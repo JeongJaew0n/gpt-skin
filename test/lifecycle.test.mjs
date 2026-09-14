@@ -44,9 +44,31 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
 // 5. 빌드 스탬프로 staleness 를 눈으로 확인할 수 있어야 한다
 {
   const d = fs.readFileSync('src/shared/defaults.js', 'utf8');
+  const cmds = fs.readFileSync('src/content/commands.js', 'utf8');
   t('GT_BUILD 정의', /var GT_BUILD = '/.test(d));
   t('부팅 줄에 빌드 표시', /build \$\{GT_BUILD\}/.test(src));
-  t(':version 명령 존재', /def\(':version'/.test(fs.readFileSync('src/content/commands.js','utf8')));
+  t(':version 명령 존재', /def\(':version'/.test(cmds));
+
+  // --- 버전은 manifest 하나에만 적는다 (CLAUDE.md §2) ---
+  // 소스에 또 적으면 갈린다. 실제로 manifest 가 0.1.0 인 동안 화면은 따로 0.1.0 을
+  // 들고 있었고, 한쪽만 올리면 조용히 어긋났을 자리다.
+  const mani = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+  t('manifest 버전이 0.x.x 다', /^0\.\d+\.\d+$/.test(mani.version));
+  t('GT_VERSION 을 manifest 에서 읽는다',
+    /chrome\.runtime\.getManifest\(\)\.version/.test(d));
+  t('읽을 수 없는 곳에서도 죽지 않는다', /catch \(_\) \{ return '0\.0\.0'; \}/.test(d));
+  t('부팅 줄이 GT_VERSION 을 쓴다', /gpt-term \$\{GT_VERSION\}/.test(src));
+  t(':version 도 GT_VERSION 을 쓴다', /gpt-term \$\{GT_VERSION\}/.test(cmds));
+
+  // 소스 어디에도 버전 문자열을 박아 두지 않는다
+  const srcFiles = ['src/content/index.js', 'src/content/commands.js',
+    'src/shared/defaults.js', 'src/popup/popup.js', 'src/options/options.js'];
+  const hardcoded = srcFiles.filter((f) => {
+    const body = fs.readFileSync(f, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');   // 주석은 봐준다
+    return /(?:^|[^.\d])0\.\d+\.\d+/.test(body.replace(/'0\.0\.0'/g, ''));  // 폴백은 예외
+  });
+  t('소스에 버전을 박아 두지 않았다', hardcoded.length === 0);
 }
 
 // 6. 물러날 때 조용히 사라지지 않는다

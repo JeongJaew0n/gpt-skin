@@ -331,7 +331,7 @@ GT.commands = (function () {
   }, null, () => ['0', '1', '2', '낮음', '중간', '높음', '+', '-']);
 
   def(':version', '지금 실행 중인 코드의 빌드 시각', () => {
-    info(`gpt-term 0.1.0 · build ${GT_BUILD}`);
+    info(`gpt-term ${GT_VERSION} · build ${GT_BUILD}`);
     info('이 값이 소스를 고친 뒤에도 그대로면 확장이 다시 로드되지 않은 것입니다 (chrome://extensions 의 ↻)');
   });
 

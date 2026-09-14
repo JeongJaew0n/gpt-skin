@@ -571,6 +571,6 @@
   // '점검이 멀쩡하니 켜져 있겠지' 로 추측한다 — 기본이 꺼짐이 되면서 그 추측이 틀리게 됐다.
   GT.sendToSW({ kind: 'visible', visible: GT.tty.visible() });
   GT.health.report();
-  GT.tty.system('info', `gpt-term 0.1.0 · build ${GT_BUILD} — :help 로 명령, ^\` 로 원본 토글`,
+  GT.tty.system('info', `gpt-term ${GT_VERSION} · build ${GT_BUILD} — :help 로 명령, ^\` 로 원본 토글`,
     null, { quiet: true });
 })();

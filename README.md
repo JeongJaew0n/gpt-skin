@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1043](https://img.shields.io/badge/테스트-1043_케이스-22C55E)
+![테스트 1049](https://img.shields.io/badge/테스트-1049_케이스-22C55E)
 
 </div>
 
@@ -327,7 +327,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>30개 파일 · 1043 케이스</b></summary>
+<summary><b>30개 파일 · 1049 케이스</b></summary>
 
 <br>
 
@@ -342,7 +342,7 @@ tools/test.sh
 | `chats` | 18 | 대화 목록 그룹핑 (고정·프로젝트·일반) |
 | `conversation` | 12 | 대화 원본에서 활성 분기·본문만 뽑기 |
 | `stream` | 37 | SSE 판별 — 추론·툴·숨김 본문이 새지 않는가 |
-| `lifecycle` | 22 | 확장 재로드 시 자진 해체 |
+| `lifecycle` | 29 | 확장 재로드 시 자진 해체 · 버전을 한 곳에만 적는가 |
 | `replay` | 3 | 녹화한 실제 스트림을 `tap.js` 에 재생 |
 | `sidebar` | 55 | 목록 손잡이·표시 규칙·오버레이 |
 | `picker` | 58 | 모델·추론 수준 선택 (원본 메뉴 조작) |
@@ -406,7 +406,7 @@ tools/test.sh
 | 생각 중 표시 · 회전자 | 실제 테마 CSS 로 세 상태(추론 중 · 스트리밍 · 완료)를 렌더해 확인 |
 | 툴바 패널 글자 대비 | 계산 — 전부 4.5:1 이상 (도움말은 2.3 → 7.8) |
 | 인용 마커 | 실측 — API·SSE·fiber 세 경로의 표기를 각각 확인하고, 실제 응답 데이터로 렌더 |
-| 순수 로직 | 1043 케이스 통과 (위 표) |
+| 순수 로직 | 1049 케이스 통과 (위 표) |
 | 녹화 스트림 재생 | 실제 SSE 1건을 `tap.js` 에 재생 (`test/replay.test.mjs`) |
 | ProseMirror 주입 · 전송 버튼 활성화 | 실제 페이지에서 확인 |
 | SSE 가로채기 (`res.body.tee()`) | 실제 페이지에서 확인 |

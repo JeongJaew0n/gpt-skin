@@ -1,7 +1,14 @@
 // gpt-term 빌드 스탬프.
 // 크롬은 언팩 확장 파일을 캐시한다. "고쳤는데 왜 그대로지?" 를 추측으로 풀지 않으려고 둔다.
 // 터미널 부팅 줄과 :version 에 찍힌다. 이 값이 안 바뀌면 확장이 다시 로드되지 않은 것이다.
-var GT_BUILD = '2026-09-11 09:20';
+var GT_BUILD = '2026-09-14 10:10';
+
+// 버전은 manifest.json 이 정본이다. 소스에 또 적으면 반드시 갈린다 —
+// 실제로 manifest 가 0.1.0 인 동안 :version 이 0.1.0 을 따로 들고 있었다.
+// 확장 컨텍스트(content script·popup·options)에서는 늘 읽을 수 있다.
+var GT_VERSION = (function () {
+  try { return chrome.runtime.getManifest().version; } catch (_) { return '0.0.0'; }
+})();
 
 // gpt-term — 설정 스키마. 콘텐츠 스크립트와 옵션 화면이 같은 정의를 쓴다.
 // 여기가 유일한 출처다. 옵션 화면에 항목을 늘리려면 이 배열만 고치면 된다.
