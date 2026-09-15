@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1049](https://img.shields.io/badge/테스트-1049_케이스-22C55E)
+![테스트 1061](https://img.shields.io/badge/테스트-1061_케이스-22C55E)
 
 </div>
 
@@ -327,7 +327,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>30개 파일 · 1049 케이스</b></summary>
+<summary><b>30개 파일 · 1061 케이스</b></summary>
 
 <br>
 
@@ -358,7 +358,7 @@ tools/test.sh
 | `complete` | 37 | 명령·인자 자동완성 · `parse` 가 인식하는 이름은 전부 실재하는가 |
 | `rename` | 13 | `:rename` 의 기본 대상은 지금 대화 |
 | `copy` | 29 | 복사 버튼 — 누른 순간의 원문을 집는가, 실패를 삼키지 않는가 |
-| `citation` | 97 | 인용 마커 — 두 표기를 번호+도메인 링크로, `url` 봉투를 본문 링크로 |
+| `citation` | 104 | 인용 마커 — 두 표기를 번호+도메인 링크로, `url` 봉투를 본문 링크로 |
 | `image` | 98 | 생성된 이미지 — tool 메시지에서 뽑는가 · 문자 블록 종횡비 · 그리는 중 표시 |
 | `popup` | 41 | 툴바 패널 — 토글 둘이 서로 독립인가, 못 쓰는 탭을 잠그는가, 글자 대비가 4.5:1 이상인가 |
 | `route` | 29 | 대화를 옮기면 이전 제목·본문이 남지 않는가 · 수확이 제목을 덮지 않는가 · esc 우선순위 |
@@ -381,7 +381,7 @@ tools/test.sh
 | [이미지 생성 — 결과와 과정](docs/plan/2026-09-09-image-generation.md) | 1·2단계 구현 · 2단계는 브라우저 확인 대기 |
 | [Google 확장 개발 에이전트 도구 검토](docs/plan/2026-09-11-modern-web-guidance.md) | 분석만 — `reload_extension` 도입 권고 |
 
-조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열다섯 건 중 열하나가 해결**됐고, 한 건은 반쯤, 한 건은 분석까지 끝났다.
+조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열다섯 건 중 열둘이 해결**됐고 한 건은 반쯤 해결됐다.
 매니페스트 캐시 건은 크롬 동작이라 감지만 하고, 선택 유실 건은 스크롤백 쪽만 고쳐졌다.
 
 ### 아직 안 된 것
@@ -406,7 +406,7 @@ tools/test.sh
 | 생각 중 표시 · 회전자 | 실제 테마 CSS 로 세 상태(추론 중 · 스트리밍 · 완료)를 렌더해 확인 |
 | 툴바 패널 글자 대비 | 계산 — 전부 4.5:1 이상 (도움말은 2.3 → 7.8) |
 | 인용 마커 | 실측 — API·SSE·fiber 세 경로의 표기를 각각 확인하고, 실제 응답 데이터로 렌더 |
-| 순수 로직 | 1049 케이스 통과 (위 표) |
+| 순수 로직 | 1061 케이스 통과 (위 표) |
 | 녹화 스트림 재생 | 실제 SSE 1건을 `tap.js` 에 재생 (`test/replay.test.mjs`) |
 | ProseMirror 주입 · 전송 버튼 활성화 | 실제 페이지에서 확인 |
 | SSE 가로채기 (`res.body.tee()`) | 실제 페이지에서 확인 |

@@ -346,6 +346,36 @@ mode('number');
   t('빈 값도 처리한다', M.stripMarks('') === '' && M.stripMarks(null) === '');
 }
 
+// --- 원본이 남기는 앞 콜론 (2026-09-15 실측) ---
+// image_group 같은 봉투를 치환할 때 '::contentReference…' 로 콜론이 하나 더 붙는다.
+// 안 먹으면 화면에 콜론이 떠 있고 드리프트 대조도 어긋난다.
+// docs/issue/2026-09-15-drift-warning-on-most-chats.md
+{
+  const doubled = '앞 :' + oai(4) + ' 뒤';
+  t('연속된 콜론까지 걷어낸다', M.stripMarks(doubled) === '앞  뒤');
+  t('콜론이 하나면 그대로 걷어낸다', M.stripMarks('앞 ' + oai(4) + ' 뒤') === '앞  뒤');
+
+  // 의미 있는 콜론까지 먹으면 안 된다 — 사이에 공백이 있으면 마커의 일부가 아니다
+  t('떨어진 콜론은 남긴다', M.stripMarks('설명: ' + oai(0) + ' 끝') === '설명:  끝');
+
+  // 렌더 경로에서도 같아야 한다. 화면에 콜론이 남으면 안 된다.
+  mode('number');
+  const frag = M.render('본문 :' + oai(0), { refs: [REF()] });
+  t('화면에도 콜론이 남지 않는다', text(frag) === '본문 [1]');
+}
+
+// --- 실측한 다섯 봉투를 모두 걷어낸다 (2026-09-15) ---
+// 2026-09-08 에 고칠 때는 cite 하나만 알고 있었다. 표본 478개 응답에서 다섯이 나왔다.
+{
+  const KINDS = ['cite', 'entity', 'image_group', 'memcite', 'genui'];
+  const body = KINDS.map((k) => '가' + pua(k, k === 'memcite' ? undefined : '{"x":1}')).join('');
+  const out = M.stripMarks(body);
+  t('다섯 봉투를 다 걷어낸다', out === '가'.repeat(KINDS.length));
+  t('PUA 가 남지 않는다', !/[\uE200-\uE20F]/.test(out));
+  // payload 없는 봉투(memcite 가 그랬다)도 걷어낸다
+  t('payload 없는 봉투도 지운다', M.stripMarks('앞' + E200 + 'memcite' + E201 + '뒤') === '앞뒤');
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

@@ -25,7 +25,12 @@ GT.markdown = (function () {
   // 봉투는 범용이다 — \uE200<종류>\uE202<내용>\uE201. cite 말고 genui 도 관측됐다.
   // 인용이 아닌 종류는 각주를 매기지 않고 지운다. 본문에 보일 것이 아니다.
   const PUA_MARK = /\uE200([a-z_]+)(?:\uE202([\s\S]*?))?\uE201/;
-  const OAI_MARK = /:contentReference\[oaicite:(\d+)\]\{index=(\d+)\}/;
+  // 앞의 :? 는 오타가 아니다. 원본이 image_group 같은 봉투를 치환할 때
+  // '::contentReference…' 로 콜론을 하나 더 남긴다(실측 2026-09-15).
+  // 안 먹으면 화면에 콜론이 하나 떠 있고, 드리프트 대조에서도 1~2자가 어긋난다.
+  // 연속된 '::' 일 때만 먹으므로 '설명: :contentReference' 같은 경우는 건드리지 않는다.
+  // docs/issue/2026-09-15-drift-warning-on-most-chats.md
+  const OAI_MARK = /:?:contentReference\[oaicite:(\d+)\]\{index=(\d+)\}/;
 
   // 봉투 안을 나누는 구분자. url 봉투는 이걸 두 번 쓴다.
   const SEP = '\uE202';

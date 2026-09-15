@@ -29,9 +29,10 @@ const results = [];
 const t = (name, ok) => results.push([name, ok]);
 
 // 1. 드리프트는 기본값(warn)에서 복귀시키지 않는다 — 이번 회귀의 본체
+// 길이를 키워 둔다. 90자 차이라 절대량 하한(20자)을 넘고 비율만 남는다.
 {
   const w = makeWorld({});
-  w.GT.health.reconcile('a'.repeat(91), 'b'.repeat(100)); // 9% 차이
+  w.GT.health.reconcile('a'.repeat(910), 'b'.repeat(1000)); // 9% 차이
   t('드리프트 9% → 복귀하지 않음', w.hidden.called === false && w.GT.health.degraded === false);
   t('드리프트 9% → 경고로는 남음', w.GT.health.warned === true && w.GT.health.reasons.length === 1);
 }
@@ -39,8 +40,47 @@ const t = (name, ok) => results.push([name, ok]);
 // 2. 임계값 미만이면 경고조차 없다
 {
   const w = makeWorld({ 'drift.threshold': 20 });
-  w.GT.health.reconcile('a'.repeat(91), 'b'.repeat(100));
+  w.GT.health.reconcile('a'.repeat(910), 'b'.repeat(1000));
   t('임계값 20% > 실제 9% → 조용함', w.GT.health.warned === false && w.GT.health.reasons.length === 0);
+}
+
+// 2-1. 몇 자 차이로는 알리지 않는다 (2026-09-15)
+// 어긋나는 양은 마커 개수에 비례하는 고정량인데 분모는 응답 길이다.
+// 비율만 보면 짧은 응답에서 반드시 터진다 — 내용은 멀쩡한데.
+// docs/issue/2026-09-15-drift-warning-on-most-chats.md
+{
+  const w = makeWorld({});
+  w.GT.health.reconcile('a'.repeat(27), 'b'.repeat(30));   // 3자 = 10%, 임계 8% 초과
+  t('짧은 응답의 3자 차이는 조용하다', w.GT.health.warned === false && w.GT.health.reasons.length === 0);
+}
+{
+  const w = makeWorld({});
+  w.GT.health.reconcile('', 'b'.repeat(12));               // 본문이 통째로 비었지만 12자
+  t('하한 미만이면 빈 본문이어도 조용하다', w.GT.health.warned === false);
+}
+{
+  // 본문이 실제로 날아가면 수십~수백 자가 어긋나므로 여전히 잡힌다
+  const w = makeWorld({});
+  w.GT.health.reconcile('a'.repeat(30), 'b'.repeat(200));
+  t('진짜로 날아가면 잡는다', w.GT.health.warned === true && w.GT.health.reasons.length === 1);
+}
+
+// 2-2. 공백만 다르면 같다고 본다
+// 원본은 마커를 치환하면서 앞뒤 개행을 다르게 넣는다.
+//
+// 공백 차이를 하한(20자)보다 크게 잡는다. 작게 잡으면 하한에 먼저 걸려서
+// 정규화를 빼도 통과한다 — 아무것도 검증하지 못하는 검사가 된다.
+{
+  const w = makeWorld({});
+  const body = '가나다'.repeat(40);
+  w.GT.health.reconcile(body + '\n\n' + body, body + '\n'.repeat(60) + body);
+  t('개행이 58개 더 많아도 조용하다', w.GT.health.warned === false);
+}
+{
+  const w = makeWorld({});
+  const body = '앞뒤'.repeat(40);
+  w.GT.health.reconcile('   ' + body.split('').join('  ') + '   ', body.split('').join(' '));
+  t('중간 공백 개수가 달라도 조용하다', w.GT.health.warned === false);
 }
 
 // 3. onBreak=revert 를 고르면 치명 실패는 복귀시킨다

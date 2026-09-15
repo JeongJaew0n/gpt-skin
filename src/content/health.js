@@ -4,6 +4,10 @@
 GT.health = (function () {
   'use strict';
 
+  // 이만큼 안 되는 차이는 알리지 않는다. 마커 주변에 남는 잔재가 그 정도다 —
+  // 실측(2026-09-15)에서 봉투 6개짜리 응답의 잔재가 3자였다. 넉넉히 잡는다.
+  const DRIFT_MIN_CHARS = 20;
+
   const CHECKS = {
     tap: { ok: false, label: 'MAIN world tap', fatal: true },
     composer: { ok: false, label: '컴포저 #prompt-textarea', fatal: true },
@@ -98,10 +102,23 @@ GT.health = (function () {
       // 인용 마커를 걷어내고 비교한다. 두 경로가 같은 인용을 다른 표기로 주기 때문에
       // 그대로 재면 인용이 있는 대화마다 경고가 뜬다.
       // docs/issue/2026-09-08-drift-warning-false-positive.md
+      //
+      // 공백까지 고른다. 원본은 마커를 치환하면서 앞뒤 개행을 다르게 넣는다 —
+      // 알고 싶은 것은 '본문이 같은가' 이지 개행이 몇 개인가가 아니다.
+      // docs/issue/2026-09-15-drift-warning-on-most-chats.md
       const strip = (GT.markdown && GT.markdown.stripMarks) || ((x) => x);
-      const a = strip(streamText).trim(), b = strip(fiberText).trim();
+      const norm = (t) => strip(t).replace(/\s+/g, ' ').trim();
+      const a = norm(streamText), b = norm(fiberText);
       if (a === b) return;
-      const pct = Math.round((Math.abs(a.length - b.length) / Math.max(b.length, 1)) * 100);
+
+      const diff = Math.abs(a.length - b.length);
+
+      // 비율만 보면 짧은 응답에서 반드시 터진다. 어긋나는 양은 마커 개수에 비례하는
+      // 고정량(실측 1~3자)인데 분모는 응답 길이다 — 30자 응답에 마커 하나면 10% 가 된다.
+      // 본문이 실제로 날아가면 수십~수백 자가 어긋나므로 이 하한에 걸리지 않는다.
+      if (diff < DRIFT_MIN_CHARS) return;
+
+      const pct = Math.round((diff / Math.max(b.length, 1)) * 100);
       const limit = Number(GT.config.get('drift.threshold')) || 8;
       if (pct < limit) return;
       CHECKS.schema.ok = false;
