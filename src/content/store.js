@@ -27,6 +27,10 @@ GT.store = (function () {
   const listeners = [];
   const emit = (why) => listeners.forEach((fn) => fn(state, why));
 
+  // 낙관적 렌더용 임시 id 를 세는 카운터.
+  // Date.now() 만 쓰면 같은 밀리초에 두 번 보낼 때 id 가 겹쳐 앞의 줄을 덮어쓴다.
+  let localSeq = 0;
+
   // 보낼 때 우리가 먼저 올린 줄의 id. 진짜 id 는 나중에 온다.
   const isLocalId = (x) => typeof x === 'string' && x.indexOf('local-') === 0;
 
@@ -175,9 +179,30 @@ GT.store = (function () {
       state.slotId = null;        // 새 턴이 열린다
       state.pendingThinking = 0;
       state.thinkingSince = 0;
-      const rec = upsert({ id: id || `local-${Date.now()}`, role: 'user', text: String(text == null ? '' : text), model: null });
+      const rec = upsert({ id: id || `local-${Date.now()}-${++localSeq}`, role: 'user', text: String(text == null ? '' : text), model: null });
       emit('user');
       return rec;
+    },
+
+    // 이 대화에서 내가 보낸 것만, 보낸 순서대로. ↑↓ 로 되짚을 때 쓴다.
+    //
+    // 새 상태를 만들지 않고 messages 에서 뽑는다. 그래서
+    //   - 새로고침해도 남는다 (대화를 다시 읽으면 그대로 복원된다)
+    //   - 원본 UI 에서 보낸 것도 들어온다
+    //   - 대화를 옮기면 그 대화의 기록으로 바뀐다
+    // 별도 배열을 두면 앞의 둘을 잃는다.
+    // docs/plan/2026-09-09-cite-label-and-history.md
+    userHistory() {
+      const out = [];
+      state.messages.forEach((m) => {
+        if (!m || m.role !== 'user') return;
+        const t = String(m.text == null ? '' : m.text);
+        if (!t.trim()) return;
+        // 같은 것을 연달아 보냈으면 한 번만 둔다. 되짚을 때 같은 줄이 반복되면 성가시다.
+        if (out.length && out[out.length - 1] === t) return;
+        out.push(t);
+      });
+      return out;
     },
 
     // 추론 조각이 흘러왔다.

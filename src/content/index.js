@@ -356,8 +356,66 @@
   // e.isComposing 이 정본이고, keyCode 229 는 이를 안 채우는 브라우저용 보험이다.
   const composing = (e) => e.isComposing || e.keyCode === 229;
 
+  // ------------------------------------------------------- 프롬프트 기록 (↑↓)
+  //
+  // 원본에 없는 기능이다. 셸처럼 이전에 보낸 것을 되짚는다.
+  // 기록은 store 에서 뽑는다(userHistory) — 새 상태를 만들지 않는다.
+  //
+  // histIdx 가 null 이면 '지금 쓰던 것'. 처음 ↑ 를 누를 때 그 초안을 보관했다가
+  // ↓ 로 돌아오면 되돌려 준다. 그게 없으면 쓰던 걸 날린다.
+  //
+  // 기록 안에서 고친 내용은 다음 이동 때 버린다 — bash 처럼 항목별 편집분을
+  // 들고 있지 않는다. 단순함을 택했다.
+  // docs/plan/2026-09-09-cite-label-and-history.md
+  let histIdx = null;
+  let histDraft = '';
+  const histReset = () => { histIdx = null; histDraft = ''; };
+
+  // textarea 라 ↑↓ 는 원래 커서를 움직이는 키다. 그걸 무조건 뺏으면 여러 줄 편집이
+  // 깨진다. 커서가 첫 줄(↑)·마지막 줄(↓)에 있고 선택 영역이 없을 때만 기록으로 간다.
+  // 한 줄짜리 입력에서는 둘 다 참이라 늘 기록으로 간다 — 셸과 같은 감각이다.
+  const caretAlone = () => input.selectionStart === input.selectionEnd;
+  const onFirstLine = () => caretAlone() && !input.value.slice(0, input.selectionStart).includes('\n');
+  const onLastLine = () => caretAlone() && !input.value.slice(input.selectionEnd).includes('\n');
+
+  const histPut = (text) => {
+    input.value = text;
+    autosize();
+    // 커서는 끝에 둔다. 불러온 것을 이어서 고치는 게 자연스럽다.
+    input.setSelectionRange(text.length, text.length);
+    refreshSuggest();     // ':' 로 시작하는 기록이면 후보가 다시 떠야 한다
+  };
+
   input.addEventListener('keydown', async (e) => {
+    // 조합 중에는 손대지 않는다. 그때의 ↑↓ 는 한글 후보를 고르는 키다.
+    // docs/issue/2026-09-02-ime-enter-eats-last-char.md
     if (composing(e)) return;
+
+    if (e.key === 'ArrowUp' && onFirstLine()) {
+      const h = GT.store.userHistory();
+      if (!h.length) return;              // 기록이 없으면 기본 동작 그대로
+      e.preventDefault();
+      if (histIdx === null) { histDraft = input.value; histIdx = h.length - 1; }
+      else if (histIdx > 0) { histIdx -= 1; }
+      else return;                        // 맨 앞이다. 더 넘어가지 않는다
+      histPut(h[histIdx] || '');
+      return;
+    }
+    if (e.key === 'ArrowDown' && onLastLine()) {
+      if (histIdx === null) return;       // 기록을 보고 있지 않다
+      const h = GT.store.userHistory();
+      e.preventDefault();
+      if (histIdx >= h.length - 1) {      // 최신에서 한 번 더 → 쓰던 초안으로
+        const draft = histDraft;
+        histReset();
+        histPut(draft);
+        return;
+      }
+      histIdx += 1;
+      histPut(h[histIdx] || '');
+      return;
+    }
+
     if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault();
       const next = GT.commands.applyCompletion(input.value);
@@ -372,11 +430,20 @@
     if (e.key === 'Escape' && GT.tty.ui.suggest && !GT.tty.ui.suggest.hidden) {
       e.preventDefault(); GT.tty.setSuggest(null); return;
     }
+    // 기록을 보고 있었으면 쓰던 초안으로 돌아간다. 보고 있지 않으면 흘려보낸다 —
+    // 그래야 esc 가 생성 중단으로 간다.
+    if (e.key === 'Escape' && histIdx !== null) {
+      e.preventDefault();
+      const draft = histDraft;
+      histReset();
+      histPut(draft);
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const text = input.value.trim();
       if (!text) return;
-      input.value = ''; autosize(); GT.tty.setSuggest(null);
+      input.value = ''; autosize(); GT.tty.setSuggest(null); histReset();
       const handled = await GT.commands.run(text);
       if (handled) return;
       const r = await GT.compose.send(text);
@@ -504,6 +571,8 @@
         GT.store.replaceAll([], { path: location.pathname, title: '' });
       }
       GT.sidebar.draw();                 // 현재 대화 강조를 옮긴다
+      // 기록은 대화마다 다르다. 위치를 그대로 두면 엉뚱한 줄을 가리킨다.
+      histReset();
     }
   });
   // 이 틱의 목적은 시계와 경과시간이다. 본문을 갈아엎을 이유가 없다.

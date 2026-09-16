@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1061](https://img.shields.io/badge/테스트-1061_케이스-22C55E)
+![테스트 1096](https://img.shields.io/badge/테스트-1096_케이스-22C55E)
 
 </div>
 
@@ -327,7 +327,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>30개 파일 · 1061 케이스</b></summary>
+<summary><b>31개 파일 · 1096 케이스</b></summary>
 
 <br>
 
@@ -359,6 +359,7 @@ tools/test.sh
 | `rename` | 13 | `:rename` 의 기본 대상은 지금 대화 |
 | `copy` | 29 | 복사 버튼 — 누른 순간의 원문을 집는가, 실패를 삼키지 않는가 |
 | `citation` | 104 | 인용 마커 — 두 표기를 번호+도메인 링크로, `url` 봉투를 본문 링크로 |
+| `history` | 35 | ↑↓ 프롬프트 기록 — 여러 줄에서 커서를 언제 뺏는가 |
 | `image` | 98 | 생성된 이미지 — tool 메시지에서 뽑는가 · 문자 블록 종횡비 · 그리는 중 표시 |
 | `popup` | 41 | 툴바 패널 — 토글 둘이 서로 독립인가, 못 쓰는 탭을 잠그는가, 글자 대비가 4.5:1 이상인가 |
 | `route` | 29 | 대화를 옮기면 이전 제목·본문이 남지 않는가 · 수확이 제목을 덮지 않는가 · esc 우선순위 |
@@ -377,7 +378,7 @@ tools/test.sh
 | [모델 · 추론 수준 선택](docs/plan/2026-09-01-model-picker.md) | 둘 다 동작 |
 | [스크롤백 렌더 개선](docs/plan/2026-09-02-scrollback-render.md) | 스크롤백 확인 · 스트리밍 중 블록 안의 선택은 미해결 |
 | [다국어 도입](docs/plan/2026-09-08-i18n.md) | 뼈대 + 설정 화면 완료 (ko·en) · 명령·사이드바는 남음 |
-| [인용에 출처 표시 · ↑↓ 프롬프트 기록](docs/plan/2026-09-09-cite-label-and-history.md) | 1번(도메인 표시) 구현 · 2번(기록) 대기 |
+| [인용에 출처 표시 · ↑↓ 프롬프트 기록](docs/plan/2026-09-09-cite-label-and-history.md) | 둘 다 구현 |
 | [이미지 생성 — 결과와 과정](docs/plan/2026-09-09-image-generation.md) | 1·2단계 구현 · 2단계는 브라우저 확인 대기 |
 | [Google 확장 개발 에이전트 도구 검토](docs/plan/2026-09-11-modern-web-guidance.md) | 분석만 — `reload_extension` 도입 권고 |
 
@@ -406,7 +407,7 @@ tools/test.sh
 | 생각 중 표시 · 회전자 | 실제 테마 CSS 로 세 상태(추론 중 · 스트리밍 · 완료)를 렌더해 확인 |
 | 툴바 패널 글자 대비 | 계산 — 전부 4.5:1 이상 (도움말은 2.3 → 7.8) |
 | 인용 마커 | 실측 — API·SSE·fiber 세 경로의 표기를 각각 확인하고, 실제 응답 데이터로 렌더 |
-| 순수 로직 | 1061 케이스 통과 (위 표) |
+| 순수 로직 | 1096 케이스 통과 (위 표) |
 | 녹화 스트림 재생 | 실제 SSE 1건을 `tap.js` 에 재생 (`test/replay.test.mjs`) |
 | ProseMirror 주입 · 전송 버튼 활성화 | 실제 페이지에서 확인 |
 | SSE 가로채기 (`res.body.tee()`) | 실제 페이지에서 확인 |
