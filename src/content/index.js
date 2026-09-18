@@ -215,11 +215,10 @@
     setTimeout(() => GT.toMain('verify', { id: p.id }), 400);
     if (GT.config.get('bell') === 'visual') flash();
   });
-  // fiber 가 스트림의 이만큼도 안 되면 '아직 안 그려진 것' 으로 본다.
+  // fiber 가 아직 다 안 그려졌으면 몇 번 더 본다.
   // 접두사 검사로는 못 잡는다 — 인용 마커의 표기가 달라 첫 인용부터 갈라지고,
   // 애초에 접두사가 아닌 조각도 온다(실측: 본문 2488자에 fiber 312자).
   // docs/issue/2026-09-08-drift-warning-false-positive.md
-  const VERIFY_MIN_RATIO = 0.5;
   const VERIFY_RETRIES = 3;
 
   // 그림이 원본에 붙기까지 걸리는 시간은 그때그때 다르다. 간격을 늘려 가며 몇 번 본다.
@@ -235,20 +234,34 @@
     const strip = (GT.markdown && GT.markdown.stripMarks) || ((x) => x);
     const sLen = strip(streamed).length;
     const fLen = strip(fiber).length;
-    const tooShort = sLen > 0 && fLen < sLen * VERIFY_MIN_RATIO;
 
-    if (tooShort) {
+    // fiber 가 스트림보다 짧으면 그것은 '교정' 이 아니라 '손실' 이다.
+    //
+    // fiber 를 정답으로 믿고 덮어쓰던 것이 마지막 문장이 잘리는 원인이었다.
+    // 원본이 화면에 그리다 만 조각인 경우가 흔하다 — 실측(2026-09-18)에서
+    // 522자 응답의 fiber 가 1자, 446자 응답의 fiber 가 38자였다.
+    // innerText 도 같은 값이라 DOM 자체가 그만큼만 그려져 있었다.
+    //
+    // 예전에는 비율(절반 미만)로 걸렀는데, 그러면 50~99% 인 조각이 통과해
+    // 뒤쪽을 잘라먹었다. 부분 렌더는 앞에서부터 채워지므로 빠지는 것은 늘 뒤다.
+    // 비율이 아니라 방향을 본다.
+    // docs/issue/2026-09-18-last-sentence-truncated.md
+    const shorter = sLen > 0 && fLen < sLen;
+
+    if (shorter) {
+      // 아직 그리는 중일 수 있다. 간격을 늘려 가며 몇 번 더 본다.
       rec.verifyTries = (rec.verifyTries || 0) + 1;
       if (rec.verifyTries <= VERIFY_RETRIES) {
         setTimeout(() => GT.toMain('verify', { id: p.id }), 900 * rec.verifyTries);
         return;
       }
-      // 여러 번 다시 봐도 조각이면 그걸 정답이라 부르지 않는다. 스트림을 남긴다.
-      GT.log(`fiber 가 계속 짧다 (${fLen}/${sLen}) — 스트림 본문을 유지한다`);
+      // 여러 번 봐도 짧으면 그걸 정답이라 부르지 않는다. 스트림을 지킨다.
+      GT.log(`fiber 가 스트림보다 짧다 (${fLen}/${sLen}) — 스트림 본문을 지킨다`);
       return;
     }
 
-    // fiber 원문이 정답이다. 먼저 화면을 교정하고, 대조는 경고 목적으로만 한다.
+    // 여기까지 왔으면 fiber 가 스트림만큼 길거나 더 길다. 그때만 교정으로 받는다.
+    // (인용 마커가 치환되면서 길어지는 경우가 이에 해당한다)
     rec.text = fiber;
     GT.tty.render();
     GT.health.reconcile(streamed, fiber);

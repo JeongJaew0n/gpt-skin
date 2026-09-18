@@ -140,17 +140,20 @@ const t = (name, ok) => results.push([name, ok]);
 
 // 10. 렌더 중 fiber 를 정답으로 삼지 않는다 (정적)
 //
-// 전에는 '스트림의 접두사인가' 로 판단했다. 인용 마커의 표기가 두 경로에서 달라
-// 첫 인용부터 갈라지고, 애초에 접두사가 아닌 조각도 온다(실측: 본문 2488자에 312자).
-// 이제 길이 비율로 본다. docs/issue/2026-09-08-drift-warning-false-positive.md
+// 판단 기준이 두 번 바뀌었다.
+//   접두사인가        → 인용 마커 표기가 달라 첫 인용부터 갈라졌다 (2026-09-08)
+//   길이 비율 50%     → 50~99% 조각이 통과해 마지막 문장을 잘라먹었다 (2026-09-18)
+//   길이 방향         → fiber 가 짧으면 무조건 안 받는다  ← 지금
+// 자세한 검증은 test/verify.test.mjs 가 실제 핸들러를 돌려서 한다.
 {
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
   t('접두사 검사에 기대지 않는다', !/streamed\.startsWith\(fiber\)/.test(idx));
-  t('길이 비율로 판단한다', /VERIFY_MIN_RATIO/.test(idx) && /fLen < sLen \* VERIFY_MIN_RATIO/.test(idx));
+  t('비율 임계를 쓰지 않는다', !/VERIFY_MIN_RATIO/.test(idx));
+  t('짧으면 받지 않는다 (방향으로 판단)', /const shorter = sLen > 0 && fLen < sLen;/.test(idx));
   t('비교 전에 인용 마커를 걷어낸다', /stripMarks/.test(idx));
   t('여러 번 다시 본다', /VERIFY_RETRIES/.test(idx) && /rec\.verifyTries/.test(idx));
-  t('보류하면 화면을 덮지 않는다', /if \(tooShort\) \{[\s\S]{0,400}?return;/.test(idx));
-  t('끝내 짧으면 스트림을 유지한다', /스트림 본문을 유지한다/.test(idx));
+  t('보류하면 화면을 덮지 않는다', /if \(shorter\) \{[\s\S]{0,400}?return;/.test(idx));
+  t('끝내 짧으면 스트림을 지킨다', /스트림 본문을 지킨다/.test(idx));
 }
 
 // 10-1. 드리프트 경고는 관측만 적는다
