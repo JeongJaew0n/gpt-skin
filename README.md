@@ -382,7 +382,7 @@ tools/test.sh
 | [이미지 생성 — 결과와 과정](docs/plan/2026-09-09-image-generation.md) | 1·2단계 구현 · 2단계는 브라우저 확인 대기 |
 | [Google 확장 개발 에이전트 도구 검토](docs/plan/2026-09-11-modern-web-guidance.md) | 분석만 — `reload_extension` 도입 권고 |
 
-조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열다섯 건 중 열둘이 해결**됐고 한 건은 반쯤 해결됐다.
+조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열여섯 건 중 열둘이 해결**됐고, 한 건은 반쯤, 한 건은 원인까지 확정됐다.
 매니페스트 캐시 건은 크롬 동작이라 감지만 하고, 선택 유실 건은 스크롤백 쪽만 고쳐졌다.
 
 ### 아직 안 된 것
