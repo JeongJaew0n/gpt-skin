@@ -239,6 +239,7 @@ src/options/                          설정 화면 (스키마에서 생성)
 icons/  tools/make-icons.py           아이콘
 CLAUDE.md                             작업 지침 (git 규칙 · 검증 절차)
 docs/issue/  docs/plan/               조사 기록 · 계획
+docs/mockup/                          화면 목업 (브라우저로 연다)
 _locales/ko · _locales/en             매니페스트 이름·설명 (스토어 리스팅)
 docs/store/                           스토어 리스팅 · 개인정보처리방침 · 심사 노트
 docs/plans/                           작업 계획 (재개용)
@@ -382,6 +383,7 @@ tools/test.sh
 | [인용에 출처 표시 · ↑↓ 프롬프트 기록](docs/plan/2026-09-09-cite-label-and-history.md) | 둘 다 구현 |
 | [이미지 생성 — 결과와 과정](docs/plan/2026-09-09-image-generation.md) | 1·2단계 구현 · 2단계는 브라우저 확인 대기 |
 | [Google 확장 개발 에이전트 도구 검토](docs/plan/2026-09-11-modern-web-guidance.md) | 분석만 — `reload_extension` 도입 권고 |
+| [시트 스킨 — 스프레드시트로 보이는 대화](docs/plan/2026-09-21-sheet-skin.md) | 설계만 — 목업 있음 · 구현 대기 |
 
 조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열여섯 건 중 열셋이 해결**됐고 한 건은 반쯤 해결됐다.
 매니페스트 캐시 건은 크롬 동작이라 감지만 하고, 선택 유실 건은 스크롤백 쪽만 고쳐졌다.

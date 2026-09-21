@@ -1,0 +1,148 @@
+<!doctype html><meta charset="utf-8">
+<title>시트 스킨 — 설계 목업</title>
+<style>
+  :root{
+    --xl-green:#217346; --xl-green-d:#1a5c38;
+    --grid:#d4d4d4; --hdr:#f5f5f5; --hdr-b:#c6c6c6;
+    --sel:#217346; --fg:#1e1e1e; --dim:#616161;
+    --font:"맑은 고딕","Malgun Gothic",Calibri,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);font-size:11px;color:var(--fg);background:#fff}
+
+  /* ── 제목 표시줄 ── */
+  .title{background:var(--xl-green);color:#fff;height:30px;display:flex;align-items:center;
+    padding:0 10px;gap:12px;font-size:12px}
+  .title .name{font-weight:600}
+  .title .win{margin-left:auto;display:flex;gap:18px;opacity:.9}
+
+  /* ── 리본 탭 ── */
+  .tabs{background:var(--xl-green);display:flex;padding:0 6px;height:26px;align-items:flex-end}
+  .tabs div{padding:4px 11px;color:#fff;font-size:11.5px;opacity:.88}
+  .tabs .on{background:#fff;color:var(--fg);opacity:1;border-radius:3px 3px 0 0;font-weight:600}
+
+  /* ── 리본 ── */
+  .ribbon{border-bottom:1px solid var(--hdr-b);background:#fff;display:flex;
+    padding:5px 8px;gap:14px;align-items:center;height:62px}
+  .grp{display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:0 9px;border-right:1px solid #e3e3e3;height:100%;justify-content:center}
+  .grp .ic{font-size:17px;line-height:1}
+  .grp .lb{font-size:10px;color:var(--dim)}
+
+  /* ── 수식 입력줄 ── */
+  .fx{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--hdr-b);height:24px;background:#fff}
+  .namebox{width:118px;border-right:1px solid var(--hdr-b);padding:0 7px;
+    display:flex;align-items:center;height:100%;font-size:11px}
+  .fxsym{width:34px;text-align:center;color:var(--dim);font-style:italic;
+    border-right:1px solid var(--hdr-b);height:100%;display:flex;align-items:center;justify-content:center}
+  .fxin{flex:1;padding:0 8px;display:flex;align-items:center;height:100%;color:var(--fg)}
+  .caret{display:inline-block;width:1px;height:13px;background:#000;margin-left:1px}
+
+  /* ── 격자 ── */
+  .sheet{overflow:auto;height:432px}
+  table{border-collapse:collapse;table-layout:fixed;width:100%}
+  th,td{border:1px solid var(--grid);height:19px;padding:1px 4px;
+    font-weight:400;vertical-align:top;overflow:hidden;white-space:nowrap}
+  thead th{background:var(--hdr);text-align:center;font-size:11px;color:#444;
+    border-color:var(--hdr-b);height:19px;position:sticky;top:0}
+  .rn{background:var(--hdr);text-align:center;color:#444;width:30px;
+    border-color:var(--hdr-b);font-size:11px}
+  col.c1{width:64px} col.c2{width:760px} col.c3{width:62px}
+  td.who{color:var(--dim)}
+  td.me{color:#1a5c38;font-weight:600}
+  td.gpt{color:#8a3ffc;font-weight:600}
+  .mono{font-family:Consolas,"D2Coding",monospace;font-size:11px;background:#f7f7f7}
+  .lnk{color:#0563c1;text-decoration:underline}
+  .selcell{outline:2px solid var(--sel);outline-offset:-2px}
+  .hdron{background:#d8e9df !important;color:#0f4c2f !important;font-weight:600}
+  .blank td{color:transparent}
+
+  /* ── 시트 탭 ── */
+  .tabsbar{display:flex;align-items:center;gap:0;border-top:1px solid var(--hdr-b);
+    background:#f5f5f5;height:25px;padding:0 4px}
+  .nav{color:var(--dim);padding:0 6px;font-size:11px}
+  .st{padding:3px 13px;font-size:11px;border:1px solid transparent;color:#444}
+  .st.on{background:#fff;border-color:var(--hdr-b);border-bottom-color:#fff;
+    color:var(--xl-green);font-weight:600;border-radius:0 0 2px 2px}
+  .plus{padding:0 8px;color:var(--dim)}
+
+  /* ── 상태 표시줄 ── */
+  .status{display:flex;align-items:center;height:24px;background:var(--xl-green);
+    color:#fff;font-size:11px;padding:0 10px;gap:16px}
+  .status .r{margin-left:auto;display:flex;gap:14px;align-items:center}
+  .zoom{display:flex;align-items:center;gap:6px}
+  .zbar{width:70px;height:3px;background:rgba(255,255,255,.45);position:relative}
+  .zbar i{position:absolute;left:44%;top:-4px;width:2px;height:11px;background:#fff}
+</style>
+
+<div class="title">
+  <span class="name">2026_4분기_영업실적_분석.xlsx — Excel</span>
+  <span class="win">─ ▫ ✕</span>
+</div>
+
+<div class="tabs">
+  <div>파일</div><div class="on">홈</div><div>삽입</div><div>페이지 레이아웃</div>
+  <div>수식</div><div>데이터</div><div>검토</div><div>보기</div><div>도움말</div>
+</div>
+
+<div class="ribbon">
+  <div class="grp"><span class="ic">📋</span><span class="lb">붙여넣기</span></div>
+  <div class="grp"><span class="ic">𝐁</span><span class="lb">글꼴</span></div>
+  <div class="grp"><span class="ic">≡</span><span class="lb">맞춤</span></div>
+  <div class="grp"><span class="ic">%</span><span class="lb">표시 형식</span></div>
+  <div class="grp"><span class="ic">▦</span><span class="lb">스타일</span></div>
+  <div class="grp"><span class="ic">Σ</span><span class="lb">편집</span></div>
+</div>
+
+<div class="fx">
+  <div class="namebox">B14</div>
+  <div class="fxsym">fx</div>
+  <div class="fxin">docker 사이트 알려줘.<span class="caret"></span></div>
+</div>
+
+<div class="sheet">
+<table>
+  <colgroup><col style="width:30px"><col class="c1"><col class="c2"><col class="c3"></colgroup>
+  <thead><tr><th></th><th>A</th><th class="hdron">B</th><th>C</th></tr></thead>
+  <tbody>
+    <tr><td class="rn">1</td><td class="me">나</td><td>docker 사이트 알려줘.</td><td>14:26</td></tr>
+    <tr><td class="rn">2</td><td class="gpt">GPT</td><td>여기!</td><td>14:26</td></tr>
+    <tr><td class="rn">3</td><td></td><td>· Docker 공식 사이트: <span class="lnk">docker.com</span></td><td></td></tr>
+    <tr><td class="rn">4</td><td></td><td>· Docker Hub: <span class="lnk">hub.docker.com</span></td><td></td></tr>
+    <tr><td class="rn">5</td><td></td><td>· Docker 공식 문서: <span class="lnk">docs.docker.com</span></td><td></td></tr>
+    <tr><td class="rn">6</td><td></td><td>이미지 찾는 거면 Docker Hub 들어가면 돼.</td><td></td></tr>
+    <tr><td class="rn">7</td><td class="me">나</td><td>compose 파일 예시도 줘.</td><td>14:28</td></tr>
+    <tr><td class="rn">8</td><td class="gpt">GPT</td><td>간단한 예시입니다.</td><td>14:28</td></tr>
+    <tr><td class="rn">9</td><td></td><td class="mono">services:</td><td></td></tr>
+    <tr><td class="rn">10</td><td></td><td class="mono">&nbsp;&nbsp;web:</td><td></td></tr>
+    <tr><td class="rn">11</td><td></td><td class="mono">&nbsp;&nbsp;&nbsp;&nbsp;image: nginx:alpine</td><td></td></tr>
+    <tr><td class="rn">12</td><td></td><td class="mono">&nbsp;&nbsp;&nbsp;&nbsp;ports: ["8080:80"]</td><td></td></tr>
+    <tr><td class="rn">13</td><td></td><td>포트는 필요에 맞게 바꾸세요.</td><td></td></tr>
+    <tr><td class="rn">14</td><td class="me">나</td><td class="selcell">docker 사이트 알려줘.</td><td></td></tr>
+    <tr class="blank"><td class="rn">15</td><td>.</td><td>.</td><td>.</td></tr>
+    <tr class="blank"><td class="rn">16</td><td>.</td><td>.</td><td>.</td></tr>
+    <tr class="blank"><td class="rn">17</td><td>.</td><td>.</td><td>.</td></tr>
+    <tr class="blank"><td class="rn">18</td><td>.</td><td>.</td><td>.</td></tr>
+    <tr class="blank"><td class="rn">19</td><td>.</td><td>.</td><td>.</td></tr>
+    <tr class="blank"><td class="rn">20</td><td>.</td><td>.</td><td>.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="tabsbar">
+  <span class="nav">◀ ▶</span>
+  <div class="st on">Docker 사이트 안내</div>
+  <div class="st">K8s GVK 설명</div>
+  <div class="st">MSA 여부 판단</div>
+  <div class="st">면접 전날 식사</div>
+  <span class="plus">＋</span>
+</div>
+
+<div class="status">
+  <span>준비</span>
+  <span>셀 B14</span>
+  <div class="r">
+    <span>메시지 14</span><span>문자 1,248</span>
+    <span class="zoom">100%<span class="zbar"><i></i></span></span>
+  </div>
+</div>
