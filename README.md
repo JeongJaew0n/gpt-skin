@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1231](https://img.shields.io/badge/테스트-1231_케이스-22C55E)
+![테스트 1265](https://img.shields.io/badge/테스트-1265_케이스-22C55E)
 
 </div>
 
@@ -220,8 +220,8 @@ src/content/                          ← 매니페스트 주입 순서
   chats.js                            대화 목록 (API → DOM → 캐시)
   conversation.js                     대화 원본에서 활성 분기 뽑기
   convops.js                          이름·고정·보관·삭제·이동
-  markdown.js                         마크다운 → tty 노드 (innerHTML 미사용)
-  renderplan.js                       스크롤백 서명·재조정 (순수 함수)
+  markdown.js                         마크다운 → 블록 · tty 노드 · 줄 단위 행 (innerHTML 미사용)
+  renderplan.js                       스크롤백 서명·재조정 · 행 단위 계획 (순수 함수)
   theme.js                            테마 CSS 변수 + 셸 스타일
   shell/cover.js                      원본 가리기 · 스킨 호스트 (가리는 스킨 / 클릭 통과 스킨)
   shell/clipboard.js                  클립보드 복사
@@ -337,7 +337,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>36개 파일 · 1231 케이스</b></summary>
+<summary><b>37개 파일 · 1265 케이스</b></summary>
 
 <br>
 
@@ -379,6 +379,7 @@ tools/test.sh
 | `cover` | 20 | 원본 가리기 — 가리는/안 가리는 스타일 · 호스트 재사용 · 흔적 없이 물러나는가 · 가리기가 한 곳에만 있는가 |
 | `skin` | 26 | 스킨 계약 — 모든 스킨이 계약을 채우는가 · GT.tty·ui 우회가 없는가 · 파일 하나에 스킨 하나 · 해체가 cover 를 걷는가 · 복귀 상태에서 토글 금지 |
 | `skinconfig` | 35 | 스킨 설정 — skin 선택지 = 스킨 파일 · 스킨 전용 항목 필터 · theme 이관이 한 번만, 사용자 값을 덮지 않는가 · `:skin` `:theme` |
+| `lines` | 34 | 줄 단위 마크다운 — 한 행에 한 줄 · 문법이 한 벌인가 · 스트리밍 중 앞 행을 다시 만들지 않는가 |
 
 </details>
 
@@ -397,7 +398,7 @@ tools/test.sh
 | [이미지 생성 — 결과와 과정](docs/plan/2026-09-09-image-generation.md) | 1·2단계 구현 · 2단계는 브라우저 확인 대기 |
 | [Google 확장 개발 에이전트 도구 검토](docs/plan/2026-09-11-modern-web-guidance.md) | 분석만 — `reload_extension` 도입 권고 |
 | [시트 스킨 — 스프레드시트로 보이는 대화](docs/plan/2026-09-21-sheet-skin.md) | 설계만 — 목업 있음 · 구현 대기 |
-| [스킨 구조 — terminal · sheet · none 을 갈아끼운다](docs/plan/2026-09-24-skin-architecture.md) | 1~4단계 완료 (0.4.2~0.5.0) — 입력 컨트롤러 · 원본 가리기 · 스킨 레지스트리와 terminal 스킨 · 스킨 설정 |
+| [스킨 구조 — terminal · sheet · none 을 갈아끼운다](docs/plan/2026-09-24-skin-architecture.md) | 1~4 · 6단계 완료 (0.4.2~0.5.1) — 입력 컨트롤러 · 원본 가리기 · 스킨 레지스트리와 terminal 스킨 · 스킨 설정 · 줄 단위 마크다운 · 5단계(none)는 브라우저 실측 대기 |
 
 조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열여섯 건 중 열셋이 해결**됐고 한 건은 반쯤 해결됐다.
 매니페스트 캐시 건은 크롬 동작이라 감지만 하고, 선택 유실 건은 스크롤백 쪽만 고쳐졌다.

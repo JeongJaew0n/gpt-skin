@@ -299,17 +299,23 @@ GT.markdown = (function () {
     return t;
   }
 
-  function renderInto(src, ctx) {
-    const out = document.createDocumentFragment();
+  // ------------------------------------------------------------ 블록 판별
+  //
+  // 마크다운 원문을 블록 목록으로 자른다. 터미널 렌더(renderInto)와 줄 단위 출력(lines)이
+  // 같은 판별을 쓴다 — 문법이 두 벌이면 같은 원문이 스킨마다 다르게 잘린다.
+  //   code    { lang, lines }        heading { level, text }     hr
+  //   quote   { src }                table   { rows: [[셀]] }     item    { depth, text }
+  //   para    { text }               (여러 줄 문단은 공백으로 이어 붙인다)
+  // text 는 원문 그대로다(인용 마커 포함). 인라인 처리는 그리는 쪽이 inline() 으로 한다.
+  function blocks(src) {
+    const out = [];
     const lines = String(src == null ? '' : src).split('\n');
     let i = 0;
     let para = [];
 
     const flushPara = () => {
       if (!para.length) return;
-      const p = el('div', 'gt-p');
-      p.appendChild(inline(para.join(' '), null, ctx));
-      out.appendChild(p);
+      out.push({ type: 'para', text: para.join(' ') });
       para = [];
     };
 
@@ -324,22 +330,20 @@ GT.markdown = (function () {
         i += 1;
         while (i < lines.length && !/^\s*```+\s*$/.test(lines[i])) { body.push(lines[i]); i += 1; }
         i += 1;
-        out.appendChild(codeBlock(lang, body));
+        out.push({ type: 'code', lang, lines: body });
         continue;
       }
 
       if (/^\s*$/.test(line)) { flushPara(); i += 1; continue; }
 
       if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
-        flushPara(); out.appendChild(el('div', 'gt-hr')); i += 1; continue;
+        flushPara(); out.push({ type: 'hr' }); i += 1; continue;
       }
 
       const h = /^(#{1,6})\s+(.*)$/.exec(line);
       if (h) {
         flushPara();
-        const n = el('div', `gt-h gt-h${h[1].length}`);
-        n.appendChild(inline(h[2], null, ctx));
-        out.appendChild(n);
+        out.push({ type: 'heading', level: h[1].length, text: h[2] });
         i += 1; continue;
       }
 
@@ -347,12 +351,7 @@ GT.markdown = (function () {
         flushPara();
         const buf = [];
         while (i < lines.length && /^\s*>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^\s*>\s?/, '')); i += 1; }
-        const q = el('div', 'gt-quote');
-        q.appendChild(el('span', 'gt-quote-bar'));
-        const inner = el('div', 'gt-quote-body');
-        inner.appendChild(renderInto(buf.join('\n'), ctx));
-        q.appendChild(inner);
-        out.appendChild(q);
+        out.push({ type: 'quote', src: buf.join('\n') });
         continue;
       }
 
@@ -364,7 +363,7 @@ GT.markdown = (function () {
           if (!/^[\s:|-]+$/.test(lines[i])) rows.push(cells);
           i += 1;
         }
-        if (rows.length) out.appendChild(table(rows, ctx));
+        if (rows.length) out.push({ type: 'table', rows });
         continue;
       }
 
@@ -372,12 +371,7 @@ GT.markdown = (function () {
       if (li) {
         flushPara();
         const depth = Math.floor(li[1].replace(/\t/g, '  ').length / 2);
-        const row = el('div', `gt-li gt-li-d${Math.min(depth, 3)}`);
-        row.appendChild(el('span', 'gt-bullet', depth === 0 ? '·' : '▸'));
-        const body = el('span', 'gt-li-body');
-        body.appendChild(inline(li[3], null, ctx));
-        row.appendChild(body);
-        out.appendChild(row);
+        out.push({ type: 'item', depth, text: li[3] });
         i += 1; continue;
       }
 
@@ -386,6 +380,76 @@ GT.markdown = (function () {
     }
     flushPara();
     return out;
+  }
+
+  function renderInto(src, ctx) {
+    const out = document.createDocumentFragment();
+    blocks(src).forEach((b) => {
+      if (b.type === 'code') { out.appendChild(codeBlock(b.lang, b.lines)); return; }
+      if (b.type === 'hr') { out.appendChild(el('div', 'gt-hr')); return; }
+      if (b.type === 'heading') {
+        const n = el('div', `gt-h gt-h${b.level}`);
+        n.appendChild(inline(b.text, null, ctx));
+        out.appendChild(n);
+        return;
+      }
+      if (b.type === 'quote') {
+        const q = el('div', 'gt-quote');
+        q.appendChild(el('span', 'gt-quote-bar'));
+        const inner = el('div', 'gt-quote-body');
+        inner.appendChild(renderInto(b.src, ctx));
+        q.appendChild(inner);
+        out.appendChild(q);
+        return;
+      }
+      if (b.type === 'table') { out.appendChild(table(b.rows, ctx)); return; }
+      if (b.type === 'item') {
+        const row = el('div', `gt-li gt-li-d${Math.min(b.depth, 3)}`);
+        row.appendChild(el('span', 'gt-bullet', b.depth === 0 ? '·' : '▸'));
+        const body = el('span', 'gt-li-body');
+        body.appendChild(inline(b.text, null, ctx));
+        row.appendChild(body);
+        out.appendChild(row);
+        return;
+      }
+      const p = el('div', 'gt-p');
+      p.appendChild(inline(b.text, null, ctx));
+      out.appendChild(p);
+    });
+    return out;
+  }
+
+  // ------------------------------------------------------------ 줄 단위 출력
+  //
+  // 시트 스킨은 '한 행에 한 줄' 로 그린다 (docs/plan/2026-09-21-sheet-skin.md §3).
+  // 블록을 행의 배열로 편다. DOM 을 만들지 않는다 — 어떻게 그릴지는 스킨이 정한다.
+  //   { kind: 'text' | 'heading' | 'item' | 'code' | 'table' | 'hr', text, ... , quote }
+  //   heading: level · item: depth · code: lang, start, end · table: cells, header
+  //   quote: 인용 깊이 (0 이면 인용 밖)
+  // 표를 시트에서 어떻게 보일지는 아직 정하지 않았다 [미정] — 여기서는 행과 칸만 넘긴다.
+  function lines(src, quote) {
+    const q = quote || 0;
+    const rows = [];
+    blocks(src).forEach((b) => {
+      if (b.type === 'code') {
+        const body = b.lines.length ? b.lines : [''];
+        body.forEach((t, k) => rows.push({ kind: 'code', text: t, lang: b.lang, start: k === 0, end: k === body.length - 1, quote: q }));
+      } else if (b.type === 'hr') {
+        rows.push({ kind: 'hr', text: '', quote: q });
+      } else if (b.type === 'heading') {
+        rows.push({ kind: 'heading', text: b.text, level: b.level, quote: q });
+      } else if (b.type === 'quote') {
+        lines(b.src, q + 1).forEach((r) => rows.push(r));
+      } else if (b.type === 'table') {
+        b.rows.forEach((cells, k) => rows.push({ kind: 'table', text: cells.map((c) => c.trim()).join(' | '),
+          cells: cells.map((c) => c.trim()), header: k === 0, quote: q }));
+      } else if (b.type === 'item') {
+        rows.push({ kind: 'item', text: b.text, depth: b.depth, quote: q });
+      } else {
+        rows.push({ kind: 'text', text: b.text, quote: q });
+      }
+    });
+    return rows;
   }
 
   // opts.refs — conversation.js 가 실어준 content_references.
@@ -406,5 +470,5 @@ GT.markdown = (function () {
       .replace(new RegExp(OAI_MARK.source, 'g'), '');
   }
 
-  return { render, renderInto, inline, copyBtn, newCtx, stripMarks };
+  return { render, renderInto, blocks, lines, inline, copyBtn, newCtx, stripMarks };
 })();

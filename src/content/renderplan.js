@@ -89,5 +89,20 @@ GT.renderplan = (function () {
     return plan.ops.every((o, i) => prevKeys[i] === o.key);
   }
 
-  return { signature, interleave, reconcile, unchanged };
+  // 행 단위 계획. 시트처럼 '한 행에 한 줄' 로 그리는 스킨이 쓴다.
+  //
+  // 메시지 단위로 서명하면 스트리밍 중 한 글자마다 그 메시지의 모든 행을 다시 만든다.
+  // 행마다 키와 서명을 주면 reconcile 이 바뀐 행만 고른다 — 글이 흘러오는 동안
+  // 앞 행은 그대로 남고 마지막 행(과 새로 생긴 행)만 바뀐다.
+  // docs/plan/2026-09-21-sheet-skin.md §4 (2)
+  //
+  // msgKey : 메시지 키   rows : GT.markdown.lines() 의 결과   ctx.epoch : 설정 변경
+  // 키는 '메시지:행번호' 다. 앞에 행이 끼어들면 뒤가 전부 밀려 다시 만들어진다 —
+  // 스트리밍은 뒤에만 붙으므로 이 단순한 키로 충분하다.
+  function rows(msgKey, list, ctx) {
+    const epoch = (ctx && ctx.epoch) || 0;
+    return (list || []).map((r, i) => ({ key: msgKey + ':' + i, sig: JSON.stringify([r, epoch]) }));
+  }
+
+  return { signature, interleave, reconcile, unchanged, rows };
 })();

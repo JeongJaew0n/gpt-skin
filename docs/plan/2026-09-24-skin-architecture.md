@@ -406,7 +406,7 @@ CSS 는 지금처럼 JS 문자열로 둔다(`theme.js` 방식). 파일을 나누
 | **3** [완료] | `shell/skin.js` 레지스트리 + `skins/terminal.js` = `tty.js` 이동 + `register`. **`GT.tty.*` 107곳을 `GT.skin.current.*` 로.** 오버레이 세 모듈은 `overlayRoot()` (0.4.4, 2026-09-24). 역할별로 커밋을 나누지 않고 한 커밋으로 했다 — 중간 상태마다 테스트를 통과시키려면 스텁을 두 벌 들고 가야 해서 오히려 위험했다 | PATCH | **`GT.tty` 가 `skins/terminal.js` 밖에 없다** (테스트). 기존 1124건 통과 |
 | **4** [완료] | 설정: `skin` 키, 스킨별 항목 표시, `theme` → `terminal.theme` 이관, `:skin` `:theme` 갱신, 옵션에 스킨 선택 (0.5.0, 2026-09-24). **5단계로 넘긴 것** — 팝업의 스킨 선택(선택지가 하나라 뜻이 없다), `:skin` 실시간 전환(`GT.skin.switch`, 두 번째 스킨이 있어야 확인된다), `enabled` 와 `skin: none` 합치기(none 이 있어야 판단된다), `hiddenCommands` 적용(숨길 명령이 있는 스킨이 none 부터다). 스킨 정의의 `label` 은 없앴다 — 이름은 사전 `opt.skin.choice.<id>` 가 정본이다. `configKeys` 는 스키마의 `skin:` 표시에서 끌어온다 | MINOR | 스킨이 하나라도 `:skin` 이 목록을 내고, 옵션 화면이 터미널 항목만 보인다 |
 | **5** | `skins/none.js` — 명령줄 · 토스트 · `covers:false` · `capturesTyping:false` | MINOR | `:skin none` 에서 원본이 온전하고 `:ls` `:rename` `Ctrl+B` 가 된다. `Ctrl+\`` 로 명령줄이 접힌다 |
-| **6** | `markdown.lines()` + 행 단위 `renderplan` (core) | PATCH | 순수 함수 테스트. 화면 변화 없음 |
+| **6** [완료] | `markdown.lines()` + 행 단위 `renderplan` (core) (0.5.1, 2026-09-24). 블록 판별을 `blocks()` 로 떼어 터미널 렌더와 `lines()` 가 같은 문법을 쓴다. 떼어 내기 전후 렌더 트리를 원문 18가지로 비교해 전부 같음을 확인했다. 행 계획은 `renderplan.rows()` — 기존 `reconcile` 을 그대로 쓴다. 스트리밍을 한 글자씩 흉내 내면 한 틱에 최대 두 행만 다시 만든다 | PATCH | 순수 함수 테스트. 화면 변화 없음 |
 | **7** | `skins/sheet.js` 1단계 — 보이고, 읽고, 보낸다 (시트 문서 §6-1) | MINOR | 시트 문서 §7 회귀 목록 |
 | **8** | sheet 2·3단계 | MINOR | 시트 문서 |
 | **9** | 스킨 추가 안내 문서 + 계약 검사 테스트가 세 스킨을 다 돈다 | 없음 | §5 |
