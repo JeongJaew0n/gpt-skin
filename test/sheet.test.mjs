@@ -221,6 +221,29 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   t('입력줄에 들어가면 선택을 푼다', S.ui.namebox.textContent === 'B5' && !S.ui.body.querySelector('[data-sel="1"]'));
 }
 
+// ---------------------------------------------------------------- 하네스에서 찾은 것 (2026-09-24)
+{
+  const { S, state, calls } = load();
+  S.mount({ 'font.size': 13 });
+  state.messages = [{ id: 'a1', role: 'assistant', text: '- 하나\n  - 둘' }];
+  S.render();
+  S.ui.body.children[1].children[2].dispatch('mousedown');
+  S.ui.grid.dispatch('keydown', { key: 'c', ctrlKey: true });
+  t('목록 행을 복사하면 글머리를 뺀다', calls.copy.at(-1) === '둘');
+  const src = read('src/content/skins/sheet.js');
+  t('빈 행은 칸만 숨기고 행 번호는 보인다', /tr\.gs-blank td:not\(\.gs-rn\) \{ color: transparent; \}/.test(src) && !/tr\.gs-blank td \{ color: transparent/.test(src));
+  S.render();
+  const blank = S.ui.tail.children[1];
+  t('빈 행에도 번호가 있다', blank.children[0].textContent === String(S.ui.body.children.length + 2));
+}
+{
+  // 하네스가 스킨 파일을 전부 싣는다 — 새 스킨을 넣고 하네스를 잊으면 브라우저 확인을 못 한다
+  const html = read('tools/harness/index.html');
+  const skins = fs.readdirSync('src/content/skins').filter((f) => f.endsWith('.js'));
+  t('하네스가 모든 스킨을 싣는다', skins.every((f) => html.includes(`src/content/skins/${f}`)));
+  t('하네스가 진짜 입력 컨트롤러와 명령을 싣는다', html.includes('src/content/shell/prompt.js') && html.includes('src/content/commands.js'));
+}
+
 // ---------------------------------------------------------------- 시트 탭
 {
   const { S, calls } = load();

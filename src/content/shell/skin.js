@@ -118,7 +118,12 @@ GT.skin = (function () {
         s.mount(GT.config.all);
         if (GT.prompt.attached !== undefined) this.attachPrompt();
         s.syncSidebar();
-        if (GT.sidebar && GT.sidebar.element && GT.sidebar.element.isConnected) GT.sidebar.draw();
+        // 스킨이 사이드바를 새로 만든다. 목록이 비어 있으면 다시 불러온다 — 그리기만 하면
+        // '목록을 가져오지 못했습니다' 가 뜬다 (하네스 실측: sheet → terminal).
+        if (GT.sidebar && GT.sidebar.element && GT.sidebar.element.isConnected) {
+          const empty = !GT.sidebar.chats || GT.sidebar.chats().length === 0;
+          if (empty && GT.sidebar.refresh) GT.sidebar.refresh(); else GT.sidebar.draw();
+        }
         s.render();
         s.renderChrome();
         if (GT.store && GT.store.isStreaming && GT.store.isStreaming()) s.setMode('STREAM');

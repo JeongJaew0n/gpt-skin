@@ -127,8 +127,11 @@ function commandsWith(hiddenCommands) {
   t('팔레트에서 숨긴다', palette() && !palette().some((i) => i.name === ':theme') && palette().some((i) => i.name === ':ls'));
 }
 {
-  const { C } = commandsWith([]);
+  const { C, palette } = commandsWith([]);
   t('숨긴 게 없으면 다 보인다', C.complete(':fo').candidates.includes(':font'));
+  C.openPalette();
+  const th = palette().find((i) => i.name === ':theme');
+  t(':theme 에 특정 스킨의 테마 이름을 예시로 박지 않는다 (하네스 실측)', !!th && !th.hint);
 }
 
 // ---------------------------------------------------------------- 스킨 전환 (skin.js)
@@ -209,6 +212,21 @@ function registry() {
   t('새 스킨이 죽으면 실패를 돌려준다', !r.ok && /boom/.test(r.reason));
   t('이전 스킨으로 되돌린다', GT.skin.current === a && a.mounted === 1);
   t('숨어 있던 상태도 되돌린다', isOn() === false);
+}
+
+// ---------------------------------------------------------------- 전환 뒤 대화 목록 (하네스 실측 2026-09-24)
+{
+  const { GT, make } = registry();
+  const side = { refreshed: 0, drawn: 0, list: [] };
+  GT.sidebar = { element: { isConnected: true }, chats: () => side.list, refresh() { side.refreshed++; }, draw() { side.drawn++; } };
+  GT.skins.register(make('a'));
+  GT.skins.register(make('b'));
+  GT.skin.use('a');
+  await GT.skin.switch('b');
+  t('전환 뒤 목록이 비어 있으면 다시 불러온다', side.refreshed === 1 && side.drawn === 0);
+  side.list = [{ id: 'x' }];
+  await GT.skin.switch('a');
+  t('목록이 있으면 다시 그리기만 한다', side.refreshed === 1 && side.drawn === 1);
 }
 
 // ---------------------------------------------------------------- 숨길 때 포커스를 원본에 돌려준다

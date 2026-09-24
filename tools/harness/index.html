@@ -1,0 +1,157 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>gpt-skin 하네스</title>
+<!--
+  스킨을 진짜 브라우저에서 확인하는 페이지. 확장을 다시 로드하지 않아도 된다.
+
+      python3 -m http.server 8765        # 저장소 뿌리에서
+      http://localhost:8765/tools/harness/?skin=sheet
+
+  진짜 소스(src/)를 매니페스트와 같은 순서로 싣는다. 원본 ChatGPT 에 기대는 가장자리만 흉내 낸다 —
+  백엔드(oai), 원본 컴포저 전송(compose), 모델 선택(picker), 대화 전환(navigate).
+  보낸 메시지에는 흉내 응답이 스트리밍으로 흘러온다 (목록 · 코드 · 인용 · 표).
+  이 페이지는 패키지에 들어가지 않는다 (tools/ 는 zip 에서 빠진다).
+-->
+<style>
+  body { margin: 0; font: 14px -apple-system, sans-serif; background: #fcfcfc; color: #222; }
+  .orig { max-width: 720px; margin: 80px auto; }
+  .orig h1 { font-size: 20px; font-weight: 500; text-align: center; }
+  #prompt-textarea { border: 1px solid #ddd; border-radius: 24px; padding: 14px 18px; min-height: 22px; background: #fff; outline: none; }
+  .orig nav a { display: block; color: #0563c1; margin: 4px 0; }
+</style>
+
+<!-- 원본 자리. none 스킨에서 보인다 -->
+<div class="orig" id="thread">
+  <h1>원본 화면 (흉내)</h1>
+  <div id="prompt-textarea" contenteditable="true" aria-label="원본 컴포저"></div>
+  <nav><a href="/c/abc">도커 정리</a><a href="/c/x2">K8s 설명</a></nav>
+</div>
+
+<script>
+  // ---- chrome.* 흉내 (저장은 메모리)
+  (function () {
+    const mem = { sync: {}, local: {}, session: {} };
+    const area = (name) => ({
+      async get(q) {
+        const m = mem[name];
+        if (q == null) return { ...m };
+        if (typeof q === 'string') return q in m ? { [q]: m[q] } : {};
+        if (Array.isArray(q)) { const o = {}; q.forEach((k) => { if (k in m) o[k] = m[k]; }); return o; }
+        return { ...q, ...m };
+      },
+      async set(o) { Object.assign(mem[name], o); },
+      async remove(k) { delete mem[name][k]; }
+    });
+    const skin = new URLSearchParams(location.search).get('skin');
+    if (skin) mem.sync.skin = skin;
+    window.chrome = {
+      runtime: { id: 'harness', getManifest: () => ({ version: 'harness' }), sendMessage: (m, cb) => { window.__sw = (window.__sw || []).concat([m]); cb && cb(); },
+                 onMessage: { addListener() {} }, lastError: null },
+      storage: { sync: area('sync'), local: area('local'), session: area('session'), onChanged: { addListener() {} } }
+    };
+  })();
+</script>
+
+<script src="../../src/shared/i18n.js"></script>
+<script src="../../src/shared/defaults.js"></script>
+<script src="../../src/content/protocol.js"></script>
+<script src="../../src/content/config.js"></script>
+<script src="../../src/content/store.js"></script>
+<script src="../../src/content/chats.js"></script>
+<script src="../../src/content/markdown.js"></script>
+<script src="../../src/content/renderplan.js"></script>
+<script src="../../src/content/theme.js"></script>
+<script src="../../src/content/shell/cover.js"></script>
+<script src="../../src/content/shell/clipboard.js"></script>
+<script src="../../src/content/shell/skin.js"></script>
+<script src="../../src/content/skins/terminal.js"></script>
+<script src="../../src/content/skins/sheet.js"></script>
+<script src="../../src/content/skins/none.js"></script>
+<script src="../../src/content/palette.js"></script>
+<script src="../../src/content/sidebar.js"></script>
+
+<script>
+  // ---- 원본에 기대는 가장자리 흉내
+  const CHATS = [
+    { id: 'abc', title: '도커 정리', update_time: 3, pinned_time: null, gizmo_id: null },
+    { id: 'p1', title: '고정 대화', update_time: 2, pinned_time: 1, gizmo_id: null },
+    { id: 'x2', title: 'K8s 설명', update_time: 1, pinned_time: null, gizmo_id: null },
+    { id: 'x3', title: 'MSA 여부 판단', update_time: 0, pinned_time: null, gizmo_id: null }
+  ];
+  GT.oai = { get: async (p) => (/conversations/.test(p) ? { items: CHATS, total: CHATS.length } : { items: [] }), patch: async () => ({}) };
+  GT.conversation = { idFromPath: () => (location.pathname.match(/\/c\/([\w-]+)/) || [])[1] || window.__cid || 'abc' };
+  GT.convops = { rename: async () => true, pin: async () => true, archive: async () => true, remove: async () => true, removeMany: async () => true, moveToProject: async () => true, SHARE: {} };
+  GT.picker = { available: () => true, pending: null, effortLabel: () => '중간', effortChoices: () => [], models: () => [], onChange() {} };
+  GT.image = { size: () => '', peek: () => null, resolve: async () => null, blocks: () => null };
+  GT.health = { degraded: false, CHECKS: {}, reasons: [], soft() {}, fail() {}, pass() {}, report() {} };
+  window.__nav = [];
+  GT.navigate = {
+    to(h) { window.__nav.push(h); window.__cid = h.split('/').pop(); GT.store.replaceAll(SAMPLE(h), { path: h, title: (CHATS.find((c) => '/c/' + c.id === h) || {}).title || '' }); return true; },
+    newChat() { window.__nav.push('/'); GT.store.replaceAll([], { path: '/', title: '' }); return true; }
+  };
+
+  const REPLY = '좋습니다. 핵심만 정리합니다.\n\n'
+    + '## 설치\n\n- Docker Desktop 을 설치합니다 citeturn0search1\n  - 맥은 Apple Silicon 판을 고릅니다\n- 설치 뒤 `docker version` 으로 확인합니다\n\n'
+    + '```yaml\nservices:\n  web:\n    image: nginx:alpine\n    ports: ["8080:80"]\n```\n\n'
+    + '| 명령 | 뜻 |\n|---|---|\n| up | 띄우기 |\n| ps | 목록 |\n\n'
+    + '> 포트가 겹치면 앞 숫자를 바꾸세요.\n\n더 궁금한 점이 있으면 물어보세요 citeturn0search2';
+  let streaming = null;
+  let busy = false;       // 원본의 '중단 버튼이 있는가' 와 같은 뜻
+  GT.compose = {
+    composer: () => document.getElementById('prompt-textarea'),
+    stopButton: () => (busy ? {} : null),
+    stop() { busy = false; if (streaming) { clearInterval(streaming); streaming = null; GT.store.end(); } return true; },
+    async send(text) {
+      window.__sent = (window.__sent || []).concat([text]);
+      const id = 'r' + Date.now();
+      busy = true;
+      setTimeout(() => {
+        GT.store.begin({ id, role: 'assistant', text: '', model: 'gpt-5' });
+        let n = 0;
+        streaming = setInterval(() => {
+          n = Math.min(REPLY.length, n + 6);
+          GT.store.delta(id, REPLY.slice(0, n));
+          if (n >= REPLY.length) { clearInterval(streaming); streaming = null; busy = false; GT.store.end(id, REPLY); }
+        }, 25);
+      }, 900);
+      return { ok: true, via: 'harness' };
+    },
+    inject: () => true, sendButton: () => null
+  };
+  function SAMPLE(path) {
+    if (path === '/c/x2') return [{ id: 'k1', role: 'user', text: 'K8s GVK 가 뭐야?' }, { id: 'k2', role: 'assistant', model: 'gpt-5', text: 'Group · Version · Kind 의 줄임입니다.' }];
+    const t = Date.parse('2026-09-24T14:26:00');
+    return [
+      { id: 'u1', role: 'user', text: 'docker 사이트 알려줘.', at: t },
+      { id: 'a1', role: 'assistant', model: 'gpt-5', at: t, text: '여기!\n\n- Docker 공식 사이트: [docker.com](https://www.docker.com)\n- Docker Hub: [hub.docker.com](https://hub.docker.com)\n\n이미지 찾는 거면 Docker Hub 들어가면 돼.' },
+      { id: 'u2', role: 'user', text: 'compose 파일 예시도 줘.', at: t + 120000 },
+      { id: 'a2', role: 'assistant', model: 'gpt-5', at: t + 120000, text: '간단한 예시입니다.\n\n```yaml\nservices:\n  web:\n    image: nginx:alpine\n```\n\n포트는 필요에 맞게 바꾸세요.' }
+    ];
+  }
+</script>
+
+<script src="../../src/content/commands.js"></script>
+<script src="../../src/content/shell/prompt.js"></script>
+
+<script>
+  // ---- index.js 의 부팅 배선 중 스킨에 필요한 부분만
+  (async function () {
+    const cfg = await GT.config.load();
+    GT_SET_LOCALE(cfg.locale);
+    GT.skin.use(cfg.skin);
+    GT.skin.mount(cfg);
+    GT.store.onChange(() => GT.skin.current.render());
+    GT.config.onChange((c) => {
+      if (c.skin && c.skin !== GT.skin.current.id && GT.skins.get(c.skin)) { GT.skin.switch(c.skin, { persist: false }); return; }
+      GT.skin.current.applyConfig(c);
+      GT.skin.current.render();
+    });
+    GT.skin.attachPrompt();
+    GT.store.replaceAll(SAMPLE('/c/abc'), { path: '/c/abc', title: '도커 정리' });
+    GT.skin.show();
+    setInterval(() => { if (GT.skin.visible()) GT.skin.current.renderChrome(); }, 1000);
+    setInterval(() => { if (GT.skin.visible()) GT.skin.current.tick(); }, 90);
+    setInterval(() => { const want = !!GT.compose.stopButton() && !GT.store.state.streamingId; if (GT.store.setThinking(want)) GT.skin.current.render(); }, 200);
+    window.__ready = true;
+  })().catch((e) => { window.__bootError = String(e && e.stack || e); console.error(e); });
+</script>

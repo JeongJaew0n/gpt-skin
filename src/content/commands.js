@@ -271,7 +271,7 @@ GT.commands = (function () {
     await GT.config.set(key, name);
     GT.skin.current.applyConfig(GT.config.all);
     info(`${key} = ${name}`);
-  }, 'modern-dark', () => themeNames());
+  }, null, () => themeNames());   // 예시 인자를 두지 않는다 — 테마 이름은 스킨마다 다르다
 
   // 스킨 고르기. 바로 바꾸고 저장한다 (GT.skin.switch).
   // 결과 줄은 새 스킨에 찍는다 — 이전 스킨은 이미 해체됐다.

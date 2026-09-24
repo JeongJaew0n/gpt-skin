@@ -90,7 +90,8 @@
 .gs-grid td.gs-b[data-quote] { border-left: 3px solid var(--gt-border); color: var(--gt-fg-dim); }
 .gs-grid td.gs-b[data-kind="thinking"] { color: var(--gt-fg-dim); font-style: italic; }
 .gs-grid tr.gs-mirror td.gs-b { color: var(--gt-fg-dim); }
-.gs-grid tr.gs-blank td { color: transparent; }
+/* 빈 행은 칸 내용만 숨긴다. 행 번호까지 숨기면 격자가 12행에서 끊겨 보인다 (하네스 실측) */
+.gs-grid tr.gs-blank td:not(.gs-rn) { color: transparent; }
 .gs-bullet { color: var(--gt-fg-dim); }
 .gs-caret { display: inline-block; width: 7px; height: 1.1em; vertical-align: text-bottom; background: var(--gs-accent);
   margin-left: 2px; animation: gs-blink 1s steps(1) infinite; }
@@ -479,8 +480,15 @@
       const picked = (shadow.getSelection ? shadow.getSelection() : document.getSelection());
       if (picked && String(picked).length) return;       // 드래그로 고른 글자가 있으면 그걸 복사한다 (기본 동작)
       const td = sel.tr.children[1 + c];
-      if (td) { e.preventDefault(); GT.clipboard.copy(td.textContent || ''); }
+      if (td) { e.preventDefault(); GT.clipboard.copy(cellText(td)); }
     }
+  }
+
+  // 셀의 글자. 목록 글머리(· ▸)는 보이기 위한 장식이라 복사에서 뺀다 (하네스 실측: '▸ 맥은…' 이 복사됐다).
+  function cellText(td) {
+    const nodes = td.childNodes || td.children || [];
+    return [...nodes].filter((n) => !(n.classList && n.classList.contains('gs-bullet') || n.className === 'gs-bullet'))
+      .map((n) => n.textContent).join('');
   }
 
   // ---------------------------------------------------------------- 시트 탭 (대화 목록)

@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1419](https://img.shields.io/badge/테스트-1419_케이스-22C55E)
+![테스트 1427](https://img.shields.io/badge/테스트-1427_케이스-22C55E)
 
 </div>
 
@@ -273,6 +273,7 @@ _locales/ko · _locales/en             매니페스트 이름·설명 (스토어
 docs/store/                           스토어 리스팅 · 개인정보처리방침 · 심사 노트
 docs/plans/                           작업 계획 (재개용)
 tools/test.sh                         테스트 전체 (종료 코드로 판정)
+tools/harness/                        스킨을 진짜 브라우저에서 보는 페이지 (확장 재로드 없이)
 tools/package.sh                      배포 zip
 test/                                 Node 테스트 (의존성 없음)
 ```
@@ -348,6 +349,18 @@ uv run --with pillow tools/make-icons.py   다시 생성
 
 ## 테스트
 
+### 브라우저 하네스
+
+확장을 다시 로드하지 않고 스킨을 진짜 브라우저에서 본다. 진짜 소스(`src/`)를 싣고, 원본 ChatGPT 에
+기대는 가장자리(백엔드 · 전송 · 모델 선택 · 대화 전환)만 흉내 낸다. 보낸 메시지에는 흉내 응답이 스트리밍으로 온다.
+
+```bash
+python3 -m http.server 8765           # 저장소 뿌리에서
+open 'http://localhost:8765/tools/harness/?skin=sheet'   # terminal · sheet · none
+```
+
+### 단위 테스트
+
 의존성 없음. Node 만 있으면 된다.
 
 ```bash
@@ -359,7 +372,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>40개 파일 · 1419 케이스</b></summary>
+<summary><b>40개 파일 · 1427 케이스</b></summary>
 
 <br>
 
@@ -402,9 +415,9 @@ tools/test.sh
 | `skin` | 26 | 스킨 계약 — 모든 스킨이 계약을 채우는가 · GT.tty·ui 우회가 없는가 · 파일 하나에 스킨 하나 · 해체가 cover 를 걷는가 · 복귀 상태에서 토글 금지 |
 | `skinconfig` | 35 | 스킨 설정 — skin 선택지 = 스킨 파일 · 스킨 전용 항목 필터 · theme 이관이 한 번만, 사용자 값을 덮지 않는가 · `:skin` `:theme` |
 | `lines` | 34 | 줄 단위 마크다운 — 한 행에 한 줄 · 문법이 한 벌인가 · 스트리밍 중 앞 행을 다시 만들지 않는가 |
-| `none` | 68 | none 스킨 — Ctrl+; 열기 · esc 닫기 · 타이핑 비가로채기 · 숨긴 명령 · 스킨 전환과 실패 시 되돌리기 · 사이드바는 직접 열 때만 |
+| `none` | 71 | none 스킨 — Ctrl+; 열기 · esc 닫기 · 타이핑 비가로채기 · 숨긴 명령 · 스킨 전환과 실패 시 되돌리기 · 사이드바는 직접 열 때만 |
 | `reload` | 9 | `:reload` — 탭을 적어 두고 다시 읽는가 · 새 워커가 그 탭만 한 번 새로고침하는가 · 페이지 스크립트가 부를 길이 없는가 |
-| `sheet` | 59 | 시트 스킨 — 한 행에 한 줄 · 스트리밍 중 두 행만 다시 · 인용 번호가 행을 건너 이어지는가 · 셀 선택·방향키·복사 · 입력 미러 · 시트 탭 |
+| `sheet` | 64 | 시트 스킨 — 한 행에 한 줄 · 스트리밍 중 두 행만 다시 · 인용 번호가 행을 건너 이어지는가 · 셀 선택·방향키·복사 · 입력 미러 · 시트 탭 |
 
 </details>
 
