@@ -135,7 +135,8 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('열 때 닫는 동작이 설정에 걸려 있다', /config\.get\('sidebar\.closeOnOpen'\)\) dismiss\(\)/.test(sb));
   t('옵션 화면에 항목이 있다', /sidebar\.closeOnOpen/.test(d));
   t(':open 명령도 같은 동작', /closeOnOpen'\)\) GT\.sidebar\.dismiss\(\)/.test(cmds));
-  t('토글은 DOM 이 아니라 표시 조건으로 뒤집는다', /force === undefined \? !shouldShow\(\)/.test(sb));
+  // 표시 조건은 스킨이 답한다 (none 은 창 폭 규칙을 따르지 않는다). 스킨이 없을 때만 shouldShow 로.
+  t('토글은 DOM 이 아니라 표시 조건으로 뒤집는다', /skin\.sidebarShown \? skin\.sidebarShown\(\) : shouldShow\(\)/.test(sb) && /force === undefined \? !now/.test(sb));
 }
 
 // --- 5. 보이지 않는 컨트롤이 클릭을 가로채면 안 된다 ---

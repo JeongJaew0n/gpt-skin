@@ -141,12 +141,16 @@
   }
 
   // 사이드바는 사용자가 직접 열었을 때만 원본 위에 띄운다.
-  // 창이 넓으면 기본으로 펼치는 규칙(sidebar.minColumns)을 여기서는 따르지 않는다 —
-  // 원본에 이미 대화 목록이 있다.
+  // 창이 넓으면 기본으로 펼치는 규칙(sidebar.minColumns)도, 저장된 sidebar.visible 도 따르지 않는다 —
+  // 원본에 이미 대화 목록이 있고, 여기서 여닫는 것은 잠깐이다.
+  function sidebarShown() {
+    const st = GT.sidebar.state ? GT.sidebar.state() : {};
+    return !!st.forcedOpen && !st.dismissed;
+  }
+
   function syncSidebar() {
     if (!root || !ui.sidebarSlot) return;
-    const st = GT.sidebar.state ? GT.sidebar.state() : {};
-    const want = !!st.forcedOpen && GT.sidebar.shouldShow();
+    const want = sidebarShown();
     const attached = ui.sidebarSlot.parentElement === root;
     if (want && !attached) root.insertBefore(ui.sidebarSlot, ui.dock);
     else if (!want && attached) ui.sidebarSlot.remove();
@@ -159,6 +163,7 @@
     covers: false,              // 원본을 가리지 않는다. 호스트는 클릭을 통과시킨다
     capturesTyping: false,      // 원본 컴포저에 치는 글자를 가로채지 않는다
     keys: { open: 'Semicolon', escapeHides: true },
+    persistSidebar: false,      // 잠깐 여는 목록이다. 터미널의 sidebar.visible 을 건드리지 않는다
     // 고를 테마가 없다. 위젯 색은 터미널 기본 팔레트로 고정한다.
     get themes() { return { 'modern-dark': GT.theme.THEMES['modern-dark'] }; },
     defaultTheme: 'modern-dark',
@@ -184,6 +189,7 @@
     renderChrome() {},
     tick() {},
     syncSidebar,
+    sidebarShown,
     system,
     clearSystem() { const n = log.length; log.length = 0; drawLog(); return n; },
     local() { return 0; },

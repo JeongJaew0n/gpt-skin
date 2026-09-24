@@ -197,10 +197,12 @@ GT.prompt = (function () {
     window.addEventListener('keydown', (e) => {
       if (composing(e)) return;
       if (e.key === '`' && e.ctrlKey) { e.preventDefault(); opts.toggle(); return; }
-      // 스킨이 숨어 있을 때 여는 키 (none 의 Ctrl+;). 물리 키(e.code)로 본다.
+      // 스킨의 여닫기 키 (none 의 Ctrl+;). 숨어 있으면 열고 열려 있으면 닫는다. 물리 키(e.code)로 본다.
       // 실측 2026-09-24: 원본은 컴포저 포커스 상태에서 Ctrl+; 를 막지도 쓰지도 않는다.
-      if (opts.openCode && e.ctrlKey && !e.metaKey && !e.altKey && e.code === opts.openCode && !GT.skin.visible()) {
-        e.preventDefault(); GT.skin.show(); return;
+      if (opts.openCode && e.ctrlKey && !e.metaKey && !e.altKey && e.code === opts.openCode) {
+        e.preventDefault();
+        if (GT.skin.visible()) GT.skin.hide(); else GT.skin.show();
+        return;
       }
       if (!GT.skin.visible()) return;
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); GT.commands.openPalette(); return; }

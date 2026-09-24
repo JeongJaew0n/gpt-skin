@@ -710,6 +710,7 @@
     covers: true,                 // 원본을 가리고 전체 화면을 쓴다
     capturesTyping: true,         // 아무 데서나 타이핑하면 입력줄로
     keys: { open: null, escapeHides: false },   // 여닫기는 Ctrl+` 하나
+    persistSidebar: true,         // 목록을 여닫으면 sidebar.visible 에 저장한다
     get themes() { return GT.theme.THEMES; },
     defaultTheme: 'modern-dark',
     // 정본은 스키마의 skin: 'terminal' 표시다. 여기에 또 적으면 갈린다.
@@ -735,6 +736,7 @@
     renderChrome,
     tick: tickSpin,
     syncSidebar,
+    sidebarShown: () => GT.sidebar.shouldShow(),
     system,
     clearSystem() { const n = systemLog.length; systemLog.length = 0; render(); return n; },
     // 화면에만 끼워 넣는 블록. 지금 마지막 메시지를 앵커로 잡는다.

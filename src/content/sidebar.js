@@ -513,10 +513,15 @@ GT.sidebar = (function () {
     // DOM 부착 여부가 아니라 '보여야 하는가'로 뒤집는다.
     // 비켜난 상태(config 는 켜짐, 화면엔 없음)나 폭 때문에 접힌 상태에서
     // ≡ 를 누르면 열려야 한다. DOM 에 기대면 마운트 타이밍에 흔들린다.
-    const next = force === undefined ? !shouldShow() : !!force;
+    // '보여야 하는가' 는 스킨이 답한다. none 은 창 폭 규칙을 따르지 않으므로 shouldShow() 로
+    // 뒤집으면 보이지 않는 목록을 '닫는' 것이 된다 — 첫 Ctrl+B 가 아무 일도 안 하던 원인이다.
+    // docs/issue/2026-09-24-none-ctrl-b-closes-hidden-sidebar.md
+    const skin = GT.skin.current;
+    const now = skin && skin.sidebarShown ? skin.sidebarShown() : shouldShow();
+    const next = force === undefined ? !now : !!force;
     dismissed = false;
     forcedOpen = next;
-    await GT.config.set('sidebar.visible', next);
+    if (!skin || skin.persistSidebar !== false) await GT.config.set('sidebar.visible', next);
     GT.skin.current.syncSidebar();
     if (next) await refresh();
     return next;

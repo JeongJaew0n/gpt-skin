@@ -11,11 +11,14 @@ GT.skins = (function () {
   // 값. 화면에 보일 이름은 여기 없다 — i18n 사전의 opt.skin.choice.<id> 가 정본이다.
   // keys: { open, escapeHides } — open 은 스킨이 숨어 있을 때 여는 키의 e.code (없으면 null),
   //   escapeHides 는 빈 입력줄에서 esc 가 스킨을 숨기는가. 키 처리 자체는 GT.prompt 가 한다.
-  const FIELDS = ['id', 'covers', 'capturesTyping', 'keys', 'themes', 'defaultTheme', 'configKeys', 'hiddenCommands'];
+  // persistSidebar: 이 스킨에서 대화 목록을 여닫은 것을 sidebar.visible 에 저장하는가.
+  //   none 은 저장하지 않는다 — 원본에 목록이 있어 잠깐 여는 것일 뿐이고, 터미널의 설정을 건드리면 안 된다.
+  const FIELDS = ['id', 'covers', 'capturesTyping', 'keys', 'persistSidebar', 'themes', 'defaultTheme', 'configKeys', 'hiddenCommands'];
   // 함수
   const METHODS = [
     'mount', 'destroy', 'applyConfig',                    // 생명주기
     'render', 'renderChrome', 'tick', 'syncSidebar',      // 자료 → 화면
+    'sidebarShown',                                       // 대화 목록이 지금 이 스킨에서 보여야 하는가
     'system', 'clearSystem', 'local', 'clearLocal',       // 시스템 출력
     'setMode', 'setSuggest', 'syncFocus', 'bell',         // 상태 표시
     'focus', 'overlayRoot'                                // 입력 · 오버레이 자리
@@ -120,7 +123,9 @@ GT.skin = (function () {
         if (wasVisible) GT.cover.on(); else GT.cover.off();
         return { ok: false, reason: String((e && e.message) || e) };
       }
-      if (wasVisible) this.show(); else this.hide();
+      // 원본을 가리지 않는 스킨은 닫힌 채로 시작한다. 이전 스킨이 보이던 상태를 넘기면
+      // 명령줄이 열린 채로 떠서 스킨이 바뀐 게 아니라 무언가 열린 것처럼 보인다 (사용자 보고 2026-09-24).
+      if (next.covers && wasVisible) this.show(); else this.hide();
       if (persist) await GT.config.set('skin', id);
       GT.sendToSW({ kind: 'visible', visible: this.visible() });
       return { ok: true };

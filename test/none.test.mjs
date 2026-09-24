@@ -50,7 +50,9 @@ function promptWith(options) {
   const e = p.key(p.win, { key: ';', code: 'Semicolon', ctrlKey: true });
   t('숨어 있을 때 Ctrl+; 가 연다', p.calls.show === 1 && e.defaultPrevented);
   p.key(p.win, { key: ';', code: 'Semicolon', ctrlKey: true });
-  t('열려 있으면 Ctrl+; 는 다시 열지 않는다', p.calls.show === 1);
+  t('열려 있으면 Ctrl+; 가 닫는다 (사용자 요청 2026-09-24)', p.calls.show === 1 && p.calls.hide === 1 && !p.isVisible());
+  p.key(p.win, { key: ';', code: 'Semicolon', ctrlKey: true });
+  t('한 번 더 누르면 다시 연다', p.calls.show === 2 && p.isVisible());
 }
 {
   const p = promptWith({ visible: false, opts: { openCode: 'Semicolon' } });
@@ -118,7 +120,7 @@ function commandsWith(hiddenCommands) {
 {
   const { C, out, palette } = commandsWith([':font', ':theme', ':messup']);
   await C.run(':font +');
-  t('숨긴 명령은 실행하지 않고 이유를 말한다', out.at(-1).l === 'error' && /:font 은 노 스킨/.test(out.at(-1).x));
+  t('숨긴 명령은 실행하지 않고 이유를 말한다', out.at(-1).l === 'error' && /:font 은 지금 스킨\(노 스킨/.test(out.at(-1).x));
   t('자동완성에서 숨긴다', !C.complete(':fo').candidates.includes(':font'));
   t('숨기지 않은 명령은 그대로 완성된다', C.complete(':sk').candidates.includes(':skin'));
   C.openPalette();
@@ -144,7 +146,7 @@ function registry() {
   };
   vm.runInContext(read('src/content/shell/skin.js'), sb, { filename: 'skin.js' });
   const make = (id, over = {}) => {
-    const d = { id, covers: id !== 'b', capturesTyping: id !== 'b', keys: { open: id === 'b' ? 'Semicolon' : null, escapeHides: id === 'b' },
+    const d = { id, covers: id !== 'b', capturesTyping: id !== 'b', keys: { open: id === 'b' ? 'Semicolon' : null, escapeHides: id === 'b' }, persistSidebar: id !== 'b',
       themes: { t: {} }, defaultTheme: 't', configKeys: [], hiddenCommands: [], prompt: { el: id + '-input', autosize() {} },
       mounted: 0, destroyed: 0 };
     sb.GT.skins.METHODS.forEach((m) => { d[m] = () => {}; });
@@ -168,7 +170,7 @@ function registry() {
   const at = calls.attach.at(-1);
   t('새 위젯에 입력을 붙인다', at && at.a.el === 'b-input');
   t('새 스킨의 키를 넘긴다', at && at.o.openCode === 'Semicolon' && at.o.escapeHides === true && at.o.capturesTyping === false);
-  t('보이던 상태를 유지한다', isOn());
+  t('원본을 안 가리는 스킨으로 바꾸면 닫힌 채 시작한다 (사용자 보고 2026-09-24)', !isOn());
   t('저장한다', calls.set.some(([k, v]) => k === 'skin' && v === 'b'));
   t('서비스 워커에 알린다', calls.sw.length === 1);
 
@@ -176,6 +178,19 @@ function registry() {
   t('같은 스킨이면 아무것도 안 한다', same.same && b.mounted === 1);
   const unknown = await GT.skin.switch('zzz');
   t('모르는 스킨이면 실패', !unknown.ok && GT.skin.current === b);
+}
+{
+  const { GT, make, isOn } = registry();
+  GT.skins.register(make('a'));
+  GT.skins.register(make('b'));
+  GT.skin.use('b');
+  GT.skin.show();
+  await GT.skin.switch('a');
+  t('가리는 스킨으로 바꾸면 보이던 상태를 유지한다', isOn());
+  GT.skin.hide();
+  await GT.skin.switch('b');
+  await GT.skin.switch('a');
+  t('숨어 있었으면 숨은 채로', !isOn());
 }
 {
   const { GT, calls, make } = registry();
@@ -210,7 +225,7 @@ function mockDom() {
   };
   return mk;
 }
-function loadNone(sidebarState) {
+function loadNone(sidebarState, shouldShow = true) {
   const mk = mockDom();
   const logged = [];
   const sb = base({ document: { createElement: mk } });
@@ -218,7 +233,7 @@ function loadNone(sidebarState) {
   sb.GT = {
     cover: { host: () => { sb.__shadow = mk('#shadow'); return { shadow: sb.__shadow }; } },
     theme: { CSS: '', THEMES: { 'modern-dark': {} }, vars: (c) => 'theme=' + c['terminal.theme'] },
-    sidebar: { build: () => mk('sidebar'), state: () => sidebarState, shouldShow: () => true },
+    sidebar: { build: () => mk('sidebar'), state: () => sidebarState, shouldShow: () => shouldShow },
     config: { get: (k) => (k === 'log' ? cfgLog : undefined) },
     log: (x) => logged.push(x)
   };
@@ -258,11 +273,69 @@ function loadNone(sidebarState) {
   t('Ctrl+B 로 열었으면 사이드바를 띄운다', root.kids.some((k) => k.tagName === 'sidebar'));
 }
 {
+  // 터미널에서 목록을 꺼 두었거나 창이 좁아 기본 규칙이 '안 보임' 이어도, 직접 열었으면 보인다
+  const { N } = loadNone({ forcedOpen: true, dismissed: false }, false);
+  t('none.sidebarShown 은 기본 규칙·저장값을 따르지 않는다', N.sidebarShown() === true);
+  const d = loadNone({ forcedOpen: true, dismissed: true }).N;
+  t('esc 로 물린 뒤에는 안 보인다', d.sidebarShown() === false);
+  t('none 은 목록 여닫기를 저장하지 않는다', N.persistSidebar === false);
+}
+{
   // 원본은 라이트 모드일 수 있다(실측). 위젯은 자기 배경을 칠하므로 팔레트를 고정한다.
   const { N, sb } = loadNone({ forcedOpen: false });
   N.mount({ 'terminal.theme': 'amber' });
   const styles = sb.__shadow.kids.filter((k) => k.tagName === 'style');
   t('터미널 테마를 amber 로 해도 none 위젯은 기본 팔레트', styles.some((st) => st.textContent === 'theme=modern-dark'));
+}
+
+// ---------------------------------------------------------------- Ctrl+B (sidebar.toggle 을 실제로 돌린다)
+function sidebarWith(skin, cfgInit) {
+  const cfg = { 'sidebar.visible': true, 'sidebar.minColumns': 100, 'font.size': 13, 'sidebar.width': 30, 'sidebar.groups': true, ...cfgInit };
+  const writes = [];
+  const sb = base({ innerWidth: 1480, document: { createElement: mockDom() } });
+  sb.window.innerWidth = 1480;
+  sb.GT = {
+    config: { get: (k) => cfg[k], set: async (k, v) => { cfg[k] = v; writes.push([k, v]); } },
+    skin: { current: skin },
+    chats: { load: async () => ({ pinned: [], projects: [], chats: [], total: 0, loaded: 0, hasMore: false, source: 'api' }), flatten: () => [] },
+    navigate: {}, palette: {}
+  };
+  vm.runInContext(read('src/content/sidebar.js'), sb, { filename: 'sidebar.js' });
+  skin.bind(sb.GT.sidebar);
+  return { S: sb.GT.sidebar, cfg, writes };
+}
+{
+  // none: 넓은 창이라 shouldShow() 는 참이지만 목록은 안 보인다. 첫 Ctrl+B 가 열어야 한다.
+  let S0 = null;
+  const none = { persistSidebar: false, syncSidebar() {}, system() {}, focus() {},
+    sidebarShown: () => !!S0.state().forcedOpen && !S0.state().dismissed, bind(s) { S0 = s; } };
+  const { S, cfg, writes } = sidebarWith(none);
+  t('전제: 넓은 창이라 기본 규칙은 보인다고 답한다', S.shouldShow() === true);
+  const r1 = await S.toggle();
+  t('none 에서 첫 Ctrl+B 가 연다', r1 === true && none.sidebarShown());
+  t('none 에서 연 것은 sidebar.visible 에 쓰지 않는다', writes.length === 0 && cfg['sidebar.visible'] === true);
+  const r2 = await S.toggle();
+  t('두 번째 Ctrl+B 가 닫는다', r2 === false && !none.sidebarShown());
+  t('닫아도 터미널의 sidebar.visible 은 그대로', cfg['sidebar.visible'] === true && writes.length === 0);
+}
+{
+  // none: 터미널에서 목록을 꺼 두었어도(sidebar.visible=false) none 에서는 열린다
+  let S0 = null;
+  const none = { persistSidebar: false, syncSidebar() {}, system() {}, focus() {},
+    sidebarShown: () => !!S0.state().forcedOpen && !S0.state().dismissed, bind(s) { S0 = s; } };
+  const { S } = sidebarWith(none, { 'sidebar.visible': false });
+  await S.toggle();
+  t('저장된 설정과 무관하게 none 에서 열린다', none.sidebarShown());
+}
+{
+  // terminal: 예전 동작 그대로 — 보이면 닫고, 저장한다
+  let S0 = null;
+  const term = { persistSidebar: true, syncSidebar() {}, system() {}, focus() {},
+    sidebarShown: () => S0.shouldShow(), bind(s) { S0 = s; } };
+  const { S, cfg, writes } = sidebarWith(term);
+  const r = await S.toggle();
+  t('terminal 에서는 보이던 목록을 닫는다', r === false);
+  t('terminal 에서는 저장한다', writes.some(([k, v]) => k === 'sidebar.visible' && v === false) && cfg['sidebar.visible'] === false);
 }
 
 // ---------------------------------------------------------------- 배선 (정적)

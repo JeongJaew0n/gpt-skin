@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1324](https://img.shields.io/badge/테스트-1324_케이스-22C55E)
+![테스트 1338](https://img.shields.io/badge/테스트-1338_케이스-22C55E)
 
 </div>
 
@@ -117,10 +117,11 @@ ChatGPT 위에 씌우는 화면의 종류다. `:skin <이름>` 또는 설정 화
 | 스킨 | 무엇 | 여닫기 |
 |---|---|---|
 | `terminal` <sub>기본</sub> | 원본을 덮고 터미널로 다시 그린다 | <kbd>Ctrl</kbd>+<kbd>&#96;</kbd> |
-| `none` | 원본 화면을 그대로 둔다. 명령줄과 결과 패널만 띄운다 | <kbd>Ctrl</kbd>+<kbd>;</kbd> 로 열고 빈 줄에서 <kbd>esc</kbd> · <kbd>Ctrl</kbd>+<kbd>&#96;</kbd> |
+| `none` | 원본 화면을 그대로 둔다. 명령줄과 결과 패널만 띄운다 | <kbd>Ctrl</kbd>+<kbd>;</kbd> 로 여닫기 · 빈 줄에서 <kbd>esc</kbd> 로 닫기 |
 
 none 에서는 원본 컴포저에 치는 글자를 가로채지 않고, 원본 클릭도 그대로 원본으로 간다.
-`:font` `:theme` `:messup` 은 none 에서 쓸 수 없다. 대화 목록은 <kbd>Ctrl</kbd>+<kbd>B</kbd> 로 직접 열 때만 뜬다.
+`:font` `:theme` `:messup` 은 none 에서 쓸 수 없다. 대화 목록은 명령줄을 연 상태에서 <kbd>Ctrl</kbd>+<kbd>B</kbd> 로 직접 열 때만 뜨고, 여닫은 것은 저장하지 않는다.
+none 으로 바꾸면 명령줄이 닫힌 채 시작한다.
 구조는 [스킨 구조 설계](docs/plan/2026-09-24-skin-architecture.md) 에 있다.
 
 ---
@@ -353,7 +354,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>38개 파일 · 1324 케이스</b></summary>
+<summary><b>38개 파일 · 1338 케이스</b></summary>
 
 <br>
 
@@ -396,7 +397,7 @@ tools/test.sh
 | `skin` | 26 | 스킨 계약 — 모든 스킨이 계약을 채우는가 · GT.tty·ui 우회가 없는가 · 파일 하나에 스킨 하나 · 해체가 cover 를 걷는가 · 복귀 상태에서 토글 금지 |
 | `skinconfig` | 35 | 스킨 설정 — skin 선택지 = 스킨 파일 · 스킨 전용 항목 필터 · theme 이관이 한 번만, 사용자 값을 덮지 않는가 · `:skin` `:theme` |
 | `lines` | 34 | 줄 단위 마크다운 — 한 행에 한 줄 · 문법이 한 벌인가 · 스트리밍 중 앞 행을 다시 만들지 않는가 |
-| `none` | 50 | none 스킨 — Ctrl+; 열기 · esc 닫기 · 타이핑 비가로채기 · 숨긴 명령 · 스킨 전환과 실패 시 되돌리기 · 사이드바는 직접 열 때만 |
+| `none` | 64 | none 스킨 — Ctrl+; 열기 · esc 닫기 · 타이핑 비가로채기 · 숨긴 명령 · 스킨 전환과 실패 시 되돌리기 · 사이드바는 직접 열 때만 |
 
 </details>
 
@@ -417,7 +418,7 @@ tools/test.sh
 | [시트 스킨 — 스프레드시트로 보이는 대화](docs/plan/2026-09-21-sheet-skin.md) | 설계만 — 목업 있음 · 구현 대기 |
 | [스킨 구조 — terminal · sheet · none 을 갈아끼운다](docs/plan/2026-09-24-skin-architecture.md) | 1~6단계 완료 (0.4.2~0.6.0) — terminal · none 스킨, 실시간 전환 · 7~8단계(sheet) 남음 |
 
-조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열여섯 건 중 열셋이 해결**됐고 한 건은 반쯤 해결됐다.
+조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열일곱 건 중 열넷이 해결**됐고 한 건은 반쯤 해결됐다.
 매니페스트 캐시 건은 크롬 동작이라 감지만 하고, 선택 유실 건은 스크롤백 쪽만 고쳐졌다.
 
 ### 아직 안 된 것
