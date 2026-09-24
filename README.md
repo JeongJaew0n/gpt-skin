@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1342](https://img.shields.io/badge/테스트-1342_케이스-22C55E)
+![테스트 1351](https://img.shields.io/badge/테스트-1351_케이스-22C55E)
 
 </div>
 
@@ -57,7 +57,7 @@ tools/package.sh      # dist/gpt-skin-<version>.zip
 
 | # | 할 일 | 빠뜨리면 |
 |:--:|---|---|
-| 1 | `chrome://extensions` → gpt-skin 의 **↻** | 크롬이 언팩 파일을 캐시해 새 코드가 안 들어간다 |
+| 1 | 입력줄에서 `:reload` (또는 `chrome://extensions` → gpt-skin 의 **↻** 후 탭 새로고침) | 크롬이 언팩 파일을 캐시해 새 코드가 안 들어간다 |
 | 2 | **대상 탭 새로고침** | 이전 스크립트가 그 탭에 그대로 남는다 |
 | 3 | 부팅 줄의 `build` 확인 (또는 `:version`) | 값이 그대로면 ①②가 안 먹은 것 |
 
@@ -164,6 +164,7 @@ none 으로 바꾸면 명령줄이 닫힌 채 시작한다.
 <tr><td><code>:log [on|off|toggle]</code></td><td>진단 출력 <sub>(끄면 콘솔과 스크롤백 양쪽이 조용해진다 · 상태줄에 표시)</sub></td></tr>
 <tr><td><code>:log dump [n]</code> · <code>:log clear</code></td><td>쌓인 진단 줄 보기 / 비우기 <sub>(꺼져 있어도 쌓인다)</sub></td></tr>
 <tr><td><code>:version</code></td><td>지금 실행 중인 코드의 빌드 시각</td></tr>
+<tr><td><code>:reload</code></td><td>확장을 다시 읽고 이 탭을 새로고침 <sub>(<code>chrome://extensions</code> 의 ↻ + 새로고침과 같다)</sub></td></tr>
 <tr><td><code>:messup [횟수|clear]</code></td><td>화면에만 가짜 출력을 끼워 넣는다 <sub>(서버로 안 간다)</sub></td></tr>
 </table>
 
@@ -354,7 +355,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>38개 파일 · 1342 케이스</b></summary>
+<summary><b>39개 파일 · 1351 케이스</b></summary>
 
 <br>
 
@@ -398,6 +399,7 @@ tools/test.sh
 | `skinconfig` | 35 | 스킨 설정 — skin 선택지 = 스킨 파일 · 스킨 전용 항목 필터 · theme 이관이 한 번만, 사용자 값을 덮지 않는가 · `:skin` `:theme` |
 | `lines` | 34 | 줄 단위 마크다운 — 한 행에 한 줄 · 문법이 한 벌인가 · 스트리밍 중 앞 행을 다시 만들지 않는가 |
 | `none` | 68 | none 스킨 — Ctrl+; 열기 · esc 닫기 · 타이핑 비가로채기 · 숨긴 명령 · 스킨 전환과 실패 시 되돌리기 · 사이드바는 직접 열 때만 |
+| `reload` | 9 | `:reload` — 탭을 적어 두고 다시 읽는가 · 새 워커가 그 탭만 한 번 새로고침하는가 · 페이지 스크립트가 부를 길이 없는가 |
 
 </details>
 

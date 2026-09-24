@@ -28,9 +28,34 @@ function paint(tabId) {
   quiet(chrome.action.setTitle({ tabId, title: b.title }));
 }
 
+// :reload — 확장을 디스크에서 다시 읽고, 요청한 탭을 새로고침한다.
+// chrome://extensions 의 ↻ + 탭 새로고침과 같다. 콘텐츠 스크립트는 runtime.reload 를 부를 수 없어서
+// 여기서 한다. 다시 읽으면 이 워커도 죽으므로, 새로고침할 탭을 storage.session 에 적어 두고
+// 새 워커가 시작할 때 꺼내 새로고침한다. 입력줄에서 친 명령으로만 온다 (페이지 스크립트는 못 보낸다).
+const RELOAD_KEY = 'gptSkinReloadTab';
+function reloadExtension(tabId) {
+  const go = () => chrome.runtime.reload();
+  try {
+    const p = chrome.storage.session.set({ [RELOAD_KEY]: tabId || 0 });
+    if (p && typeof p.then === 'function') p.then(go, go); else go();
+  } catch (_) { go(); }
+}
+try {
+  const p = chrome.storage.session.get(RELOAD_KEY);
+  if (p && typeof p.then === 'function') {
+    p.then((got) => {
+      const tabId = got && got[RELOAD_KEY];
+      if (!tabId) return;
+      quiet(chrome.storage.session.remove(RELOAD_KEY));
+      quiet(chrome.tabs.reload(tabId));
+    }, () => {});
+  }
+} catch (_) { /* storage.session 이 없으면 탭 새로고침만 빠진다 */ }
+
 chrome.runtime.onMessage.addListener((msg, sender) => {
   if (!msg) return;
   if (msg.kind === 'openOptions') { chrome.runtime.openOptionsPage(); return; }
+  if (msg.kind === 'reload') { reloadExtension(sender.tab && sender.tab.id); return; }
 
   const tabId = sender.tab && sender.tab.id;
   if (!tabId) return;

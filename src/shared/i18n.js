@@ -43,6 +43,8 @@ var GT_I18N = {
     'opt.log.label': '콘솔 진단 로그',
     'opt.log.help': '개발자 콘솔에 [gpt-skin] 진단 줄을 남깁니다. :log off 로도 끕니다.',
 
+    'cmd.reload.desc': '확장을 다시 읽고 이 탭을 새로고침합니다 (코드를 고친 뒤)',
+    'cmd.reload.going': '확장을 다시 읽습니다. 탭이 곧 새로고침됩니다',
     'cmd.skin.desc': '스킨 — 인자 없으면 목록, :skin <이름> 으로 바꿉니다',
     'cmd.skin.state': '지금 스킨: $1 · 가능: $2',
     'cmd.skin.unknown': '알 수 없는 스킨입니다: $1 (가능: $2)',
@@ -157,6 +159,8 @@ var GT_I18N = {
     'opt.log.label': 'Console diagnostics',
     'opt.log.help': 'Writes [gpt-skin] diagnostic lines to the developer console. :log off turns it off too.',
 
+    'cmd.reload.desc': 'Reload the extension and this tab (after editing code)',
+    'cmd.reload.going': 'Reloading the extension. This tab will refresh shortly',
     'cmd.skin.desc': 'Skin — lists skins, or :skin <name> to change',
     'cmd.skin.state': 'Current skin: $1 · available: $2',
     'cmd.skin.unknown': 'Unknown skin: $1 (available: $2)',
