@@ -211,6 +211,42 @@ function registry() {
   t('숨어 있던 상태도 되돌린다', isOn() === false);
 }
 
+// ---------------------------------------------------------------- 숨길 때 포커스를 원본에 돌려준다
+function focusRig(active) {
+  const r = registry();
+  const composer = { focused: 0, focus() { this.focused++; } };
+  r.sb.document = { activeElement: active };
+  r.GT.cover.HOST_ID = 'gpt-skin-host';
+  r.GT.compose = { composer: () => composer };
+  r.GT.skins.register(r.make('a'));
+  r.GT.skins.register(r.make('b'));
+  return { ...r, composer };
+}
+{
+  const { GT, composer } = focusRig({ id: 'gpt-skin-host' });
+  GT.skin.use('b'); GT.skin.show();
+  GT.skin.hide();
+  t('명령줄에 포커스가 있을 때 숨기면 원본 컴포저로 돌려준다 (실측: BODY 로 빠졌다)', composer.focused === 1);
+}
+{
+  const { GT, composer } = focusRig({ id: 'prompt-textarea' });
+  GT.skin.use('b'); GT.skin.show();
+  GT.skin.hide();
+  t('포커스가 원래 원본에 있었으면 건드리지 않는다', composer.focused === 0);
+}
+{
+  const { GT, composer } = focusRig({ id: 'gpt-skin-host' });
+  GT.skin.use('a'); GT.skin.show();
+  await GT.skin.switch('b');
+  t('터미널 입력줄에서 :skin none 을 치면 원본 컴포저로 돌려준다', composer.focused === 1);
+}
+{
+  const { GT, composer } = focusRig({ id: 'gpt-skin-host' });
+  GT.skin.use('b'); GT.skin.show();
+  await GT.skin.switch('a');
+  t('가리는 스킨으로 바꿀 때는 원본에 포커스를 주지 않는다', composer.focused === 0);
+}
+
 // ---------------------------------------------------------------- none 스킨 본체
 function mockDom() {
   const mk = (tag) => {

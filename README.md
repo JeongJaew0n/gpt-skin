@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1338](https://img.shields.io/badge/테스트-1338_케이스-22C55E)
+![테스트 1342](https://img.shields.io/badge/테스트-1342_케이스-22C55E)
 
 </div>
 
@@ -354,7 +354,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>38개 파일 · 1338 케이스</b></summary>
+<summary><b>38개 파일 · 1342 케이스</b></summary>
 
 <br>
 
@@ -397,7 +397,7 @@ tools/test.sh
 | `skin` | 26 | 스킨 계약 — 모든 스킨이 계약을 채우는가 · GT.tty·ui 우회가 없는가 · 파일 하나에 스킨 하나 · 해체가 cover 를 걷는가 · 복귀 상태에서 토글 금지 |
 | `skinconfig` | 35 | 스킨 설정 — skin 선택지 = 스킨 파일 · 스킨 전용 항목 필터 · theme 이관이 한 번만, 사용자 값을 덮지 않는가 · `:skin` `:theme` |
 | `lines` | 34 | 줄 단위 마크다운 — 한 행에 한 줄 · 문법이 한 벌인가 · 스트리밍 중 앞 행을 다시 만들지 않는가 |
-| `none` | 64 | none 스킨 — Ctrl+; 열기 · esc 닫기 · 타이핑 비가로채기 · 숨긴 명령 · 스킨 전환과 실패 시 되돌리기 · 사이드바는 직접 열 때만 |
+| `none` | 68 | none 스킨 — Ctrl+; 열기 · esc 닫기 · 타이핑 비가로채기 · 숨긴 명령 · 스킨 전환과 실패 시 되돌리기 · 사이드바는 직접 열 때만 |
 
 </details>
 

@@ -59,6 +59,18 @@ GT.skin = (function () {
   let cur = null;
   const DEFAULT = 'terminal';
 
+  // 포커스가 우리 호스트 안에 있는가. 스킨을 숨기거나 해체하면 그 요소가 사라져
+  // 포커스가 문서 본문(BODY)으로 빠진다 — 그때 무엇을 쳐도 어디에도 안 들어간다.
+  // 실측 2026-09-24: :skin none 직후와 Ctrl+; 로 닫은 직후 activeElement = BODY.
+  // docs/issue/2026-09-24-none-ctrl-b-closes-hidden-sidebar.md
+  const focusInHost = () => {
+    try { const a = document.activeElement; return !!a && a.id === GT.cover.HOST_ID; } catch (_) { return false; }
+  };
+  // 원본 컴포저로 돌려준다. 원본이 보이는 상태에서만 부른다.
+  const giveBack = () => {
+    try { const c = GT.compose && GT.compose.composer && GT.compose.composer(); if (c) c.focus(); } catch (_) {}
+  };
+
   // 부팅 때 설정으로 고른다. 모르는 이름이면 기본 스킨으로 간다.
   function use(id) {
     cur = GT.skins.get(id) || GT.skins.get(DEFAULT);
@@ -99,6 +111,7 @@ GT.skin = (function () {
       const prev = this.current;
       if (next === prev) return { ok: true, same: true };
       const wasVisible = this.visible();
+      const hadFocus = focusInHost();
       const mountOne = (s) => {
         cur = s;
         GT.cover.apply(s.covers);
@@ -125,13 +138,18 @@ GT.skin = (function () {
       }
       // 원본을 가리지 않는 스킨은 닫힌 채로 시작한다. 이전 스킨이 보이던 상태를 넘기면
       // 명령줄이 열린 채로 떠서 스킨이 바뀐 게 아니라 무언가 열린 것처럼 보인다 (사용자 보고 2026-09-24).
-      if (next.covers && wasVisible) this.show(); else this.hide();
+      if (next.covers && wasVisible) this.show();
+      else { GT.cover.off(); if (hadFocus) giveBack(); }
       if (persist) await GT.config.set('skin', id);
       GT.sendToSW({ kind: 'visible', visible: this.visible() });
       return { ok: true };
     },
     show() { GT.cover.on(); this.current.focus(); },
-    hide() { GT.cover.off(); },
+    hide() {
+      const had = focusInHost();
+      GT.cover.off();
+      if (had) giveBack();
+    },
     visible() { return GT.cover.isOn(); },
     // Ctrl+` · 툴바 버튼. 원본으로 복귀한 상태(degraded)에서는 다시 켜지 않는다.
     toggle() {
