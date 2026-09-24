@@ -231,7 +231,7 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   S.ui.grid.dispatch('keydown', { key: 'c', ctrlKey: true });
   t('목록 행을 복사하면 글머리를 뺀다', calls.copy.at(-1) === '둘');
   const src = read('src/content/skins/sheet.js');
-  t('빈 행은 칸만 숨기고 행 번호는 보인다', /tr\.gs-blank td:not\(\.gs-rn\) \{ color: transparent; \}/.test(src) && !/tr\.gs-blank td \{ color: transparent/.test(src));
+  t('빈 행은 칸만 숨기고 행 번호는 보인다', /tr\.gs-blank > td:not\(\.gs-rn\) \{ color: transparent; \}/.test(src) && !/gs-blank > td \{ color: transparent/.test(src));
   S.render();
   const blank = S.ui.tail.children[1];
   t('빈 행에도 번호가 있다', blank.children[0].textContent === String(S.ui.body.children.length + 2));
@@ -256,7 +256,12 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   t('시트 테마가 강조 글자색을 정의한다', Object.values(S.themes).every((th) => th['--gt-fg-strong'] && th['--gt-fg-strong'] !== '#fff' && th['--gt-fg-strong'] !== '#ffffff'));
   const sheet = read('src/content/skins/sheet.js');
   t('격자는 기준 높이 0 (행 추가마다 전체를 재지 않게)', /\.gs-grid \{ flex: 1 1 0;[^}]*contain: strict;/.test(sheet));
-  t('화면 밖 행은 배치를 건너뛴다', /\.gs-grid tbody tr \{ content-visibility: auto;/.test(sheet));
+  t('화면 밖 행은 배치를 건너뛴다', /\.gs-grid > table > tbody > tr \{ content-visibility: auto;/.test(sheet));
+  // 칸 안에 명령 결과 표(:ls)가 들어간다. 격자 규칙이 자손 선택자면 그 표까지 4열 그리드가 된다 (하네스 실측).
+  // 클래스가 붙은 규칙(td.gs-a …)은 명령 결과 표에 걸리지 않는다. 클래스 없는 요소 규칙만 본다.
+  const loose = sheet.match(/\.gs-grid (table|thead|tbody|tr|th|td|colgroup)(?![.\w-])[^{]*\{/g) || [];
+  t('격자의 요소 규칙은 자식 선택자로만 (칸 안 표를 건드리지 않게)', loose.length === 0);
+  if (loose.length) console.log('    ', loose.join(' | '));
 }
 
 // ---------------------------------------------------------------- 바뀌지 않은 메시지는 다시 펴지 않는다

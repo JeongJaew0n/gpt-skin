@@ -66,18 +66,18 @@
 /* 격자는 표 요소(tr/td)를 쓰되 배치는 CSS 그리드로 한다. 표 배치는 칸 하나가 바뀌어도 모든 행을
    다시 잰다 — 하네스 실측: 1390행에서 칸 하나 바꾼 뒤 레이아웃 18.4ms. 행마다 그리드로 두고 화면 밖 행은
    content-visibility 로 건너뛴다. */
-.gs-grid table, .gs-grid thead, .gs-grid tbody { display: block; }
-.gs-grid colgroup { display: none; }
-.gs-grid tr { display: grid; grid-template-columns: 44px 72px minmax(0, 1fr) 64px; }
-.gs-grid tbody tr { content-visibility: auto; contain-intrinsic-size: auto 23px; }
-.gs-grid thead { position: sticky; top: 0; z-index: 1; }
-.gs-grid th, .gs-grid td { border-right: 1px solid var(--gt-border); border-bottom: 1px solid var(--gt-border);
+.gs-grid > table, .gs-grid > table > thead, .gs-grid > table > tbody { display: block; }
+.gs-grid > table > colgroup { display: none; }
+.gs-grid > table > * > tr { display: grid; grid-template-columns: 44px 72px minmax(0, 1fr) 64px; }
+.gs-grid > table > tbody > tr { content-visibility: auto; contain-intrinsic-size: auto 23px; }
+.gs-grid > table > thead { position: sticky; top: 0; z-index: 1; }
+.gs-grid > table > * > tr > th, .gs-grid > table > * > tr > td { border-right: 1px solid var(--gt-border); border-bottom: 1px solid var(--gt-border);
   padding: 1px 6px; font-weight: 400; text-align: left; line-height: 1.5; min-width: 0; }
-.gs-grid thead th { background: var(--gs-hdr); color: #444; text-align: center; border-color: var(--gs-hdr-b); font-size: 11px; }
-.gs-grid thead th[data-on="1"] { background: var(--gs-hdron); color: var(--gs-hdron-fg); font-weight: 600; }
+.gs-grid > table > thead > tr > th { background: var(--gs-hdr); color: #444; text-align: center; border-color: var(--gs-hdr-b); font-size: 11px; }
+.gs-grid > table > thead > tr > th[data-on="1"] { background: var(--gs-hdron); color: var(--gs-hdron-fg); font-weight: 600; }
 .gs-grid td.gs-rn { background: var(--gs-hdr); color: #444; text-align: center; border-color: var(--gs-hdr-b);
   font-size: 11px; user-select: none; }
-.gs-grid tr[data-sel="1"] td.gs-rn { background: var(--gs-hdron); color: var(--gs-hdron-fg); font-weight: 600; }
+.gs-grid > table > * > tr[data-sel="1"] > td.gs-rn { background: var(--gs-hdron); color: var(--gs-hdron-fg); font-weight: 600; }
 .gs-grid td.gs-a { color: var(--gt-fg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gs-grid td.gs-a[data-who="user"] { color: var(--gs-accent-d); font-weight: 600; }
 .gs-grid td.gs-a[data-who="assistant"] { color: var(--gt-magenta); font-weight: 600; }
@@ -86,7 +86,7 @@
 .gs-grid td.gs-a[data-who="error"] { color: var(--gt-red); }
 .gs-grid td.gs-b { white-space: pre-wrap; word-break: break-word; }
 .gs-grid td.gs-c { color: var(--gt-fg-dim); white-space: nowrap; font-size: 11px; }
-.gs-grid td[data-sel="1"] { outline: 2px solid var(--gs-accent); outline-offset: -2px; }
+.gs-grid > table > * > tr > td[data-sel="1"] { outline: 2px solid var(--gs-accent); outline-offset: -2px; }
 .gs-grid td.gs-b[data-kind="heading"] { font-weight: 700; }
 .gs-grid td.gs-b[data-kind="code"] { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: .92em; background: var(--gs-code); white-space: pre; overflow-x: auto; }
@@ -97,9 +97,9 @@
 .gs-grid td.gs-b[data-kind="sys"] { color: var(--gt-fg-dim); }
 .gs-grid td.gs-b[data-quote] { border-left: 3px solid var(--gt-border); color: var(--gt-fg-dim); }
 .gs-grid td.gs-b[data-kind="thinking"] { color: var(--gt-fg-dim); font-style: italic; }
-.gs-grid tr.gs-mirror td.gs-b { color: var(--gt-fg-dim); }
+.gs-grid > table > * > tr.gs-mirror > td.gs-b { color: var(--gt-fg-dim); }
 /* 빈 행은 칸 내용만 숨긴다. 행 번호까지 숨기면 격자가 12행에서 끊겨 보인다 (하네스 실측) */
-.gs-grid tr.gs-blank td:not(.gs-rn) { color: transparent; }
+.gs-grid > table > * > tr.gs-blank > td:not(.gs-rn) { color: transparent; }
 .gs-bullet { color: var(--gt-fg-dim); }
 .gs-caret { display: inline-block; width: 7px; height: 1.1em; vertical-align: text-bottom; background: var(--gs-accent);
   margin-left: 2px; animation: gs-blink 1s steps(1) infinite; }
