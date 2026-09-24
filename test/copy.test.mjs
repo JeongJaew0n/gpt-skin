@@ -44,12 +44,13 @@ function makeDom() {
   };
 }
 
-function load(ttyStub) {
+// 복사는 2026-09-24 에 tty.js 에서 shell/clipboard.js 로 옮겼다. markdown 은 GT.clipboard 를 부른다.
+function load(clipStub) {
   const document = makeDom();
   const sandbox = { console, Object, Array, String, Number, Boolean, JSON, Promise, Error, RegExp, Math,
     document, setTimeout, clearTimeout };
   sandbox.window = sandbox; sandbox.globalThis = sandbox;
-  sandbox.GT = { tty: ttyStub };
+  sandbox.GT = { clipboard: clipStub };
   vm.createContext(sandbox);
   vm.runInContext(fs.readFileSync('src/content/markdown.js', 'utf8'), sandbox, { filename: 'markdown.js' });
   return sandbox.GT.markdown;
@@ -132,7 +133,7 @@ function iconKind(b) {
   t('예외가 터져도 화면이 멈추지 않는다', iconKind(b) === 'fail');
 }
 {
-  const M = load({});                       // tty.copy 가 아직 없는 순간
+  const M = load({});                       // clipboard.copy 가 아직 없는 순간
   const b = M.render('```\nx\n```').all(isBtn)[0];
   b.fire('click'); await wait();
   t('copy 가 없어도 던지지 않는다', iconKind(b) === 'fail');
@@ -164,11 +165,13 @@ function iconKind(b) {
 {
   const md = fs.readFileSync('src/content/markdown.js', 'utf8');
   const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const clip = fs.readFileSync('src/content/shell/clipboard.js', 'utf8');
   const css = fs.readFileSync('src/content/theme.js', 'utf8');
   t("동작하지 않는 'yank/write/open' 힌트를 걷어냈다", !/yank/.test(md));
-  t('tty 가 클립보드를 맡는다', /async function copy\(/.test(tty) && /navigator\.clipboard/.test(tty));
-  t('비동기 API 가 막히면 폴백이 있다', /execCommand\('copy'\)/.test(tty));
-  t('copy 를 밖으로 내보낸다', /system, copy,/.test(tty));
+  t('clipboard 가 클립보드를 맡는다', /async function copy\(/.test(clip) && /navigator\.clipboard/.test(clip));
+  t('tty 에는 클립보드 코드가 없다', !/navigator\.clipboard/.test(tty));
+  t('비동기 API 가 막히면 폴백이 있다', /execCommand\('copy'\)/.test(clip));
+  t('copy 를 밖으로 내보낸다', /return \{ copy \};/.test(clip));
   t('스트리밍 중에는 버튼을 안 단다', /!m\.streaming && \(m\.text/.test(tty));
   t('안 보일 때는 클릭도 안 먹는다', /\.gt-meta \.gt-copy \{ opacity: 0; pointer-events: none; \}/.test(css));
   t('버튼은 정사각형 아이콘 칸', /width: 21px; height: 21px/.test(css));

@@ -255,7 +255,7 @@ GT.markdown = (function () {
         }, 1200);
       };
       let p;
-      try { p = GT.tty && GT.tty.copy ? GT.tty.copy(getText()) : false; } catch (_) { p = false; }
+      try { p = GT.clipboard && GT.clipboard.copy ? GT.clipboard.copy(getText()) : false; } catch (_) { p = false; }
       Promise.resolve(p).then(done, () => done(false));
     });
     return b;

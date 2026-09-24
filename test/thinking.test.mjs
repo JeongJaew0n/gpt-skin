@@ -109,7 +109,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
 
   t('틱이 등록돼 있다', /every\(90, \(\) => \{ if \(GT\.tty\.visible\(\)\) GT\.tty\.tickSpin\(\); \}\)/.test(idx));
   t('틱은 터미널이 보일 때만 돈다', /if \(GT\.tty\.visible\(\)\) GT\.tty\.tickSpin\(\)/.test(idx));
-  t('tickSpin 을 밖으로 내보낸다', /copy, tickSpin,/.test(tty));
+  t('tickSpin 을 밖으로 내보낸다', /system, tickSpin,/.test(tty));
 
   t('스타일이 있다', /\.gt-thinking-live/.test(css));
   t('모션을 줄이는 설정을 존중한다', /prefers-reduced-motion/.test(css));

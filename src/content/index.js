@@ -10,7 +10,7 @@
   'use strict';
   const missing = [];
   if (typeof GT === 'undefined') missing.push('GT (protocol.js)');
-  else ['config', 'oai', 'store', 'chats', 'conversation', 'convops', 'markdown', 'renderplan', 'theme', 'tty', 'palette', 'sidebar', 'compose', 'picker', 'navigate', 'commands', 'health', 'prompt']
+  else ['config', 'oai', 'store', 'chats', 'conversation', 'convops', 'markdown', 'renderplan', 'theme', 'tty', 'palette', 'sidebar', 'compose', 'picker', 'navigate', 'commands', 'health', 'cover', 'clipboard', 'prompt']
     .forEach((k) => { if (!GT[k]) missing.push('GT.' + k); });
   if (typeof GT_DEFAULTS === 'undefined') missing.push('GT_DEFAULTS (shared/defaults.js)');
   if (typeof GT_T !== 'function') missing.push('GT_T (shared/i18n.js)');

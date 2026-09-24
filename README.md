@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1148](https://img.shields.io/badge/테스트-1148_케이스-22C55E)
+![테스트 1170](https://img.shields.io/badge/테스트-1170_케이스-22C55E)
 
 </div>
 
@@ -220,6 +220,8 @@ src/content/                          ← 매니페스트 주입 순서
   markdown.js                         마크다운 → tty 노드 (innerHTML 미사용)
   renderplan.js                       스크롤백 서명·재조정 (순수 함수)
   theme.js                            테마 CSS 변수 + 셸 스타일
+  shell/cover.js                      원본 가리기 · 스킨 호스트 (가리는 스킨 / 클릭 통과 스킨)
+  shell/clipboard.js                  클립보드 복사
   tty.js                              shadow root 셸
   palette.js                          퍼지 명령 팔레트
   sidebar.js                          대화 목록 오버레이
@@ -331,13 +333,13 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>33개 파일 · 1148 케이스</b></summary>
+<summary><b>34개 파일 · 1170 케이스</b></summary>
 
 <br>
 
 | 파일 | 케이스 | 무엇을 지키는가 |
 |---|--:|---|
-| `load` | 23 모듈 | 콘텐츠 스크립트를 매니페스트 순서대로 평가 — 로드 시점 예외 검출 |
+| `load` | 25 모듈 | 콘텐츠 스크립트를 매니페스트 순서대로 평가 — 로드 시점 예외 검출 |
 | `handshake` | 5 | MAIN↔ISOLATED 브리지 버퍼링과 `ready`/`pong` 핸드셰이크 |
 | `policy` | 17 | `onBreak` 정책과 드리프트 분류 |
 | `store` | 34 | 한 턴에 assistant 메시지가 여러 개 와도 한 줄만 남는가 · 보낸 질문이 두 줄이 되지 않는가 |
@@ -370,6 +372,7 @@ tools/test.sh
 | `route` | 29 | 대화를 옮기면 이전 제목·본문이 남지 않는가 · 수확이 제목을 덮지 않는가 · esc 우선순위 |
 | `ime` | 15 | 한글 조합 중 Enter 를 전송으로 받지 않는가 |
 | `prompt` | 24 | 입력 컨트롤러 — 입력 로직이 한 벌인가 · detach 로 핸들러가 떨어지는가 · 원본을 안 가리는 스킨에서 타이핑을 뺏지 않는가 |
+| `cover` | 20 | 원본 가리기 — 가리는/안 가리는 스타일 · 호스트 재사용 · 흔적 없이 물러나는가 · 가리기가 한 곳에만 있는가 |
 
 </details>
 

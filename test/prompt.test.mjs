@@ -13,7 +13,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   const iP = js.indexOf('src/content/shell/prompt.js');
   t('매니페스트에 있다', iP >= 0);
   t('index.js 보다 먼저 로드된다', iP >= 0 && iP < js.indexOf('src/content/index.js'));
-  t('preflight 가 GT.prompt 를 확인한다', /'health', 'prompt'\]/.test(idx));
+  t('preflight 가 GT.prompt 를 확인한다', /'prompt'\]/.test(idx));
 
   // 입력 로직이 index.js 에 다시 생기면 한 벌이 두 벌이 된다
   t('index.js 에 IME 가드가 없다', !/isComposing/.test(idx));

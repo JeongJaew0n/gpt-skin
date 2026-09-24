@@ -27,9 +27,13 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
 // 3. tty.destroy 는 흔적을 남기지 않아야 한다
 {
   const tty = fs.readFileSync('src/content/tty.js', 'utf8');
-  t('destroy 가 클래스를 뗀다', /destroy\(\)[\s\S]{0,200}classList\.remove\(HIDE_CLASS\)/.test(tty));
-  t('destroy 가 페이지 스타일을 지운다', /destroy\(\)[\s\S]{0,300}gpt-skin-page-style/.test(tty));
-  t('destroy 가 호스트를 제거', /destroy\(\)[\s\S]{0,400}host\.remove\(\)/.test(tty));
+  // 흔적 지우기는 2026-09-24 에 GT.cover.remove() 로 옮겼다. tty.destroy 는 그걸 부른다.
+  const cover = fs.readFileSync('src/content/shell/cover.js', 'utf8');
+  t('destroy 가 cover 를 걷는다', /destroy\(\)[\s\S]{0,120}GT\.cover\.remove\(\)/.test(tty));
+  const rm = (/remove\(\) \{([\s\S]*?)\n    \}/.exec(cover) || [])[1] || '';
+  t('cover.remove 가 클래스를 뗀다', /classList\(\)\.remove\(ON_CLASS\)|cls\(\)\.remove\(ON_CLASS\)/.test(rm));
+  t('cover.remove 가 페이지 스타일을 지운다', /getElementById\(STYLE_ID\)[\s\S]{0,40}st\.remove\(\)/.test(rm));
+  t('cover.remove 가 호스트를 제거', /getElementById\(HOST_ID\)[\s\S]{0,40}h\.remove\(\)/.test(rm));
 }
 
 // 4. 일상 경고를 확장 오류 목록에 쌓지 않는다

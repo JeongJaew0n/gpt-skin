@@ -1,11 +1,8 @@
 // gpt-skin — tty 셸. shadow root 안에 전부 그린다.
-// 원본 UI 는 지우지 않고 opacity 0 + pointer-events none 으로 덮는다.
-// 지우면 하이드레이션과 컴포저 포커스가 깨진다(원본은 살아 있어야 우리가 전송할 수 있다).
+// 원본 가리기와 호스트는 GT.cover(shell/cover.js), 클립보드는 GT.clipboard 가 맡는다.
 GT.tty = (function () {
   'use strict';
 
-  const HOST_ID = 'gpt-skin-host';
-  const HIDE_CLASS = 'gpt-skin-on';
   const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x !== undefined) n.textContent = x; return n; };
 
   let host = null, shadow = null, root = null, varStyle = null;
@@ -25,28 +22,8 @@ GT.tty = (function () {
   let localSeq = 0;
   let sysSeq = 0;
 
-  // 원본 UI 를 덮는 스타일은 page document 에 있어야 한다(shadow root 밖).
-  function pageStyle() {
-    let s = document.getElementById('gpt-skin-page-style');
-    if (s) return s;
-    s = document.createElement('style');
-    s.id = 'gpt-skin-page-style';
-    s.textContent = `
-html.${HIDE_CLASS} body > *:not(#${HOST_ID}) { opacity: 0 !important; pointer-events: none !important; }
-html.${HIDE_CLASS} { overflow: hidden !important; }
-#${HOST_ID} { position: fixed; inset: 0; z-index: 2147483000; }
-html:not(.${HIDE_CLASS}) #${HOST_ID} { display: none; }
-`;
-    (document.head || document.documentElement).appendChild(s);
-    return s;
-  }
-
   function build() {
-    host = document.getElementById(HOST_ID) || el('div');
-    host.id = HOST_ID;
-    if (!host.isConnected) (document.body || document.documentElement).appendChild(host);
-    shadow = host.shadowRoot || host.attachShadow({ mode: 'open' });
-    shadow.textContent = '';
+    ({ host, shadow } = GT.cover.host());
 
     const base = el('style'); base.textContent = GT.theme.CSS; shadow.appendChild(base);
     varStyle = el('style'); shadow.appendChild(varStyle);
@@ -697,32 +674,6 @@ html:not(.${HIDE_CLASS}) #${HOST_ID} { display: none; }
 
   function focusInput() { if (ui.input) ui.input.focus(); }
 
-  // 클립보드. 비동기 API 를 먼저 쓰고, 막히면 execCommand 로 내려간다.
-  // 실패를 삼키지 않고 false 를 돌려준다 — 버튼이 '복사 실패' 를 보여줘야 한다.
-  async function copy(text) {
-    const s = String(text == null ? '' : text);
-    if (!s) return false;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(s);
-        return true;
-      }
-    } catch (_) { /* 권한·포커스 문제. 아래 폴백으로 간다 */ }
-    try {
-      // execCommand 는 문서에 붙은 노드에서만 동작한다. shadow root 안에서는 안 잡힌다.
-      const ta = document.createElement('textarea');
-      ta.value = s;
-      ta.setAttribute('readonly', '');
-      ta.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0';
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand('copy');
-      ta.remove();
-      focusInput();                      // 포커스를 원래 자리로 돌려놓는다
-      return !!ok;
-    } catch (_) { return false; }
-  }
-
   function setMode(m) {
     mode = m;
     if (ui.mode) { ui.mode.textContent = m; ui.mode.dataset.mode = m; }
@@ -745,7 +696,6 @@ html:not(.${HIDE_CLASS}) #${HOST_ID} { display: none; }
   }
 
   return {
-    HOST_ID, HIDE_CLASS,
     get ui() { return ui; },
     get shadow() { return shadow; },
     // 입력 위젯을 GT.prompt 에 넘긴다. 키 처리는 거기 있고, 여기는 위젯과 높이 규칙만 안다.
@@ -755,9 +705,9 @@ html:not(.${HIDE_CLASS}) #${HOST_ID} { display: none; }
         autosize() { const i = ui.input; if (!i) return; i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 240) + 'px'; }
       };
     },
-    mount(cfg) { pageStyle(); build(); applyConfig(cfg); return root; },
+    mount(cfg) { GT.cover.apply(true); build(); applyConfig(cfg); return root; },
     applyConfig, syncSidebar, refreshChrome, renderChrome, popup, closePopup, setSuggest,
-    render, setMode, system, copy, tickSpin, syncCursorFocus,
+    render, setMode, system, tickSpin, syncCursorFocus,
     clearSystem() { const n = systemLog.length; systemLog.length = 0; render(); return n; },
 
     // 화면에만 끼워 넣는 블록. 지금 마지막 메시지를 앵커로 잡는다.
@@ -774,16 +724,13 @@ html:not(.${HIDE_CLASS}) #${HOST_ID} { display: none; }
     clearLocal() { const n = localLog.length; localLog.length = 0; render(); return n; },
     // 확장이 다시 로드되면 이 스크립트는 고아가 된다. 그때 화면에서 완전히 물러난다.
     destroy() {
-      document.documentElement.classList.remove(HIDE_CLASS);
-      const st = document.getElementById('gpt-skin-page-style');
-      if (st) st.remove();
-      if (host) host.remove();
+      GT.cover.remove();
       pool.clear();
       host = null; shadow = null; root = null;
     },
-    show() { document.documentElement.classList.add(HIDE_CLASS); ui.input && ui.input.focus(); },
-    hide() { document.documentElement.classList.remove(HIDE_CLASS); },
-    visible() { return document.documentElement.classList.contains(HIDE_CLASS); },
+    show() { GT.cover.on(); ui.input && ui.input.focus(); },
+    hide() { GT.cover.off(); },
+    visible() { return GT.cover.isOn(); },
     focus: focusInput
   };
 })();
