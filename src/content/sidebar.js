@@ -1,4 +1,4 @@
-// gpt-term — 좌측 대화 목록 페인.
+// gpt-skin — 좌측 대화 목록 페인.
 // 데이터는 GT.chats 가 준다. 여기는 그리기·선택·필터·키 처리만 한다.
 GT.sidebar = (function () {
   'use strict';

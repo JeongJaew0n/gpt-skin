@@ -1,4 +1,4 @@
-// gpt-term — 마크다운 원문을 tty 노드로 그린다.
+// gpt-skin — 마크다운 원문을 tty 노드로 그린다.
 // HTML 문자열을 만들지 않는다. 전부 createElement 로 조립해 주입 위험을 없앤다.
 // 지원 범위는 07 아트보드(출력 렌더링 규격)에 맞춘 부분집합이다.
 GT.markdown = (function () {

@@ -1,10 +1,10 @@
-// gpt-term — isolated world 전역 네임스페이스와 MAIN world 브리지.
+// gpt-skin — isolated world 전역 네임스페이스와 MAIN world 브리지.
 // 진단 줄을 메모리에만 쌓아 둔다. 저장하지 않는다 —
 // 개인정보처리방침의 '기기에 저장되는 것' 을 늘리지 않기 위해서다.
 // 지금 로그는 건수·상태만 담고 대화 본문을 담지 않는다.
 var GT = (function () {
   'use strict';
-  const CH = '__gpt_term__';
+  const CH = '__gpt_skin__';
   const RING_MAX = 200;
   const RING = [];
 
@@ -23,7 +23,7 @@ var GT = (function () {
   const MAX_PENDING = 50;
 
   const deliver = (fn, payload) => {
-    try { fn(payload); } catch (err) { console.error('[gpt-term]', err); }
+    try { fn(payload); } catch (err) { console.error('[gpt-skin]', err); }
   };
 
   window.addEventListener('message', (e) => {
@@ -76,7 +76,7 @@ var GT = (function () {
       RING.push({ at: Date.now(), line });
       if (RING.length > RING_MAX) RING.shift();
       if (GT.config && typeof GT.config.get === 'function' && GT.config.get('log') === false) return;
-      console.log('[gpt-term]', ...a);
+      console.log('[gpt-skin]', ...a);
     },
 
     // 쌓아 둔 진단 줄. 최근 것이 뒤에 온다.

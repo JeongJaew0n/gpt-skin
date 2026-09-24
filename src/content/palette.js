@@ -1,4 +1,4 @@
-// gpt-term — 명령 팔레트. fzf 식 퍼지 매칭 + 하이라이트(05 아트보드).
+// gpt-skin — 명령 팔레트. fzf 식 퍼지 매칭 + 하이라이트(05 아트보드).
 GT.palette = (function () {
   'use strict';
 

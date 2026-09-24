@@ -1,4 +1,4 @@
-// gpt-term 설정 화면. 항목은 src/shared/defaults.js 의 GT_SCHEMA 에서 생성한다.
+// gpt-skin 설정 화면. 항목은 src/shared/defaults.js 의 GT_SCHEMA 에서 생성한다.
 // 저장 버튼은 없다 — 바꾸는 즉시 저장하고 열려 있는 탭에 반영한다.
 (async function () {
   'use strict';

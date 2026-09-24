@@ -1,4 +1,4 @@
-// gpt-term — 원본 백엔드 읽기 클라이언트.
+// gpt-skin — 원본 백엔드 읽기 클라이언트.
 //
 // 쿠키만으로는 안 된다. /api/auth/session 의 accessToken 을 Bearer 로 붙여야 한다.
 // 이걸 몰라서 한동안 "/backend-api/conversation/<id> 는 404" 라고 잘못 적어뒀었다 —

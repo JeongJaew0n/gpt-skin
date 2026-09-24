@@ -28,7 +28,7 @@
 라이브 페이지에서 shadow root 의 `.gt-input` 에 직접 이벤트를 쏴서 확인했다.
 
 ```js
-const inp = document.getElementById('gpt-term-host').shadowRoot.querySelector('.gt-input');
+const inp = document.getElementById('gpt-skin-host').shadowRoot.querySelector('.gt-input');
 inp.value = ':health';
 inp.dispatchEvent(new KeyboardEvent('keydown', {
   key: 'Enter', code: 'Enter', keyCode: 229, which: 229,

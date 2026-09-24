@@ -1,4 +1,4 @@
-# Privacy Policy — Scrollback (Terminal UI for ChatGPT)
+# Privacy Policy — gpt-skin (Terminal UI for ChatGPT)
 
 **Last updated: 2026-09-07**
 
@@ -6,7 +6,7 @@
 > URL goes in the Chrome Web Store dashboard under *Privacy → Privacy policy URL*.
 > Nothing else in this file needs changing.
 
-Scrollback is a browser extension that redraws the ChatGPT web app as a terminal-style
+gpt-skin is a browser extension that redraws the ChatGPT web app as a terminal-style
 interface. This policy describes exactly what it touches, what it keeps, and what it
 never does. Every statement below is verifiable in the source code, which is public.
 
@@ -14,7 +14,7 @@ never does. Every statement below is verifiable in the source code, which is pub
 
 ## Summary
 
-**Scrollback sends no data to anyone. There is no server, no analytics, and no advertising.**
+**gpt-skin sends no data to anyone. There is no server, no analytics, and no advertising.**
 
 Everything the extension does happens inside your browser, on `chatgpt.com` tabs only.
 
@@ -22,7 +22,7 @@ Everything the extension does happens inside your browser, on `chatgpt.com` tabs
 
 ## What the extension accesses
 
-Scrollback runs only on `https://chatgpt.com/*`. On those pages it:
+gpt-skin runs only on `https://chatgpt.com/*`. On those pages it:
 
 1. **Reads your conversation content** so it can draw it as terminal output.
    It obtains this in two ways, both of which stay inside the page:
@@ -44,7 +44,7 @@ cookies of other sites, or clipboard contents.
 
 **Nowhere but ChatGPT.** All network requests the extension makes go to `chatgpt.com`
 — the same service you are already using and already logged into. There is no
-Scrollback server. No data is transmitted to the developer or to any third party.
+gpt-skin server. No data is transmitted to the developer or to any third party.
 
 ## What is stored on your device
 
@@ -79,12 +79,12 @@ Source: `src/content/oai.js`.
 ## Logging
 
 The extension writes diagnostic lines to the page's developer console (prefixed
-`[gpt-term]`). These contain counts and status only — for example "conversation loaded,
+`[gpt-skin]`). These contain counts and status only — for example "conversation loaded,
 12 messages". **They never contain message text, titles, or the access token.**
 
 ## Data we do not collect
 
-Scrollback does not collect, transmit, sell, or share any of the following:
+gpt-skin does not collect, transmit, sell, or share any of the following:
 
 - Personally identifiable information
 - Health, financial, or authentication information
@@ -106,7 +106,7 @@ for creditworthiness or lending, or for sale to third parties.
 
 ## Children
 
-Scrollback is not directed at children and collects no data from anyone.
+gpt-skin is not directed at children and collects no data from anyone.
 
 ## Changes
 
@@ -119,26 +119,26 @@ store listing will point to the current version.
 
 ## Not affiliated with OpenAI
 
-Scrollback is an independent extension. It is not affiliated with, endorsed by, or
+gpt-skin is an independent extension. It is not affiliated with, endorsed by, or
 sponsored by OpenAI. "ChatGPT" and "OpenAI" are trademarks of OpenAI.
 
 ---
 ---
 
-# 개인정보처리방침 — Scrollback
+# 개인정보처리방침 — gpt-skin
 
 **최종 수정: 2026-09-07**
 
 > **제출 전 TODO** — 이 문서를 공개된 URL 에 올리고, 그 URL 을 웹스토어 대시보드의
 > *개인정보 보호 → 개인정보처리방침 URL* 에 넣어야 합니다. 그 외에 고칠 것은 없습니다.
 
-Scrollback 은 ChatGPT 웹을 터미널 화면으로 다시 그리는 브라우저 확장입니다.
+gpt-skin 은 ChatGPT 웹을 터미널 화면으로 다시 그리는 브라우저 확장입니다.
 이 방침은 확장이 무엇에 접근하고, 무엇을 남기고, 무엇을 하지 않는지를 적습니다.
 아래 내용은 모두 공개된 소스 코드에서 확인할 수 있습니다.
 
 ## 요약
 
-**Scrollback 은 어떤 데이터도 외부로 보내지 않습니다. 서버도, 분석 도구도, 광고도 없습니다.**
+**gpt-skin 은 어떤 데이터도 외부로 보내지 않습니다. 서버도, 분석 도구도, 광고도 없습니다.**
 
 모든 동작은 `chatgpt.com` 탭 안에서, 사용자의 브라우저 안에서만 일어납니다.
 
@@ -164,7 +164,7 @@ Scrollback 은 ChatGPT 웹을 터미널 화면으로 다시 그리는 브라우�
 
 **ChatGPT 외에는 어디에도 가지 않습니다.** 확장이 보내는 모든 요청의 목적지는
 `chatgpt.com` 이며, 이는 사용자가 이미 쓰고 있고 이미 로그인해 둔 서비스입니다.
-Scrollback 서버는 존재하지 않습니다. 개발자에게도, 제3자에게도 전송하지 않습니다.
+gpt-skin 서버는 존재하지 않습니다. 개발자에게도, 제3자에게도 전송하지 않습니다.
 
 ## 기기에 저장되는 것
 
@@ -197,7 +197,7 @@ ChatGPT 백엔드를 사용자 대신 호출하기 위해, ChatGPT 페이지가 
 
 ## 로그
 
-확장은 페이지 개발자 콘솔에 진단용 줄을 씁니다(`[gpt-term]` 접두사). 건수와 상태만
+확장은 페이지 개발자 콘솔에 진단용 줄을 씁니다(`[gpt-skin]` 접두사). 건수와 상태만
 담습니다 — 예: "대화 원본 12건". **메시지 본문·제목·토큰은 절대 찍지 않습니다.**
 
 ## 수집하지 않는 것
@@ -221,7 +221,7 @@ ChatGPT 백엔드를 사용자 대신 호출하기 위해, ChatGPT 페이지가 
 
 ## 아동
 
-Scrollback 은 아동을 대상으로 하지 않으며, 누구로부터도 데이터를 수집하지 않습니다.
+gpt-skin 은 아동을 대상으로 하지 않으며, 누구로부터도 데이터를 수집하지 않습니다.
 
 ## 변경
 
@@ -233,5 +233,5 @@ Scrollback 은 아동을 대상으로 하지 않으며, 누구로부터도 데�
 
 ## OpenAI 와 무관합니다
 
-Scrollback 은 독립적인 확장입니다. OpenAI 와 제휴하거나 후원받지 않았습니다.
+gpt-skin 은 독립적인 확장입니다. OpenAI 와 제휴하거나 후원받지 않았습니다.
 "ChatGPT" 와 "OpenAI" 는 OpenAI 의 상표입니다.

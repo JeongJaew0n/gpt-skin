@@ -28,7 +28,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
 {
   const tty = fs.readFileSync('src/content/tty.js', 'utf8');
   t('destroy 가 클래스를 뗀다', /destroy\(\)[\s\S]{0,200}classList\.remove\(HIDE_CLASS\)/.test(tty));
-  t('destroy 가 페이지 스타일을 지운다', /destroy\(\)[\s\S]{0,300}gpt-term-page-style/.test(tty));
+  t('destroy 가 페이지 스타일을 지운다', /destroy\(\)[\s\S]{0,300}gpt-skin-page-style/.test(tty));
   t('destroy 가 호스트를 제거', /destroy\(\)[\s\S]{0,400}host\.remove\(\)/.test(tty));
 }
 
@@ -57,8 +57,8 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('GT_VERSION 을 manifest 에서 읽는다',
     /chrome\.runtime\.getManifest\(\)\.version/.test(d));
   t('읽을 수 없는 곳에서도 죽지 않는다', /catch \(_\) \{ return '0\.0\.0'; \}/.test(d));
-  t('부팅 줄이 GT_VERSION 을 쓴다', /gpt-term \$\{GT_VERSION\}/.test(src));
-  t(':version 도 GT_VERSION 을 쓴다', /gpt-term \$\{GT_VERSION\}/.test(cmds));
+  t('부팅 줄이 GT_VERSION 을 쓴다', /gpt-skin \$\{GT_VERSION\}/.test(src));
+  t(':version 도 GT_VERSION 을 쓴다', /gpt-skin \$\{GT_VERSION\}/.test(cmds));
 
   // 소스 어디에도 버전 문자열을 박아 두지 않는다
   const srcFiles = ['src/content/index.js', 'src/content/commands.js',
@@ -76,7 +76,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('물러남을 알린다', /notifyGone/.test(src));
   t('무슨 일이 있었는지 밝힌다', /확장이 다시 로드 됐습니다/.test(src));
   t('무엇을 해야 하는지 안내', /새로고침해주세요/.test(src));
-  t('알림은 한 번만', /getElementById\('gpt-term-gone'\)\) return/.test(src));
+  t('알림은 한 번만', /getElementById\('gpt-skin-gone'\)\) return/.test(src));
   // 사유는 화면 문구에서 뺐지만 진단용으로는 남겨 둔다
   t('사유는 콘솔에 남긴다', /GT\.log\('물러남:', why/.test(src));
 }

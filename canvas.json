@@ -71,7 +71,7 @@
       "x": 0,
       "y": -230,
       "w": 660,
-      "text": "gpt-term — 풀 TUI 재구성\n\n원본 UI 를 숨기고 shadow root 안에 tty 를 통째로 그린다.\n대화는 스크롤백, 입력은 프롬프트 라인, 사이드바는 ls ~/chats.\n\n방향: 모던 다크(Warp/iTerm2 계열) · JetBrains Mono 13px.\n색은 장식이 아니라 의미다 — 초록=나, 보라=모델, 청록=진행중,\n노랑=미저장, 빨강=파괴적."
+      "text": "gpt-skin — 풀 TUI 재구성\n\n원본 UI 를 숨기고 shadow root 안에 tty 를 통째로 그린다.\n대화는 스크롤백, 입력은 프롬프트 라인, 사이드바는 ls ~/chats.\n\n방향: 모던 다크(Warp/iTerm2 계열) · JetBrains Mono 13px.\n색은 장식이 아니라 의미다 — 초록=나, 보라=모델, 청록=진행중,\n노랑=미저장, 빨강=파괴적."
     },
     {
       "id": "note-stream",

@@ -1,4 +1,4 @@
-// gpt-term — 대화 원본을 백엔드에서 읽는다.
+// gpt-skin — 대화 원본을 백엔드에서 읽는다.
 //
 // DOM 수확은 원본이 그려준 만큼만 볼 수 있다. 진입 경로에 따라 앞쪽 턴이 통째로 빠진다
 // (docs/issue/2026-08-31-partial-thread-harvest.md).

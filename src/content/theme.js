@@ -1,4 +1,4 @@
-// gpt-term — 테마. CSS 변수 한 벌이 곧 테마다(08 아트보드).
+// gpt-skin — 테마. CSS 변수 한 벌이 곧 테마다(08 아트보드).
 // 문자열로 들고 있는 이유: 페이지 CSP 와 무관하게 shadow root 안에 직접 넣기 위해서다.
 GT.theme = (function () {
   'use strict';

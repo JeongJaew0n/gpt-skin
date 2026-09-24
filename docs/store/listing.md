@@ -7,16 +7,16 @@ Chrome 웹스토어 개발자 대시보드에 그대로 붙여 넣을 문구다.
 
 ## 이름
 
-**권장 — `Scrollback — Terminal UI for ChatGPT`**
+**권장 — `gpt-skin — Terminal UI for ChatGPT`**
 
 | 안 | 이름 | 상표 위험 | 비고 |
 |---|---|---|---|
-| **A (권장)** | `Scrollback — Terminal UI for ChatGPT` | 낮음~중간 | "for ChatGPT" 는 호환성을 밝히는 나열적(nominative) 사용. 확장 생태계의 관행이다 |
-| B (가장 안전) | `Scrollback` | 없음 | ChatGPT 언급을 설명문으로만 내린다. 대신 검색에서 안 잡힌다 |
-| C (비권장) | `gpt-term` | **높음** | "GPT" 가 이름의 본체다. OpenAI 상표 주장에 그대로 노출된다 |
+| **A (현재)** | `gpt-skin — Terminal UI for ChatGPT` | 중간~높음 | "for ChatGPT" 는 호환성을 밝히는 나열적(nominative) 사용이지만, 이름 본체에 "gpt" 가 들어간다 |
+| B | `gpt-skin` | 중간~높음 | ChatGPT 언급을 설명문으로만 내린다. "gpt" 위험은 그대로다 |
+| C (과거안) | `Scrollback — Terminal UI for ChatGPT` | 낮음~중간 | 2026-09 에 잠시 썼던 이름. "GPT" 가 이름에 없어 가장 안전했다 |
 
-`Scrollback` 은 터미널에서 지나간 출력을 되짚어 보는 영역을 가리키는 말이고,
-이 코드베이스가 내내 쓰는 어휘이기도 하다(`renderScrollback`, `docs/plan/…-scrollback-render.md`).
+이름 이력: `gpt-term` → `Scrollback` → `gpt-skin` (2026-09-24 확정). "GPT" 를 이름에 넣는
+상표 위험은 알고 선택했다. 심사에서 이름 변경을 요구받으면 C 안으로 되돌린다.
 
 > **주의** — 이름·설명·아이콘 어디에도 OpenAI 나 ChatGPT 의 로고·마크를 쓰지 않는다.
 > "ChatGPT" 라는 낱말을 **호환 대상을 밝히는 용도로만** 쓴다.

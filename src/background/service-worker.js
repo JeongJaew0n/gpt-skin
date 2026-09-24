@@ -1,4 +1,4 @@
-// gpt-term — 배지와 토글.
+// gpt-skin — 배지와 토글.
 // 배지는 네 상태를 말한다: 켜짐 / 경고를 안고 켜짐 / 원본으로 복귀함 / 꺼짐.
 const STATE = new Map(); // tabId -> {reverted, warned, reasons, visible}
 
@@ -9,16 +9,16 @@ const quiet = (p) => { if (p && typeof p.catch === 'function') p.catch(() => {})
 function badgeFor(s) {
   if (s.reverted) {
     return { text: '!', color: '#f85149',
-      title: 'gpt-term — 원본 UI 로 복귀함\n' + (s.reasons || []).join('\n') };
+      title: 'gpt-skin — 원본 UI 로 복귀함\n' + (s.reasons || []).join('\n') };
   }
   if (s.warned) {
     return { text: '⚠', color: '#d29922',
-      title: 'gpt-term 켜짐 — 경고 있음\n' + (s.reasons || []).join('\n') };
+      title: 'gpt-skin 켜짐 — 경고 있음\n' + (s.reasons || []).join('\n') };
   }
   if (s.visible) {
-    return { text: '▮', color: '#3fb950', title: 'gpt-term 켜짐' };
+    return { text: '▮', color: '#3fb950', title: 'gpt-skin 켜짐' };
   }
-  return { text: '', color: '#30363d', title: 'gpt-term 꺼짐' };
+  return { text: '', color: '#30363d', title: 'gpt-skin 꺼짐' };
 }
 
 function paint(tabId) {

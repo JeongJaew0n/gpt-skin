@@ -1,4 +1,4 @@
-// gpt-term — MAIN world tap.
+// gpt-skin — MAIN world tap.
 // 페이지와 같은 JS 컨텍스트에서만 할 수 있는 세 가지를 담당한다.
 //   1. fetch 를 감싸 /backend-api/f/conversation 의 SSE 를 갈라 읽는다
 //   2. React fiber 에서 메시지의 마크다운 원문을 수확한다
@@ -7,7 +7,7 @@
 (() => {
   'use strict';
 
-  const CH = '__gpt_term__';
+  const CH = '__gpt_skin__';
   const STREAM_PATH = '/backend-api/f/conversation';
   const SUPPORTED_ENCODING = 'v1';
 
@@ -304,7 +304,7 @@
     return;
   }
 
-  window.fetch = function gptTermFetch(...args) {
+  window.fetch = function gptSkinFetch(...args) {
     let url = '';
     try { url = String(typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || ''); } catch (_) {}
     const isStream = url.split('?')[0].endsWith(STREAM_PATH);

@@ -1,4 +1,4 @@
-// gpt-term — 설정. 스키마는 src/shared/defaults.js 가 유일한 출처다.
+// gpt-skin — 설정. 스키마는 src/shared/defaults.js 가 유일한 출처다.
 GT.config = (function () {
   'use strict';
 

@@ -1,4 +1,4 @@
-// gpt-term — 대화 전환.
+// gpt-skin — 대화 전환.
 // location.href 로 전체 페이지를 다시 띄우면 확장이 재부팅되고,
 // 콜드 로드에서 앞쪽 턴이 빠지는 문제(docs/issue/2026-08-31-partial-thread-harvest.md)를 정통으로 밟는다.
 // 원본의 클라이언트 라우팅을 그대로 태운다.

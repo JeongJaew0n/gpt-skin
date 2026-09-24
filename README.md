@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="icons/icon128.png" width="104" alt="gpt-term">
+<img src="icons/icon128.png" width="104" alt="gpt-skin">
 
-# Scrollback
+# gpt-skin
 
 **ChatGPT 웹을 터미널 TUI 로 재구성하는 크롬 확장**
 
-<sub><code>gpt-term</code> 에서 이름을 바꿨다 — 웹스토어 제출 준비 과정에서 상표 위험을 피하려고.</sub>
+<sub>이름 이력: <code>gpt-term</code> → <code>Scrollback</code> → <code>gpt-skin</code> (2026-09-24). 저장소도 <code>gpt-web-is-terminal-now</code> 에서 <code>gpt-skin</code> 으로 바꿨다.</sub>
 
 원본 UI 를 지우지 않는다. 덮고, 우리가 자체 상태에서 다시 그린다.
 
@@ -46,7 +46,7 @@
 ### 배포 패키지 만들기
 
 ```bash
-tools/package.sh      # dist/scrollback-<version>.zip
+tools/package.sh      # dist/gpt-skin-<version>.zip
 ```
 
 화이트리스트 방식이다 — 담을 것만 적어두고 나머지는 전부 뺀다. 담기 전에
@@ -57,7 +57,7 @@ tools/package.sh      # dist/scrollback-<version>.zip
 
 | # | 할 일 | 빠뜨리면 |
 |:--:|---|---|
-| 1 | `chrome://extensions` → gpt-term 의 **↻** | 크롬이 언팩 파일을 캐시해 새 코드가 안 들어간다 |
+| 1 | `chrome://extensions` → gpt-skin 의 **↻** | 크롬이 언팩 파일을 캐시해 새 코드가 안 들어간다 |
 | 2 | **대상 탭 새로고침** | 이전 스크립트가 그 탭에 그대로 남는다 |
 | 3 | 부팅 줄의 `build` 확인 (또는 `:version`) | 값이 그대로면 ①②가 안 먹은 것 |
 

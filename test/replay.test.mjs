@@ -17,7 +17,7 @@ function replay(sse) {
   };
   sandbox.window = sandbox; sandbox.globalThis = sandbox;
   sandbox.addEventListener = () => {}; sandbox.window.addEventListener = () => {};
-  sandbox.postMessage = (m) => { if (m && m.__gpt_term__ && m.dir === 'm2i') posted.push(m); };
+  sandbox.postMessage = (m) => { if (m && m.__gpt_skin__ && m.dir === 'm2i') posted.push(m); };
   sandbox.fetch = async () => new Response(
     new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode(sse)); c.close(); } }),
     { status: 200, headers: { 'content-type': 'text/event-stream' } });

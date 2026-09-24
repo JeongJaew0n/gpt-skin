@@ -1,4 +1,4 @@
-// gpt-term — 스크롤백 재구성 계획. 순수 함수만 둔다.
+// gpt-skin — 스크롤백 재구성 계획. 순수 함수만 둔다.
 //
 // 스크롤백을 매번 통째로 다시 그리면 선택 앵커가 사라진다
 // (docs/issue/2026-09-02-selection-lost-on-rerender.md).

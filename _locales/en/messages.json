@@ -1,5 +1,5 @@
 {
-  "extName":  { "message": "Scrollback — Terminal UI for ChatGPT", "description": "Extension name" },
-  "extShort": { "message": "Scrollback", "description": "Toolbar icon tooltip" },
+  "extName":  { "message": "gpt-skin — Terminal UI for ChatGPT", "description": "Extension name" },
+  "extShort": { "message": "gpt-skin", "description": "Toolbar icon tooltip" },
   "extDesc":  { "message": "Turns the ChatGPT web app into a keyboard-driven terminal UI. Commands, an overlay chat list, and a one-key switch back.", "description": "Store short description" }
 }

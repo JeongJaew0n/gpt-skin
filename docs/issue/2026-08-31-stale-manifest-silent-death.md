@@ -38,7 +38,7 @@ GT.config 존재? false
 제거할 필요 없다.
 
 ```
-chrome://extensions → gpt-term 카드의 ↻ (다시 로드) → 페이지 새로고침
+chrome://extensions → gpt-skin 카드의 ↻ (다시 로드) → 페이지 새로고침
 ```
 
 언제 ↻ 가 필요한가:
@@ -64,7 +64,7 @@ chrome://extensions → gpt-term 카드의 ↻ (다시 로드) → 페이지 새
 3. 페이지 컨텍스트에서 MAIN world tap 에 직접 수확을 요청하고 응답을 봤다.
 
 ```js
-window.postMessage({ __gpt_term__: true, dir: 'i2m', kind: 'harvest', payload: {} }, location.origin);
+window.postMessage({ __gpt_skin__: true, dir: 'i2m', kind: 'harvest', payload: {} }, location.origin);
 // → 응답 payload: { total: 5, fiberHits: 3 }   ← fiberEligible 없음
 ```
 

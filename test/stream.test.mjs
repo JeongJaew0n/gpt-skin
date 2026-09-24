@@ -16,7 +16,7 @@ function runStream(lines) {
   sandbox.window = sandbox; sandbox.globalThis = sandbox;
   sandbox.addEventListener = () => {};
   sandbox.window.addEventListener = () => {};
-  sandbox.postMessage = (msg) => { if (msg && msg.__gpt_term__) posted.push(msg); };
+  sandbox.postMessage = (msg) => { if (msg && msg.__gpt_skin__) posted.push(msg); };
   // 원본 fetch: SSE 본문을 돌려준다
   sandbox.fetch = async () => new Response(
     new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode(lines.join('\n') + '\n')); c.close(); } }),

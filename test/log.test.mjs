@@ -26,7 +26,7 @@ function loadProtocol(cfg) {
   const p = loadProtocol(undefined);
   p.GT.log('부팅 중');
   t('config 가 없으면 찍는다', p.debug.length === 1);
-  t('접두사를 붙인다', /^\[gpt-term\]/.test(p.debug[0]));
+  t('접두사를 붙인다', /^\[gpt-skin\]/.test(p.debug[0]));
 }
 
 // --- 켜짐 ---
@@ -264,7 +264,7 @@ function loadCommands(initial) {
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
   t('preflight 오류는 console.error 로 남는다', /console\.error\(/.test(idx));
   const proto = fs.readFileSync('src/content/protocol.js', 'utf8');
-  t('핸들러 예외도 console.error 로 남는다', /console\.error\('\[gpt-term\]', err\)/.test(proto));
+  t('핸들러 예외도 console.error 로 남는다', /console\.error\('\[gpt-skin\]', err\)/.test(proto));
 }
 
 // --- :log off 는 '알아서 남기는 줄' 만 지운다 ---

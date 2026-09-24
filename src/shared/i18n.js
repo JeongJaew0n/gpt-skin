@@ -1,4 +1,4 @@
-// gpt-term — 화면 문구 사전.
+// gpt-skin — 화면 문구 사전.
 //
 // 왜 chrome.i18n 을 안 쓰나 (docs/plan/2026-09-08-i18n.md)
 //   · chrome.i18n 은 브라우저 UI 언어를 따른다. 앱 안에서 못 바꾼다.
@@ -36,7 +36,7 @@ var GT_I18N = {
     'opt.drift.threshold.help': '스트림으로 받은 본문과 원본이 이만큼 넘게 어긋나면 경고합니다. 화면은 항상 원본 쪽으로 교정되므로 경고일 뿐입니다.',
 
     'opt.log.label': '콘솔 진단 로그',
-    'opt.log.help': '개발자 콘솔에 [gpt-term] 진단 줄을 남깁니다. :log off 로도 끕니다.',
+    'opt.log.help': '개발자 콘솔에 [gpt-skin] 진단 줄을 남깁니다. :log off 로도 끕니다.',
 
     'cmd.log.desc': '콘솔 진단 로그 — :log [on|off]',
     'cmd.log.state.on': '콘솔 진단 로그: 켜짐 — :log off 로 끕니다',
@@ -133,7 +133,7 @@ var GT_I18N = {
     'opt.drift.threshold.help': 'Warn when the streamed text differs from the original by more than this. The display is always corrected to the original, so this is only a warning.',
 
     'opt.log.label': 'Console diagnostics',
-    'opt.log.help': 'Writes [gpt-term] diagnostic lines to the developer console. :log off turns it off too.',
+    'opt.log.help': 'Writes [gpt-skin] diagnostic lines to the developer console. :log off turns it off too.',
 
     'cmd.log.desc': 'Console diagnostics — :log [on|off]',
     'cmd.log.state.on': 'Console diagnostics: on — :log off to turn off',

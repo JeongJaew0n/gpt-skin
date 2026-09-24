@@ -9,7 +9,7 @@ Chrome 웹스토어 개발자 대시보드에 붙여 넣을 내용이다.
 
 > **English (대시보드 입력용)**
 >
-> Scrollback has one purpose: to re-render the ChatGPT web app (`chatgpt.com`) as a
+> gpt-skin has one purpose: to re-render the ChatGPT web app (`chatgpt.com`) as a
 > terminal-style, keyboard-driven interface. Every feature exists to display or operate
 > that one site's conversations. The extension does nothing on any other site.
 
@@ -186,7 +186,7 @@ grep -rn "postMessage(" src/                                   # 대상이 locat
 1. **비공개 API 사용** — `/backend-api/*` 는 문서화된 공개 API 가 아니다. 웹스토어 정책이
    직접 금지하지는 않지만, OpenAI 가 문제를 제기하면 리스팅이 내려갈 수 있다.
 2. **이름에 "ChatGPT" 를 쓰는 것** — 나열적 사용이고 "제휴 아님" 을 설명문·방침에 명시했다.
-   그래도 심사관 재량으로 이름 변경을 요구받을 수 있다. 그 경우 `Scrollback` 단독으로
-   내리면 된다(`docs/store/listing.md` 의 B안).
+   그래도 심사관 재량으로 이름 변경을 요구받을 수 있다. "gpt" 자체가 문제면
+   `Scrollback` 으로 되돌린다(`docs/store/listing.md` 의 C안).
 3. **호스트 사이트 구조 변경** — 원본이 바뀌면 확장이 깨진다. 배지로 알리고 설정에 따라
    원본으로 복귀한다. 리스팅 설명에 이 한계를 미리 적어 두었다.

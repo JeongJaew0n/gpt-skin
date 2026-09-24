@@ -1,4 +1,4 @@
-// gpt-term — 전송 경로.
+// gpt-skin — 전송 경로.
 // 자체 API 호출은 불가능하다. /backend-api/f/conversation 앞에 sentinel proof-of-work 가 붙고
 // 그 토큰은 페이지가 만든다. 그래서 텍스트를 원본 컴포저에 주입하고 페이지가 보내게 한다.
 GT.compose = (function () {

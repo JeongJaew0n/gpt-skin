@@ -191,7 +191,7 @@ if (ctype !== 'text' || rcp !== 'all') { /* 본문 아님 */ }
 let n = 0;
 window.addEventListener('message', (e) => {
   const d = e.data;
-  if (d && d.__gpt_term__ && d.dir === 'm2i' && d.kind === 'begin') console.log('begin', ++n, d.payload.id);
+  if (d && d.__gpt_skin__ && d.dir === 'm2i' && d.kind === 'begin') console.log('begin', ++n, d.payload.id);
 });
 ```
 

@@ -1,5 +1,5 @@
 {
-  "extName":  { "message": "Scrollback — ChatGPT 터미널 UI", "description": "확장 이름" },
-  "extShort": { "message": "Scrollback", "description": "툴바 아이콘 툴팁" },
+  "extName":  { "message": "gpt-skin — ChatGPT 터미널 UI", "description": "확장 이름" },
+  "extShort": { "message": "gpt-skin", "description": "툴바 아이콘 툴팁" },
   "extDesc":  { "message": "ChatGPT 웹을 터미널처럼 씁니다. 키보드로 대화를 넘기고 명령으로 이름·보관·삭제까지. 원본 UI 는 지우지 않고 덮어 그립니다.", "description": "스토어 짧은 설명" }
 }

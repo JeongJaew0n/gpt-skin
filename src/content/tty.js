@@ -1,11 +1,11 @@
-// gpt-term — tty 셸. shadow root 안에 전부 그린다.
+// gpt-skin — tty 셸. shadow root 안에 전부 그린다.
 // 원본 UI 는 지우지 않고 opacity 0 + pointer-events none 으로 덮는다.
 // 지우면 하이드레이션과 컴포저 포커스가 깨진다(원본은 살아 있어야 우리가 전송할 수 있다).
 GT.tty = (function () {
   'use strict';
 
-  const HOST_ID = 'gpt-term-host';
-  const HIDE_CLASS = 'gpt-term-on';
+  const HOST_ID = 'gpt-skin-host';
+  const HIDE_CLASS = 'gpt-skin-on';
   const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x !== undefined) n.textContent = x; return n; };
 
   let host = null, shadow = null, root = null, varStyle = null;
@@ -27,10 +27,10 @@ GT.tty = (function () {
 
   // 원본 UI 를 덮는 스타일은 page document 에 있어야 한다(shadow root 밖).
   function pageStyle() {
-    let s = document.getElementById('gpt-term-page-style');
+    let s = document.getElementById('gpt-skin-page-style');
     if (s) return s;
     s = document.createElement('style');
-    s.id = 'gpt-term-page-style';
+    s.id = 'gpt-skin-page-style';
     s.textContent = `
 html.${HIDE_CLASS} body > *:not(#${HOST_ID}) { opacity: 0 !important; pointer-events: none !important; }
 html.${HIDE_CLASS} { overflow: hidden !important; }
@@ -80,7 +80,7 @@ html:not(.${HIDE_CLASS}) #${HOST_ID} { display: none; }
 
     ui.dot = el('span', 'gt-dot');
     const brand = el('div'); brand.style.display = 'flex'; brand.style.alignItems = 'center'; brand.style.gap = '8px';
-    brand.appendChild(ui.dot); brand.appendChild(el('span', 'gt-dim', 'gpt-term'));
+    brand.appendChild(ui.dot); brand.appendChild(el('span', 'gt-dim', 'gpt-skin'));
     ui.title = el('div', 'gt-title', '~');
     ui.model = el('span', null, ''); ui.model.style.color = 'var(--gt-magenta)';
     ui.effort = el('span', 'gt-dim gt-effort', '');
@@ -768,7 +768,7 @@ html:not(.${HIDE_CLASS}) #${HOST_ID} { display: none; }
     // 확장이 다시 로드되면 이 스크립트는 고아가 된다. 그때 화면에서 완전히 물러난다.
     destroy() {
       document.documentElement.classList.remove(HIDE_CLASS);
-      const st = document.getElementById('gpt-term-page-style');
+      const st = document.getElementById('gpt-skin-page-style');
       if (st) st.remove();
       if (host) host.remove();
       pool.clear();

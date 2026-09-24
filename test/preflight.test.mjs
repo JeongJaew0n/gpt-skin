@@ -45,13 +45,13 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('GT_DEFAULTS 를 지목한다', /GT_DEFAULTS/.test(msg));
   t('해결 방법을 알려준다', /chrome:\/\/extensions/.test(msg) && /↻/.test(msg));
   t('제거 재설치가 불필요함을 명시', /재설치할 필요는 없습니다/.test(msg));
-  t('화면에도 배너를 띄운다', r.appended.some(n => n.id === 'gpt-term-preflight'));
+  t('화면에도 배너를 띄운다', r.appended.some(n => n.id === 'gpt-skin-preflight'));
 }
 
 {
   const r = run(ALL);
   t('정상 로드에서는 조용하다', r.errors.length === 0);
-  t('정상 로드에서는 배너 없음', !r.appended.some(n => n.id === 'gpt-term-preflight'));
+  t('정상 로드에서는 배너 없음', !r.appended.some(n => n.id === 'gpt-skin-preflight'));
 }
 
 let bad = 0;

@@ -132,7 +132,7 @@ else
 fi
 
 mkdir -p "$OUT_DIR"
-ZIP="$ROOT/$OUT_DIR/scrollback-${VERSION:-0.0.0}.zip"
+ZIP="$ROOT/$OUT_DIR/gpt-skin-${VERSION:-0.0.0}.zip"
 rm -f "$ZIP"
 (cd "$STAGE" && zip -q -r -X "$ZIP" .) || bad "zip 생성 실패"
 

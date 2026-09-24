@@ -33,7 +33,7 @@
 매니페스트는 건드리지 않은 채 페이지만 새로고침한 뒤 MAIN world 에 직접 물었다.
 
 ```js
-window.postMessage({ __gpt_term__: true, dir: 'i2m', kind: 'harvest' }, location.origin);
+window.postMessage({ __gpt_skin__: true, dir: 'i2m', kind: 'harvest' }, location.origin);
 // → { total: 5, fiberHits: 3 }      ← fiberEligible 없음 = 옛 코드가 돌고 있다
 ```
 
@@ -51,7 +51,7 @@ window.postMessage({ __gpt_term__: true, dir: 'i2m', kind: 'harvest' }, location
 | `MutationObserver` (스레드 감시) | `index.js` | 없음 |
 | `keydown` **capture: true** | `index.js` | 없음 |
 | `resize` | `index.js` | 없음 |
-| shadow root 터미널 + `html.gpt-term-on` | `tty.js` | 없음 |
+| shadow root 터미널 + `html.gpt-skin-on` | `tty.js` | 없음 |
 
 결과:
 
@@ -75,7 +75,7 @@ const observe = (obs, node, cfg) => { obs.observe(node, cfg); disposers.push(() 
 every(4000, () => { if (!contextAlive()) shutdown('확장이 다시 로드됨'); });
 ```
 
-`shutdown()` 은 disposer 를 모두 실행하고 `GT.tty.destroy()` 로 호스트·페이지 스타일·`gpt-term-on` 클래스까지 걷어낸다.
+`shutdown()` 은 disposer 를 모두 실행하고 `GT.tty.destroy()` 로 호스트·페이지 스타일·`gpt-skin-on` 클래스까지 걷어낸다.
 **고아가 되면 화면에서 완전히 물러나 원본 UI 를 돌려준다.** `pagehide` 에서도 같은 정리를 한다.
 
 ## C. `chrome://extensions` 의 오류 목록은 영구적이다 — 우리가 부추겼다
@@ -85,7 +85,7 @@ every(4000, () => { if (!contextAlive()) shutdown('확장이 다시 로드됨');
 그런데 우리 `health.soft()` 는 경고마다 `console.warn` 을 찍었다.
 
 ```js
-console.warn('[gpt-term]', reason);
+console.warn('[gpt-skin]', reason);
 ```
 
 `[가정]` 콘텐츠 스크립트의 `console.warn` 이 이 목록에 수집된다.
@@ -102,7 +102,7 @@ console.warn('[gpt-term]', reason);
 
 ### 검증 방법
 
-`chrome://extensions` → gpt-term → 오류 → **모두 지우기**.
+`chrome://extensions` → gpt-skin → 오류 → **모두 지우기**.
 그 뒤 페이지를 새로고침해서 오류가 **다시 생기는지** 본다.
 다시 안 생기면 남아 있던 건 과거 기록이다.
 
@@ -122,7 +122,7 @@ var GT_BUILD = '2026-09-01 12:38';
 터미널 부팅 줄과 `:version` 에 찍힌다.
 
 ```
-[info] gpt-term 0.1.0 · build 2026-09-01 12:38 — :help 로 명령, ^` 로 원본 토글
+[info] gpt-skin 0.1.0 · build 2026-09-01 12:38 — :help 로 명령, ^` 로 원본 토글
 ```
 
 **소스를 고쳤는데 이 값이 그대로면 확장이 다시 로드되지 않은 것이다.** 추측할 일이 없어진다.
@@ -133,7 +133,7 @@ var GT_BUILD = '2026-09-01 12:38';
 
 ```
 1. 소스 수정
-2. chrome://extensions → gpt-term 의 ↻
+2. chrome://extensions → gpt-skin 의 ↻
 3. 대상 탭 새로고침          ← 이게 빠지면 고아 스크립트가 남는다
 4. 부팅 줄의 build 값 확인 (또는 :version)
 5. 오류 목록이 거슬리면 "모두 지우기"
@@ -161,7 +161,7 @@ var GT_BUILD = '2026-09-01 12:38';
 "사이드바가 안 닫힌다"는 신고를 받고 조사했더니 DOM 상태가 이랬다.
 
 ```
-호스트존재: false      페이지스타일존재: false      클래스: (gpt-term-on 없음)
+호스트존재: false      페이지스타일존재: false      클래스: (gpt-skin-on 없음)
 ```
 
 터미널이 이미 물러난 뒤였고, 화면에 보이던 건 **원본 ChatGPT 사이드바**였다.
@@ -173,7 +173,7 @@ var GT_BUILD = '2026-09-01 12:38';
 우측 하단에 작게 띄운다.
 
 ```
-gpt-term 이 물러났다 (확장이 다시 로드됨).
+gpt-skin 이 물러났다 (확장이 다시 로드됨).
 지금 보이는 건 원본 UI 다 — 페이지를 새로고침해라.
 ```
 

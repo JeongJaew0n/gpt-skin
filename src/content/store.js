@@ -1,4 +1,4 @@
-// gpt-term — 대화 모델. 원본 DOM 을 미러링하지 않고 자체 상태를 유지한다.
+// gpt-skin — 대화 모델. 원본 DOM 을 미러링하지 않고 자체 상태를 유지한다.
 GT.store = (function () {
   'use strict';
 

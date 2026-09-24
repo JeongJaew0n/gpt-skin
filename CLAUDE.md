@@ -1,4 +1,4 @@
-# gpt-term / Scrollback — 작업 지침
+# gpt-skin — 작업 지침
 
 `chatgpt.com` 을 터미널 TUI 로 갈아끼우는 개인용 Chrome MV3 확장이다.
 아키텍처·명령어·테스트 목록은 [`README.md`](README.md) 에 있다.
@@ -53,7 +53,7 @@
 소스를 고칠 때마다 갱신한다. `:version` 이 둘을 같이 찍는다.
 
 ```
-gpt-term 0.2.0 · build 2026-09-14 10:10
+gpt-skin 0.2.0 · build 2026-09-14 10:10
          ^^^^^        ^^^^^^^^^^^^^^^^
          manifest     재로드 확인용
 ```

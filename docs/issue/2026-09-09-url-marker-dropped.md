@@ -5,7 +5,7 @@
 ```
 사용자: docker 사이트 알려줘.
 
-원본 UI                          gpt-term
+원본 UI                          gpt-skin
 ──────────────────────────       ──────────────────────────
 · Docker 공식 사이트: docker.com ↗   · Docker 공식 사이트:
 · Docker Hub: hub.docker.com ↗       · Docker Hub:

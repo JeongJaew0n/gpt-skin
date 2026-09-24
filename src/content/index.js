@@ -1,4 +1,4 @@
-// gpt-term — 오케스트레이터. 부팅 순서와 이벤트 배선만 여기 있다.
+// gpt-skin — 오케스트레이터. 부팅 순서와 이벤트 배선만 여기 있다.
 // 모듈이 하나라도 빠지면 조용히 죽지 않고 이유를 말한다.
 //
 // 크롬은 언팩 확장의 매니페스트를 캐시한다. 매니페스트에 파일을 추가한 뒤 확장을 다시 로드하지 않으면
@@ -17,15 +17,15 @@
   if (!missing.length) return;
 
   console.error(
-    '[gpt-term] 모듈이 로드되지 않았습니다: ' + missing.join(', ') +
-    '\nchrome://extensions 에서 gpt-term 카드의 ↻ 를 눌러 확장을 다시 로드한 뒤 이 페이지를 새로고침하세요. ' +
+    '[gpt-skin] 모듈이 로드되지 않았습니다: ' + missing.join(', ') +
+    '\nchrome://extensions 에서 gpt-skin 카드의 ↻ 를 눌러 확장을 다시 로드한 뒤 이 페이지를 새로고침하세요. ' +
     '(제거 후 재설치할 필요는 없습니다)'
   );
 
   const show = () => {
-    if (document.getElementById('gpt-term-preflight')) return;
+    if (document.getElementById('gpt-skin-preflight')) return;
     const box = document.createElement('div');
-    box.id = 'gpt-term-preflight';
+    box.id = 'gpt-skin-preflight';
     box.setAttribute('style', [
       'position:fixed', 'left:16px', 'right:16px', 'bottom:16px', 'z-index:2147483647',
       'background:#161b22', 'color:#c9d1d9', 'border:1px solid #f85149',
@@ -38,10 +38,10 @@
     const body = document.createElement('div');
     body.style.flex = '1';
     const l1 = document.createElement('div');
-    l1.textContent = 'gpt-term 이 로드되지 않았습니다 — ' + missing.join(', ');
+    l1.textContent = 'gpt-skin 이 로드되지 않았습니다 — ' + missing.join(', ');
     const l2 = document.createElement('div');
     l2.setAttribute('style', 'color:#8b949e;margin-top:4px');
-    l2.textContent = 'chrome://extensions 에서 gpt-term 의 ↻ 를 누르고 이 페이지를 새로고침하세요. 제거 후 재설치할 필요는 없습니다.';
+    l2.textContent = 'chrome://extensions 에서 gpt-skin 의 ↻ 를 누르고 이 페이지를 새로고침하세요. 제거 후 재설치할 필요는 없습니다.';
     body.appendChild(l1); body.appendChild(l2);
     const close = document.createElement('button');
     close.textContent = '닫기';
@@ -92,9 +92,9 @@
   // "왜 안 되지?" 를 헤매게 된다. 실제로 그렇게 헷갈린 적이 있다.
   // 작게, 그러나 눈에 보이게 알린다.
   function notifyGone() {
-    if (document.getElementById('gpt-term-gone')) return;
+    if (document.getElementById('gpt-skin-gone')) return;
     const box = document.createElement('div');
-    box.id = 'gpt-term-gone';
+    box.id = 'gpt-skin-gone';
     box.setAttribute('style', [
       'position:fixed', 'right:16px', 'bottom:16px', 'z-index:2147483647',
       'background:#161b22', 'color:#c9d1d9', 'border:1px solid #d29922',
@@ -102,7 +102,7 @@
       'display:flex', 'gap:12px', 'align-items:center', 'max-width:420px'
     ].join(';'));
     const txt = document.createElement('div');
-    txt.textContent = 'gpt-term 확장이 다시 로드 됐습니다. 기능 사용을 위해서는 페이지를 새로고침해주세요';
+    txt.textContent = 'gpt-skin 확장이 다시 로드 됐습니다. 기능 사용을 위해서는 페이지를 새로고침해주세요';
     const close = document.createElement('button');
     close.textContent = '닫기';
     close.setAttribute('style', 'background:none;border:1px solid #30363d;color:#8b949e;font:inherit;padding:2px 8px;cursor:pointer;flex:0 0 auto');
@@ -653,6 +653,6 @@
   // '점검이 멀쩡하니 켜져 있겠지' 로 추측한다 — 기본이 꺼짐이 되면서 그 추측이 틀리게 됐다.
   GT.sendToSW({ kind: 'visible', visible: GT.tty.visible() });
   GT.health.report();
-  GT.tty.system('info', `gpt-term ${GT_VERSION} · build ${GT_BUILD} — :help 로 명령, ^\` 로 원본 토글`,
+  GT.tty.system('info', `gpt-skin ${GT_VERSION} · build ${GT_BUILD} — :help 로 명령, ^\` 로 원본 토글`,
     null, { quiet: true });
 })();

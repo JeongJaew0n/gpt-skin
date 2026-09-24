@@ -23,7 +23,7 @@ vm.runInContext('globalThis.__win = window;', sandbox);
 const WIN = sandbox.__win;
 
 const send = (kind, payload) =>
-  listener({ source: WIN, data: { __gpt_term__: true, dir: 'm2i', kind, payload } });
+  listener({ source: WIN, data: { __gpt_skin__: true, dir: 'm2i', kind, payload } });
 
 const results = [];
 
@@ -50,7 +50,7 @@ results.push(['B pong 이 tap 을 깨움', sandbox.__tap === true]);
 
 // C. 다른 출처/형식 메시지는 무시
 vm.runInContext("globalThis.__noise = 0; GT.on('user', () => { globalThis.__noise++; })", sandbox);
-listener({ source: {}, data: { __gpt_term__: true, dir: 'm2i', kind: 'user', payload: {} } });
+listener({ source: {}, data: { __gpt_skin__: true, dir: 'm2i', kind: 'user', payload: {} } });
 listener({ source: sandbox.window, data: { dir: 'm2i', kind: 'user' } });
 results.push(['C 잡음 무시', sandbox.__noise === 0]);
 

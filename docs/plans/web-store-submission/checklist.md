@@ -44,7 +44,7 @@
 ## 5. 배포 패키지 스크립트
 - [x] `tools/package.sh` 작성 — 화이트리스트 방식(포함할 것만 명시)
 - [x] 제외 확인: `docs/`, `test/`, `*.dc.html`, `canvas.json`,
-      `gpt-term-tui.html`, `icons/source.png`, `.git`, `tools/`
+      `gpt-skin-tui.html`, `icons/source.png`, `.git`, `tools/`
 - [x] zip 크기 출력
 - [x] zip 내용을 매니페스트 요구 파일과 대조 (누락 0 · 금지 항목 유입 0)
 - [ ] 만든 zip 을 풀어서 언팩 로드로 정상 동작 확인 — **↻ 가 필요해 사용자 확인 대기**
@@ -71,5 +71,5 @@
 - [ ] 스크린샷 1~5장 (1280×800 또는 640×400) — 찍을 화면 목록은 `docs/store/listing.md`
 - [ ] 개발자 계정 등록 (일회성 등록비)
 - [ ] 데이터 사용 공시 체크박스 입력 — 답은 `docs/store/review-notes.md` 3절에 정리돼 있다
-- [ ] 이름 최종 결정 — 기본안은 `Scrollback — Terminal UI for ChatGPT`,
-      더 안전하게 가려면 `Scrollback` 단독 (`listing.md` B안)
+- [x] 이름 최종 결정 — `gpt-skin — Terminal UI for ChatGPT` (2026-09-24).
+      심사에서 "gpt" 가 걸리면 `Scrollback` 으로 되돌린다 (`listing.md` C안)

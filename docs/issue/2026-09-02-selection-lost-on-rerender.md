@@ -103,7 +103,7 @@ if (picked()) return;   // 선택이 있으면 입력창으로 포커스를 옮�
 
 ```js
 // 페이지 콘솔. 대화가 열린 상태에서.
-const sh = document.getElementById('gpt-term-host').shadowRoot;
+const sh = document.getElementById('gpt-skin-host').shadowRoot;
 const p = [...sh.querySelectorAll('.gt-p')].find(e => e.textContent.length > 40);
 const tn = document.createTreeWalker(p, NodeFilter.SHOW_TEXT).nextNode();
 const sel = sh.getSelection();
