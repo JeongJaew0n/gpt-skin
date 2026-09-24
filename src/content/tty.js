@@ -748,6 +748,13 @@ html:not(.${HIDE_CLASS}) #${HOST_ID} { display: none; }
     HOST_ID, HIDE_CLASS,
     get ui() { return ui; },
     get shadow() { return shadow; },
+    // 입력 위젯을 GT.prompt 에 넘긴다. 키 처리는 거기 있고, 여기는 위젯과 높이 규칙만 안다.
+    get prompt() {
+      return {
+        el: ui.input,
+        autosize() { const i = ui.input; if (!i) return; i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 240) + 'px'; }
+      };
+    },
     mount(cfg) { pageStyle(); build(); applyConfig(cfg); return root; },
     applyConfig, syncSidebar, refreshChrome, renderChrome, popup, closePopup, setSuggest,
     render, setMode, system, copy, tickSpin, syncCursorFocus,

@@ -3,7 +3,8 @@
 import fs from 'node:fs';
 
 const tty = fs.readFileSync('src/content/tty.js', 'utf8');
-const idx = fs.readFileSync('src/content/index.js', 'utf8');
+// 입력 처리는 2026-09-24 에 index.js 에서 shell/prompt.js 로 옮겼다.
+const idx = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
 const results = []; const t = (n, ok) => results.push([n, ok]);
 
 // --- 클릭 ---

@@ -283,7 +283,7 @@ function loadCommands(initial) {
 
   // 사용자가 스크린샷으로 지적한 세 줄이 전부 quiet 인가
   t('부팅 배너가 quiet', /build \$\{GT_BUILD\}[\s\S]{0,120}?quiet: true/.test(idx));
-  t('중단 알림이 quiet', /'중단 요청 \(esc\)', null, \{ quiet: true \}/.test(idx));
+  t('중단 알림이 quiet', /'중단 요청 \(esc\)', null, \{ quiet: true \}/.test(fs.readFileSync('src/content/shell/prompt.js', 'utf8')));
   t('health 경고가 quiet', /system\('warn', reason, null, \{ quiet: true \}\)/.test(health));
   t('health 오류도 quiet', /system\('error', text, null, \{ quiet: true \}\)/.test(health));
 

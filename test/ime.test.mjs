@@ -2,7 +2,8 @@
 // 이걸 전송으로 받으면 마지막 글자가 빠진 채 실행되고, 확정된 글자가 빈 입력줄에 남는다.
 import fs from 'node:fs'; import vm from 'node:vm';
 
-const idx = fs.readFileSync('src/content/index.js', 'utf8');
+// 입력 처리는 2026-09-24 에 index.js 에서 shell/prompt.js 로 옮겼다.
+const idx = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
 const results = []; const t = (n, ok) => results.push([n, ok]);
 
 // --- 실제 소스에서 판별식을 꺼내 돌린다 (테스트용으로 다시 쓰지 않는다) ---
@@ -33,7 +34,7 @@ if (line) {
   const iEnter = idx.indexOf("e.key === 'Enter' && !e.shiftKey", iInput);
   t('입력줄 핸들러 맨 앞에서 막는다', iGuard > iInput && iGuard < iTab && iGuard < iEnter);
 
-  const iWin = idx.indexOf("listen(window, 'keydown'");
+  const iWin = idx.indexOf("window.addEventListener('keydown'");
   const iWinGuard = idx.indexOf('if (composing(e)) return;', iWin);
   const iToggle = idx.indexOf("e.key === '`' && e.ctrlKey", iWin);
   t('전역 핸들러도 맨 앞에서 막는다', iWinGuard > iWin && iWinGuard < iToggle);

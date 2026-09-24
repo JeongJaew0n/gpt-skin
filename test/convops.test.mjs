@@ -79,13 +79,14 @@ t('이름 바꾸기는 입력줄에 명령을 채운다', /:rename @\$\{rec\.id\
 {
   const sbSrc = fs.readFileSync('src/content/sidebar.js', 'utf8');
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
+  const prm = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
   t('선택 모드는 기본 꺼짐', /let selecting = false/.test(sbSrc));
   t('체크박스를 그린다', /\[×\]|\[ \]/.test(sbSrc));
   t('삭제는 두 단계(armed)', /if \(armed\)/.test(sbSrc) && /정말 삭제/.test(sbSrc));
   t('무엇을 지우는지 스크롤백에 남긴다', /삭제합니다 — 되돌릴 수 없습니다/.test(sbSrc));
   t('진행 상황 표시', /삭제 중 \$\{i\}\/\$\{n\}/.test(sbSrc));
   t('실패 건을 개별로 보고', /res\.failed\.forEach/.test(sbSrc));
-  t('esc 로 빠져나온다', /GT\.sidebar\.selecting.*exitSelect|selecting\) \{ e\.preventDefault\(\); GT\.sidebar\.exitSelect/.test(idx));
+  t('esc 로 빠져나온다', /GT\.sidebar\.selecting.*exitSelect|selecting\) \{ e\.preventDefault\(\); GT\.sidebar\.exitSelect/.test(prm));
   t('선택 중에는 행 클릭이 이동이 아니라 토글', /if \(selecting\) \{ togglePick/.test(sbSrc));
 }
 

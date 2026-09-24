@@ -1,7 +1,8 @@
 // 글씨 크기 조절. 맥에서 조용히 안 먹는 실수를 막는다.
 import fs from 'node:fs';
 
-const idx = fs.readFileSync('src/content/index.js', 'utf8');
+// 전역 키는 2026-09-24 에 index.js 에서 shell/prompt.js 로 옮겼다.
+const idx = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
 const cmds = fs.readFileSync('src/content/commands.js', 'utf8');
 const defs = fs.readFileSync('src/shared/defaults.js', 'utf8');
 const results = []; const t = (n, ok) => results.push([n, ok]);
@@ -33,7 +34,7 @@ t('범위가 스키마와 명령에서 같다', /min: 10, max: 24/.test(defs) &&
 {
   const tty = fs.readFileSync('src/content/tty.js', 'utf8');
   const css = fs.readFileSync('src/content/theme.js', 'utf8');
-  const idx = fs.readFileSync('src/content/index.js', 'utf8');
+  const idx = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
 
   t('포커스 상태를 맞추는 함수가 있다', /function syncCursorFocus\(\)/.test(tty));
   t('shadow 안의 실제 포커스를 본다',
@@ -43,8 +44,8 @@ t('범위가 스키마와 명령에서 같다', /min: 10, max: 24/.test(defs) &&
     /ui\.input\.addEventListener\('focus', syncCursorFocus\)/.test(tty)
     && /ui\.input\.addEventListener\('blur', syncCursorFocus\)/.test(tty));
   t('창 focus·blur 에도 연결한다',
-    /listen\(window, 'focus', \(\) => GT\.tty\.syncCursorFocus\(\)\)/.test(idx)
-    && /listen\(window, 'blur', \(\) => GT\.tty\.syncCursorFocus\(\)\)/.test(idx));
+    /window\.addEventListener\('focus', \(\) => GT\.tty\.syncCursorFocus\(\), sig\(\)\)/.test(idx)
+    && /window\.addEventListener\('blur', \(\) => GT\.tty\.syncCursorFocus\(\), sig\(\)\)/.test(idx));
   t('켜자마자 깜빡이지 않는다', /ui\.cursor\.dataset\.focus = '0'/.test(tty));
   t('설정을 다시 입힐 때도 맞춘다', /dressCursor\(ui\.cursor\);\s*\n\s*syncCursorFocus\(\);/.test(tty));
 

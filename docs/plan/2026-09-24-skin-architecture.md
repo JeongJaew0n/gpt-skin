@@ -384,7 +384,7 @@ CSS 는 지금처럼 JS 문자열로 둔다(`theme.js` 방식). 파일을 나누
 | 단계 | 하는 일 | 버전 | 끝났다는 증거 |
 |---|---|---|---|
 | **0** | 이 문서. README 계획 표에 줄 추가 | 없음 (문서) | — |
-| **1** | `shell/prompt.js` — `index.js` 336~560행 이동. `GT.tty.ui.input` 을 어댑터로 받는다 | PATCH | IME · 기록 · 완성 · 포커스 테스트가 새 경로에서 통과. 브라우저에서 한글 `:rename 안뇽` 실측 |
+| **1** [완료] | `shell/prompt.js` — `index.js` 336~560행 이동. `GT.tty.ui.input` 을 어댑터로 받는다 (0.4.2, 2026-09-24) | PATCH | IME · 기록 · 완성 · 포커스 테스트가 새 경로에서 통과. 브라우저에서 한글 `:rename 안뇽` 실측 |
 | **2** | `shell/cover.js` `shell/clipboard.js` — `tty.js` 에서 뽑는다. `health.revert` 가 `cover` 를 부른다 | PATCH | `lifecycle` 테스트(page style 제거) 통과 |
 | **3** | `shell/skin.js` 레지스트리 + `skins/terminal.js` = `tty.js` 이동 + `register`. **`GT.tty.*` 107곳을 `GT.skin.current.*` 로.** 오버레이 세 모듈은 `overlayRoot()` | PATCH | **`GT.tty` 가 `skins/terminal.js` 밖에 없다** (테스트). 기존 1124건 통과 |
 | **4** | 설정: `skin` 키, 스킨별 항목 표시, `theme` → `terminal.theme` 이관, `:skin` `:theme` 갱신, 옵션·팝업에 스킨 선택 | MINOR | 스킨이 하나라도 `:skin` 이 목록을 내고, 옵션 화면이 터미널 항목만 보인다 |

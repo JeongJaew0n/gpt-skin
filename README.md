@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1121](https://img.shields.io/badge/테스트-1121_케이스-22C55E)
+![테스트 1148](https://img.shields.io/badge/테스트-1148_케이스-22C55E)
 
 </div>
 
@@ -228,6 +228,7 @@ src/content/                          ← 매니페스트 주입 순서
   navigate.js                         라우팅
   commands.js                         명령 레지스트리 + 자동완성
   health.js                           깨짐 감지 · 정책 적용
+  shell/prompt.js                     입력 컨트롤러 (IME 가드 · ↑↓ 기록 · Tab 완성 · 전송 · 전역 키)
   index.js                            부팅과 배선
 
 src/background/service-worker.js      배지
@@ -330,13 +331,13 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>32개 파일 · 1121 케이스</b></summary>
+<summary><b>33개 파일 · 1148 케이스</b></summary>
 
 <br>
 
 | 파일 | 케이스 | 무엇을 지키는가 |
 |---|--:|---|
-| `load` | 21 모듈 | 콘텐츠 스크립트를 매니페스트 순서대로 평가 — 로드 시점 예외 검출 |
+| `load` | 23 모듈 | 콘텐츠 스크립트를 매니페스트 순서대로 평가 — 로드 시점 예외 검출 |
 | `handshake` | 5 | MAIN↔ISOLATED 브리지 버퍼링과 `ready`/`pong` 핸드셰이크 |
 | `policy` | 17 | `onBreak` 정책과 드리프트 분류 |
 | `store` | 34 | 한 턴에 assistant 메시지가 여러 개 와도 한 줄만 남는가 · 보낸 질문이 두 줄이 되지 않는가 |
@@ -368,6 +369,7 @@ tools/test.sh
 | `popup` | 41 | 툴바 패널 — 토글 둘이 서로 독립인가, 못 쓰는 탭을 잠그는가, 글자 대비가 4.5:1 이상인가 |
 | `route` | 29 | 대화를 옮기면 이전 제목·본문이 남지 않는가 · 수확이 제목을 덮지 않는가 · esc 우선순위 |
 | `ime` | 15 | 한글 조합 중 Enter 를 전송으로 받지 않는가 |
+| `prompt` | 24 | 입력 컨트롤러 — 입력 로직이 한 벌인가 · detach 로 핸들러가 떨어지는가 · 원본을 안 가리는 스킨에서 타이핑을 뺏지 않는가 |
 
 </details>
 

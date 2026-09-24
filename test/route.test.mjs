@@ -56,24 +56,25 @@ const msg = (id, role, text) => ({ id, role, text });
 // --- 정적: 라우팅과 esc 처리 ---
 {
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
+  const prm = fs.readFileSync('src/content/shell/prompt.js', 'utf8');   // esc 처리는 전역 키와 함께 옮겨 갔다
   const tty = fs.readFileSync('src/content/tty.js', 'utf8');
 
   t('대화 id 가 없으면 수확하지 않는다', /if \(GT\.conversation\.idFromPath\(\)\) \{/.test(idx));
   t('새 대화 화면에서는 store 를 바로 비운다',
     /GT\.store\.replaceAll\(\[\], \{ path: location\.pathname, title: '' \}\)/.test(idx));
 
-  t('esc 가 생성을 멈춘다', /Escape' && GT\.compose\.stopButton\(\)/.test(idx));
-  t('멈췄다고 알려준다', /중단 요청 \(esc\)/.test(idx));
+  t('esc 가 생성을 멈춘다', /Escape' && GT\.compose\.stopButton\(\)/.test(prm));
+  t('멈췄다고 알려준다', /중단 요청 \(esc\)/.test(prm));
   t('상태줄에 esc 를 적어둔다', /esc·\^C 중단/.test(tty));
 
   // 우선순위: 선택 모드 → 사이드바 → 중단
-  const iSel = idx.indexOf("GT.sidebar.selecting");
-  const iBar = idx.indexOf("GT.sidebar.isOpen() && !GT.palette.isOpen()");
-  const iStop = idx.indexOf("GT.compose.stopButton()");
+  const iSel = prm.indexOf("GT.sidebar.selecting");
+  const iBar = prm.indexOf("GT.sidebar.isOpen() && !GT.palette.isOpen()");
+  const iStop = prm.indexOf("GT.compose.stopButton()");
   t('선택 모드가 중단보다 먼저', iSel > 0 && iSel < iStop);
   t('사이드바 닫기가 중단보다 먼저', iBar > 0 && iBar < iStop);
 
-  t('입력줄에서 처리한 esc 를 두 번 쓰지 않는다', /if \(e\.defaultPrevented\) return;/.test(idx));
+  t('입력줄에서 처리한 esc 를 두 번 쓰지 않는다', /if \(e\.defaultPrevented\) return;/.test(prm));
 }
 
 // --- 이름을 바꾼 뒤 수확이 옛 이름으로 되돌리지 않는다 ---

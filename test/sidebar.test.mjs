@@ -8,16 +8,17 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   const tty = fs.readFileSync('src/content/tty.js', 'utf8');
   const cmds = fs.readFileSync('src/content/commands.js', 'utf8');
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
+  const prm = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
   const sb = fs.readFileSync('src/content/sidebar.js', 'utf8');
 
   t('상단바에 손잡이가 있다', /gt-burger/.test(tty));
   t('손잡이는 글리프가 아니라 SVG 로 그린다', /createElementNS\([^)]*svg/.test(tty) && /'line'/.test(tty));
   t('손잡이 클릭이 toggle 로 간다', /burger\.addEventListener\('click'[\s\S]{0,120}GT\.sidebar\.toggle\(\)/.test(tty));
   t('사이드바 안에도 접기 손잡이', /gt-sb-close/.test(sb) && /toggle\(false\)/.test(sb));
-  t('Ctrl\+B 도 같은 경로', /e\.key === 'b' && e\.ctrlKey[\s\S]{0,80}GT\.sidebar\.toggle\(\)/.test(idx));
+  t('Ctrl\+B 도 같은 경로', /e\.key === 'b' && e\.ctrlKey[\s\S]{0,80}GT\.sidebar\.toggle\(\)/.test(prm));
   t(':sidebar 도 같은 경로', /GT\.sidebar\.toggle\(a === 'on'/.test(cmds));
   t('config.set 을 직접 부르는 토글이 남아 있지 않다',
-    !/config\.set\('sidebar\.visible'/.test(cmds) && !/config\.set\('sidebar\.visible'/.test(idx));
+    !/config\.set\('sidebar\.visible'/.test(cmds) && !/config\.set\('sidebar\.visible'/.test(idx) && !/config\.set\('sidebar\.visible'/.test(prm));
   t('상태가 손잡이에 반영된다', /refreshChrome/.test(tty) && /aria-expanded/.test(tty));
 }
 
@@ -160,6 +161,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
 {
   const tty = fs.readFileSync('src/content/tty.js', 'utf8');
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
+  const prm = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
   const i = tty.indexOf("root.addEventListener('mousedown'");
   const block = tty.slice(i, i + 500);
 
@@ -172,8 +174,8 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('손잡이를 누른 것도 제외', /\.gt-burger/.test(tty.slice(tty.indexOf('INSIDE_OVERLAY'), tty.indexOf('INSIDE_OVERLAY') + 160)));
   t('메뉴·팔레트도 제외', /gt-ctx/.test(tty) && /gt-palette/.test(tty));
   t('shadow 를 뚫고 실제 대상을 본다', /composedPath/.test(tty) && /hit\(e\)/.test(tty));
-  t('Escape 로도 닫힌다', /Escape' && GT\.sidebar\.isOpen\(\)/.test(idx));
-  t('팔레트가 열려 있으면 Escape 는 팔레트 몫', /!GT\.palette\.isOpen\(\)/.test(idx));
+  t('Escape 로도 닫힌다', /Escape' && GT\.sidebar\.isOpen\(\)/.test(prm));
+  t('팔레트가 열려 있으면 Escape 는 팔레트 몫', /!GT\.palette\.isOpen\(\)/.test(prm));
 
   // 선택 모드에서 행을 누르면 togglePick 이 곧바로 목록을 다시 그린다.
   // 누른 행은 그 순간 DOM 에서 떨어지고, closest 로 보면 조상이 끊겨 null 이 나와

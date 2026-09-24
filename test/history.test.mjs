@@ -3,7 +3,10 @@
 // docs/plan/2026-09-09-cite-label-and-history.md
 import fs from 'node:fs'; import vm from 'node:vm';
 
-const idx = fs.readFileSync('src/content/index.js', 'utf8');
+// 입력 처리는 2026-09-24 에 index.js 에서 shell/prompt.js 로 옮겼다.
+// 대화 전환(라우팅)은 index.js 에 남았다.
+const idx = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
+const boot = fs.readFileSync('src/content/index.js', 'utf8');
 const results = []; const t = (n, ok) => results.push([n, ok]);
 
 // ---------------------------------------------------------------- 기록 뽑기
@@ -153,14 +156,14 @@ t('처음 ↑ 에서 초안을 보관한다', /histDraft = input\.value; histIdx
 }
 
 // 나가는 문 — 안 닫으면 위치가 남아 엉뚱한 줄이 뜬다
-t('보내고 나면 위치를 비운다', /GT\.tty\.setSuggest\(null\); histReset\(\);/.test(idx));
-t('대화를 옮기면 위치를 비운다', /GT\.sidebar\.draw\(\);[\s\S]{0,120}?histReset\(\);/.test(idx));
+t('보내고 나면 위치를 비운다', /suggest\(null\); histReset\(\);/.test(idx));
+t('대화를 옮기면 위치를 비운다', /GT\.sidebar\.draw\(\);[\s\S]{0,120}?GT\.prompt\.resetHistory\(\);/.test(boot));
 t('esc 로 초안이 돌아온다', /e\.key === 'Escape' && histIdx !== null/.test(idx));
 // 기록을 보고 있지 않을 때의 esc 는 흘려보내야 생성 중단으로 간다
 t('esc 를 늘 삼키지는 않는다', /histIdx !== null\) \{/.test(idx));
 // 후보 목록이 떠 있으면 그게 먼저다
 {
-  const iSuggest = idx.indexOf("e.key === 'Escape' && GT.tty.ui.suggest");
+  const iSuggest = idx.indexOf("e.key === 'Escape' && suggestOpen");
   const iHist = idx.indexOf("e.key === 'Escape' && histIdx !== null");
   t('esc 는 후보 목록이 먼저', iSuggest > 0 && iHist > iSuggest);
 }
