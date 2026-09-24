@@ -147,6 +147,8 @@
       GT.skin.current.render();
     });
     GT.skin.attachPrompt();
+    // index.js 와 같이, 목록을 보여야 하면 부팅 때 불러온다 (안 부르면 터미널 목록이 빈 채로 뜬다)
+    if (GT.sidebar.shouldShow()) GT.sidebar.refresh();
     GT.store.replaceAll(SAMPLE('/c/abc'), { path: '/c/abc', title: '도커 정리' });
     GT.skin.show();
     setInterval(() => { if (GT.skin.visible()) GT.skin.current.renderChrome(); }, 1000);
