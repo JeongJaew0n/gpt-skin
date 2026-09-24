@@ -1,7 +1,7 @@
 // gpt-skin 빌드 스탬프.
 // 크롬은 언팩 확장 파일을 캐시한다. "고쳤는데 왜 그대로지?" 를 추측으로 풀지 않으려고 둔다.
 // 터미널 부팅 줄과 :version 에 찍힌다. 이 값이 안 바뀌면 확장이 다시 로드되지 않은 것이다.
-var GT_BUILD = '2026-09-24 23:19';
+var GT_BUILD = '2026-09-24 23:24';
 
 // 버전은 manifest.json 이 정본이다. 소스에 또 적으면 반드시 갈린다 —
 // 실제로 manifest 가 0.1.0 인 동안 :version 이 0.1.0 을 따로 들고 있었다.
@@ -29,7 +29,7 @@ var GT_SCHEMA = [
   {
     section: 'skin',
     key: 'skin', type: 'enum', def: 'terminal',
-    choices: ['terminal', 'none']
+    choices: ['terminal', 'sheet', 'none']
   },
   {
     section: 'behavior',
@@ -63,6 +63,9 @@ var GT_SCHEMA = [
   // 테마는 스킨마다 따로 고른다. 예전 'theme' 키는 부팅 때 한 번 여기로 옮긴다 (GT_MIGRATIONS).
   { section: 'display', key: 'terminal.theme', type: 'enum', def: 'modern-dark', skin: 'terminal',
     choices: ['modern-dark', 'crt-green', 'amber'], rawChoices: true },
+  { section: 'display', key: 'sheet.theme', type: 'enum', def: 'green', skin: 'sheet',
+    choices: ['green', 'blue'] },
+  { section: 'display', key: 'sheet.ribbon', type: 'bool', def: true, skin: 'sheet' },
   { section: 'display', key: 'font.family', type: 'text',
     def: "'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace" },
   { section: 'display', key: 'font.size', type: 'int', def: 13, min: 10, max: 24 },

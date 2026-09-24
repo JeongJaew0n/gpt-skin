@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "__MSG_extDesc__",
   "minimum_chrome_version": "111",
   "icons": {
@@ -70,6 +70,7 @@
         "src/content/shell/clipboard.js",
         "src/content/shell/skin.js",
         "src/content/skins/terminal.js",
+        "src/content/skins/sheet.js",
         "src/content/skins/none.js",
         "src/content/palette.js",
         "src/content/sidebar.js",
