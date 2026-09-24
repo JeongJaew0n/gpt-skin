@@ -1,57 +1,68 @@
 #!/usr/bin/env python3
-"""확장 아이콘을 그린다.
+"""확장 아이콘을 만든다.
 
-    python3 tools/make-icons.py
+    uv run --with pillow tools/make-icons.py
 
-원본 이미지를 줄이는 방식이 아니라 **크기마다 직접 그린다.**
-줄이기만 하면 16px 에서 획이 뭉개져 아무것도 안 읽힌다.
-그래서 작은 크기일수록 획을 두껍게, 여백을 좁게 잡는다.
+원본은 icons/source.png 다 — 흰 배경 위에 둥근 사각형 마크가 있는 그림.
+여기서 마크의 경계와 모서리 반지름을 재서 잘라내고, 흰 모서리를 투명으로
+바꾼 뒤 16·32·48·128·512 로 줄인다. 모서리를 그대로 두면 다크 툴바에서
+흰 귀가 드러난다.
 
-모티프는 프롬프트 `>_` 하나다. 다른 제품의 마크를 닮은 요소를 쓰지 않는다.
+2026-09-24 이전에는 `>_` 모티프를 크기마다 직접 그렸다. 지금 원본은 그림이라
+줄이는 수밖에 없다 — 16px 에서 얼굴이 읽히는지는 눈으로 확인한다.
 """
 from PIL import Image, ImageDraw
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'icons'
-
-GREEN = (63, 185, 80, 255)    # --gt-green
-INK = (13, 17, 23, 255)       # --gt-bg-1
-SS = 8                        # 8배로 그리고 줄여 계단을 없앤다
-
-# 크기별 비율. 작을수록 획을 두껍고 크게 잡는다.
-#            radius  stroke  chevron(x, ymid, half)      underscore(x0, x1, y)
-TUNE = {
-    16:  (0.20, 0.115, (0.20, 0.44, 0.21), (0.52, 0.82, 0.71)),
-    32:  (0.21, 0.105, (0.21, 0.45, 0.21), (0.53, 0.80, 0.71)),
-    48:  (0.22, 0.100, (0.22, 0.455, 0.205), (0.535, 0.79, 0.705)),
-    128: (0.22, 0.095, (0.24, 0.46, 0.20), (0.54, 0.78, 0.70)),
-}
+SRC = OUT / 'source.png'
+WHITE = 235          # 이 값 이상이면 배경(흰색)으로 본다
+SS = 4               # 마스크는 4배로 그려서 줄인다
 
 
-def draw(size):
-    radius, stroke, (cx, cy, half), (ux0, ux1, uy) = TUNE[size]
-    S = size * SS
-    im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    d.rounded_rectangle([0, 0, S - 1, S - 1], radius=int(S * radius), fill=GREEN)
+def is_bg(px):
+    return px[0] >= WHITE and px[1] >= WHITE and px[2] >= WHITE
 
-    w = max(2, int(S * stroke))
-    x, ymid, h = int(S * cx), int(S * cy), int(S * half)
-    d.line([(x, ymid - h), (x + h, ymid)], fill=INK, width=w, joint='curve')
-    d.line([(x + h, ymid), (x, ymid + h)], fill=INK, width=w, joint='curve')
-    d.line([(int(S * ux0), int(S * uy)), (int(S * ux1), int(S * uy))], fill=INK, width=w)
-    return im.resize((size, size), Image.LANCZOS)
+
+def find_mark(im):
+    """마크의 경계 상자와 모서리 반지름을 잰다."""
+    w, h = im.size
+    px = im.load()
+    xs, ys = [], []
+    step = 2
+    for y in range(0, h, step):
+        for x in range(0, w, step):
+            if not is_bg(px[x, y]):
+                xs.append(x); ys.append(y)
+    x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+    # 윗변에서 처음 마크가 나오는 x 까지의 거리가 반지름이다.
+    y = y0 + 2
+    xl = next(x for x in range(x0, x1) if not is_bg(px[x, y]))
+    r = xl - x0
+    return (x0, y0, x1 + 1, y1 + 1), r
+
+
+def cut(im):
+    box, r = find_mark(im)
+    mark = im.crop(box).convert('RGBA')
+    w, h = mark.size
+    side = min(w, h)
+    mark = mark.crop((0, 0, side, side))
+    mask = Image.new('L', (side * SS, side * SS), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        [0, 0, side * SS - 1, side * SS - 1], radius=int(r * SS * 0.97), fill=255)
+    mark.putalpha(mask.resize((side, side), Image.LANCZOS))
+    return mark, r / side
 
 
 def main():
-    for n in (16, 32, 48, 128):
-        draw(n).save(OUT / f'icon{n}.png')
-        print(f'  icons/icon{n}.png')
-    # 스토어 리스팅용 큰 아이콘 (128 과 같은 비율로 그린다)
-    TUNE[512] = TUNE[128]
-    draw(512).save(OUT / 'icon512.png')
-    print('  icons/icon512.png  (스토어 리스팅용)')
+    src = Image.open(SRC).convert('RGB')
+    mark, ratio = cut(src)
+    print(f'  원본 {src.size[0]}px → 마크 {mark.size[0]}px, 모서리 반지름 {ratio:.2f}')
+    for n in (16, 32, 48, 128, 512):
+        mark.resize((n, n), Image.LANCZOS).save(OUT / f'icon{n}.png')
+        print(f'  icons/icon{n}.png' + ('  (스토어 리스팅용)' if n == 512 else ''))
 
 
 if __name__ == '__main__':

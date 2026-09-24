@@ -82,8 +82,17 @@ const ALL = SRC.map(src).join('\n');
   t('선언한 아이콘 파일이 실제로 있다',
     need.every((n) => fs.existsSync(mf.icons[n])));
   t('스토어 리스팅용 512px 이 있다', fs.existsSync('icons/icon512.png'));
-  t('OpenAI 파생 원본을 지웠다', !fs.existsSync('icons/source.png'));
-  t('아이콘 생성기가 원본 이미지에 의존하지 않는다', !/source\.png/.test(src('tools/make-icons.py')));
+  // 2026-09-24 부터 원본은 사용자가 그린 말풍선 로봇 그림이다(OpenAI 파생 아님).
+  // 생성기는 이 원본을 잘라 줄이므로 원본이 저장소에 있어야 다시 만들 수 있다.
+  t('아이콘 원본이 있다', fs.existsSync('icons/source.png'));
+  t('아이콘 생성기가 그 원본에서 만든다', /source\.png/.test(src('tools/make-icons.py')));
+  // PNG 시그니처 + IHDR 의 폭·높이가 같아야 한다. 정사각형이 아니면 잘라낼 때 마크가 잘린다.
+  const png = fs.existsSync('icons/source.png') ? fs.readFileSync('icons/source.png') : Buffer.alloc(24);
+  t('원본은 PNG 다', png.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])));
+  t('원본은 정사각형이다', png.readUInt32BE(16) === png.readUInt32BE(20));
+  // 아이콘은 모서리가 투명해야 다크 툴바에서 흰 귀가 안 보인다 — 128px 의 (0,0) 알파를 본다.
+  // PNG 를 직접 디코드하지 않고, 컬러 타입이 RGBA(6) 인지만 확인한다.
+  t('icon128 이 알파 채널을 가진다', fs.readFileSync('icons/icon128.png')[25] === 6);
 }
 
 // --- 제출 문서가 있는지 ---
