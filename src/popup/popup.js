@@ -1,8 +1,9 @@
 // gpt-skin — 툴바 팝업.
 //
 // 아이콘을 누르면 곧바로 토글하던 것을 이 화면으로 바꿨다. 토글이 둘이라서다.
-//   · 이 탭을 터미널로        — 지금 보고 있는 탭에만. 콘텐츠 스크립트에 메시지를 쏜다
-//   · 열면 바로 터미널로      — 기본 동작. chrome.storage.sync 의 'enabled'
+//   · 이 탭에 스킨 켜기       — 지금 보고 있는 탭에만. 콘텐츠 스크립트에 메시지를 쏜다
+//   · 열면 바로 스킨으로      — 기본 동작. chrome.storage.sync 의 'enabled'
+// 위에 스킨 고르기(terminal · sheet · none)가 있다. 'skin' 에 저장하면 열린 탭이 바로 따라간다.
 //
 // 둘은 다른 것이다. 기본을 켜지 않고도 이 탭만 터미널로 볼 수 있어야 한다.
 (async function () {
@@ -86,8 +87,47 @@
 
   // ------------------------------------------------------------- 기본 동작
   const stored = await chrome.storage.sync.get(
-    { enabled: GT_DEFAULTS.enabled, locale: GT_DEFAULTS.locale });
+    { enabled: GT_DEFAULTS.enabled, locale: GT_DEFAULTS.locale, skin: GT_DEFAULTS.skin });
   GT_SET_LOCALE(stored.locale);
+  $('#skins-label').textContent = GT_T('popup.skin.label');
+  $('#tab-label').textContent = GT_T('popup.tab.label');
+  $('#default-label').textContent = GT_T('popup.default.label');
+  $('#default-help').textContent = GT_T('popup.default.help');
+
+  // ------------------------------------------------------------- 스킨 고르기
+  //
+  // 선택지는 스키마(skin 의 choices)에서 만든다. 이름은 설정 화면과 같은 사전 항목에서 괄호 설명만 뺀다
+  // ('시트 (스프레드시트)' → '시트'). 좁은 팝업에 설명까지 넣으면 줄이 넘친다.
+  const skinField = GT_SCHEMA.find((f) => f.key === 'skin');
+  let skin = skinField.choices.includes(stored.skin) ? stored.skin : skinField.def;
+  const shortName = (id) => GT_T('opt.skin.choice.' + id).replace(/\s*\([^)]*\)\s*$/, '');
+  const skinButtons = skinField.choices.map((id) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'skin';
+    b.textContent = shortName(id);
+    b.title = GT_T('opt.skin.choice.' + id);
+    b.dataset.skin = id;
+    b.setAttribute('role', 'radio');
+    b.addEventListener('click', async () => {
+      if (skin === id) return;
+      skin = id;
+      paintSkins();
+      await chrome.storage.sync.set({ skin: id });
+      // 열린 탭이 스킨을 바꾸면 보임 상태가 달라질 수 있다 (none 은 닫힌 채 시작한다). 다시 읽는다.
+      setTimeout(() => { readTab(); }, 250);
+    });
+    $('#skin-list').appendChild(b);
+    return b;
+  });
+  function paintSkins() {
+    skinButtons.forEach((b) => {
+      const on = b.dataset.skin === skin;
+      b.dataset.on = on ? '1' : '0';
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  }
+  paintSkins();
   let defOn = !!stored.enabled;
   setSwitch(ui.swDef, defOn);
 

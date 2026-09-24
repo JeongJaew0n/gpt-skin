@@ -13,11 +13,16 @@
     <span class="build" id="build"></span>
   </header>
 
+  <section class="skins">
+    <span class="skins-label" id="skins-label">스킨</span>
+    <span class="skin-list" id="skin-list" role="radiogroup"></span>
+  </section>
+
   <main class="rows">
     <button class="row" id="row-terminal" type="button" disabled>
       <span class="labels">
         <span class="line">
-          <span class="label">이 탭을 터미널로</span>
+          <span class="label" id="tab-label">이 탭에 스킨 켜기</span>
           <span class="hint">Ctrl+&#96;</span>
         </span>
         <span class="help" id="terminal-help">확인 중…</span>
@@ -27,8 +32,8 @@
 
     <button class="row" id="row-default" type="button">
       <span class="labels">
-        <span class="label">ChatGPT 를 열면 바로 터미널로</span>
-        <span class="help">꺼 두면 원본 UI 로 시작합니다.</span>
+        <span class="label" id="default-label">ChatGPT 를 열면 바로 스킨으로</span>
+        <span class="help" id="default-help">꺼 두면 원본 UI 로 시작합니다.</span>
       </span>
       <span class="sw" id="sw-default" data-on="0"><span class="knob"></span></span>
     </button>

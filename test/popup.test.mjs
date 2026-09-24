@@ -7,12 +7,15 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
 function makeDom(html) {
   const ids = [...html.matchAll(/id="([^"]+)"/g)].map((m) => m[1]);
   const nodes = new Map();
-  ids.forEach((id) => nodes.set('#' + id, {
-    id, dataset: {}, textContent: '', disabled: false, listeners: {},
+  const mk = (id) => ({
+    id, dataset: {}, textContent: '', disabled: false, listeners: {}, children: [], attrs: {},
     addEventListener(type, fn) { (this.listeners[type] = this.listeners[type] || []).push(fn); },
-    click() { (this.listeners.click || []).forEach((f) => f()); }
-  }));
-  return { querySelector: (s) => nodes.get(s) || null, _nodes: nodes };
+    click() { return Promise.all((this.listeners.click || []).map((f) => f())); },
+    appendChild(c) { this.children.push(c); return c; },
+    setAttribute(k, v) { this.attrs[k] = v; }
+  });
+  ids.forEach((id) => nodes.set('#' + id, mk(id)));
+  return { querySelector: (s) => nodes.get(s) || null, createElement: (tag) => { const n = mk(''); n.tagName = tag; return n; }, _nodes: nodes };
 }
 
 // ---- 크롬 API 스텁 ----
@@ -61,6 +64,24 @@ async function run(opts) {
 }
 
 const CHAT = { id: 7, url: 'https://chatgpt.com/c/abc' };
+
+// --- 스킨 고르기 ---
+{
+  const p = await run({ tab: CHAT, sync: { skin: 'sheet' }, state: () => ({ visible: false, degraded: false }) });
+  const btns = p.$('#skin-list').children;
+  t('스킨 버튼이 스키마 선택지만큼', btns.map((b) => b.dataset.skin).join() === 'terminal,sheet,none');
+  t('이름은 괄호 설명을 뺀 짧은 이름', btns.map((b) => b.textContent).join() === '터미널,시트,노 스킨');
+  t('긴 이름은 툴팁에', btns[1].title === '시트 (스프레드시트)');
+  t('저장된 스킨이 켜져 있다', btns[1].dataset.on === '1' && btns[1].attrs['aria-checked'] === 'true' && btns[0].dataset.on === '0');
+  await btns[2].click();
+  t('누르면 skin 에 저장한다 (열린 탭이 따라간다)', p.store.skin === 'none');
+  t('누른 버튼이 켜진다', btns[2].dataset.on === '1' && btns[1].dataset.on === '0');
+  t('토글 문구가 터미널이 아니라 스킨이다', /스킨/.test(p.$('#tab-label').textContent) && /스킨/.test(p.$('#default-label').textContent));
+}
+{
+  const p = await run({ tab: CHAT, sync: { skin: '없는스킨' }, state: () => ({ visible: false, degraded: false }) });
+  t('모르는 스킨이 저장돼 있으면 기본 스킨을 켠다', p.$('#skin-list').children[0].dataset.on === '1');
+}
 
 // --- ChatGPT 탭, 터미널 꺼짐 ---
 {
