@@ -38,7 +38,7 @@ function run(streamed, fiber, tries) {
   sb.GT = {
     on: (name, fn) => { if (name === 'verify') handler = fn; },
     store: { state: { byId: new Map([['m1', rec]]) } },
-    tty: { render: () => { rendered += 1; } },
+    skin: { current: { render: () => { rendered += 1; } } },
     health: { reconcile: (a, b) => { reconciled = [a, b]; } },
     // 마커가 없는 평범한 글이면 그대로 — 여기서는 길이 비교만 본다
     markdown: { stripMarks: (x) => String(x == null ? '' : x) },

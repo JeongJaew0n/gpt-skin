@@ -112,7 +112,7 @@ const ALL = SRC.map(src).join('\n');
 {
   // 코드 주석은 반말로 쓴다(개발자용). 사용자에게 보이는 글만 검사한다.
   const files = ['src/content/commands.js', 'src/content/sidebar.js', 'src/content/index.js',
-    'src/content/health.js', 'src/content/tty.js', 'src/content/chats.js',
+    'src/content/health.js', 'src/content/skins/terminal.js', 'src/content/chats.js',
     'src/content/palette.js', 'src/content/picker.js', 'src/content/markdown.js',
     'src/shared/defaults.js', 'src/shared/i18n.js', 'src/main/tap.js',
     'src/popup/popup.js', 'src/popup/popup.html', 'src/options/options.js', 'src/options/options.html'];

@@ -307,7 +307,7 @@ function loadStore(clock) {
 {
   const conv2 = fs.readFileSync('src/content/conversation.js', 'utf8');
   const store = fs.readFileSync('src/content/store.js', 'utf8');
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   const plan = fs.readFileSync('src/content/renderplan.js', 'utf8');
   const css = fs.readFileSync('src/content/theme.js', 'utf8');
   const mani = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
@@ -327,7 +327,7 @@ function loadStore(clock) {
   t('image.js 가 로드된다', mani.content_scripts.some((c) => (c.js || []).includes('src/content/image.js')));
   t('tty 보다 먼저 로드된다', (() => {
     const js = mani.content_scripts.find((c) => (c.js || []).includes('src/content/image.js')).js;
-    return js.indexOf('src/content/image.js') < js.indexOf('src/content/tty.js');
+    return js.indexOf('src/content/image.js') < js.indexOf('src/content/skins/terminal.js');
   })());
   t('설정 항목이 있다', /key: 'image', type: 'enum', def: 'inline'/.test(def));
   t('폭 설정도 있다', /key: 'image\.columns', type: 'int', def: 48/.test(def));

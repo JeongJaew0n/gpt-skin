@@ -194,14 +194,14 @@ function world(opt) {
 
 // --- 배선 (정적) ---
 {
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
   const cmds2 = fs.readFileSync('src/content/commands.js', 'utf8');
   const css = fs.readFileSync('src/content/theme.js', 'utf8');
   t('상단바가 pending 을 그린다', /GT\.picker\.pending/.test(tty) && /dataset\.pending/.test(tty));
   t('바꾸는 중에는 색이 다르다', /\.gt-effort\[data-pending="1"\]/.test(css));
   t('상단바가 메뉴 없이 라벨을 읽는다', /GT\.picker\.effortLabel\(\)/.test(tty));
-  t('변화가 오면 즉시 다시 그린다', /GT\.picker\.onChange\(\(\) => GT\.tty\.renderChrome\(\)\)/.test(idx));
+  t('변화가 오면 즉시 다시 그린다', /GT\.picker\.onChange\(\(\) => GT\.skin\.current\.renderChrome\(\)\)/.test(idx));
   t('스크롤백에 "바꾸는 중" 을 남기지 않는다', !/추론 수준 바꾸는 중/.test(cmds2));
 }
 
@@ -226,7 +226,7 @@ function world(opt) {
 
 // --- 배선 ---
 {
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   t('상단바 표시를 누르면 팝업', /effort\.addEventListener\('mousedown'/.test(tty));
   t('팝업이 effortChoices 를 쓴다', /GT\.picker\.effortChoices\(\)/.test(tty));
   t('바꾸는 중에는 다시 안 연다', /GT\.picker\.pending\) return;/.test(tty));

@@ -18,7 +18,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('컨텍스트 생존 확인', /chrome\.runtime && chrome\.runtime\.id/.test(src));
   t('주기적 감시', /every\(4000/.test(src));
   t('shutdown 이 disposer 를 모두 실행', /disposers\.forEach/.test(src));
-  t('shutdown 이 tty 를 해체', /GT\.tty\.destroy\(\)/.test(src));
+  t('shutdown 이 스킨을 해체', /GT\.skin\.destroy\(\)/.test(src));
   t('pagehide 로는 해체하지 않는다', !/listen\(window, 'pagehide'/.test(src));
   t('pagehide 를 쓰지 않는 이유가 적혀 있다', /bfcache/.test(src));
   t('중복 shutdown 방지', /if \(gone\) return;/.test(src));
@@ -26,10 +26,12 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
 
 // 3. tty.destroy 는 흔적을 남기지 않아야 한다
 {
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   // 흔적 지우기는 2026-09-24 에 GT.cover.remove() 로 옮겼다. tty.destroy 는 그걸 부른다.
   const cover = fs.readFileSync('src/content/shell/cover.js', 'utf8');
-  t('destroy 가 cover 를 걷는다', /destroy\(\)[\s\S]{0,120}GT\.cover\.remove\(\)/.test(tty));
+  // 스킨의 destroy 가 무엇이든 GT.skin.destroy 가 cover 를 걷는다 — 스킨이 잊어도 흔적이 남지 않게.
+  const skinJs = fs.readFileSync('src/content/shell/skin.js', 'utf8');
+  t('destroy 가 cover 를 걷는다', /destroy\(\) \{\s*\n\s*try \{ this\.current\.destroy\(\); \} finally \{ GT\.cover\.remove\(\); \}/.test(skinJs));
   const rm = (/remove\(\) \{([\s\S]*?)\n    \}/.exec(cover) || [])[1] || '';
   t('cover.remove 가 클래스를 뗀다', /classList\(\)\.remove\(ON_CLASS\)|cls\(\)\.remove\(ON_CLASS\)/.test(rm));
   t('cover.remove 가 페이지 스타일을 지운다', /getElementById\(STYLE_ID\)[\s\S]{0,40}st\.remove\(\)/.test(rm));

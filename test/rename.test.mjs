@@ -14,7 +14,7 @@ function load(path) {
     chats: { projects: () => [] },
     store: { state: { messages: [], superseded: 0, orphanDeltas: 0, conversationTitle: '' },
              setTitle: (t) => calls.title.push(t) },
-    tty: { system: (lvl, txt) => out.push(lvl + ':' + (txt || '')), applyConfig(){}, render(){}, ui: { input: {} } },
+    skin: { hide(){}, current: { system: (lvl, txt) => out.push(lvl + ':' + (txt || '')), applyConfig(){}, render(){} } },
     sidebar: { chats: () => [{ id: 'aaaa1111-x', title: '다른 대화', href: '/c/aaaa1111-x' }], isOpen: () => false },
     convops: { rename: async (id, name) => { calls.rename.push({ id, name }); return true; } },
     conversation: { idFromPath: () => (path.startsWith('/c/') ? path.slice(3) : null) },

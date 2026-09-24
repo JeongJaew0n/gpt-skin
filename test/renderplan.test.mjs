@@ -80,7 +80,7 @@ const P = (...ks) => ks.map((k) => ({ key: k, sig: k + '@1' }));
 
 // --- 배선 (정적) ---
 {
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
 
   t('스크롤백을 통째로 비우지 않는다', !/ui\.scroll\.textContent = ''/.test(tty));
@@ -92,7 +92,7 @@ const P = (...ks) => ks.map((k) => ({ key: k, sig: k + '@1' }));
   t('시각은 자리에서 갱신', /function refreshTimes/.test(tty) && /\.gt-stamp/.test(tty));
   t('경과시간도 자리에서', /\.gt-elapsed/.test(tty));
   t('설정이 바뀌면 epoch 증가', /epoch \+= 1/.test(tty));
-  t('설정 변경 후 다시 그린다', /applyConfig\(c\);[\s\S]{0,120}?GT\.tty\.render\(\)/.test(idx));
+  t('설정 변경 후 다시 그린다', /applyConfig\(c\);[\s\S]{0,120}?GT\.skin\.current\.render\(\)/.test(idx));
   t('해체 시 풀도 비운다', /pool\.clear\(\)/.test(tty));
   t('id 없는 메시지를 버리지 않는다', /'i:' \+ i/.test(tty));
   t('여분 노드를 정리한다', /while \(ui\.scroll\.children\.length > next\.length\)/.test(tty));

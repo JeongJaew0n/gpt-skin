@@ -134,7 +134,7 @@ html.gpt-skin-on body > *:not(#gpt-skin-host) { opacity: 0; pointer-events: none
 ```
 
 규칙 하나로 요약된다 — **core 와 shell 은 `GT.skin.current` 만 부른다. `GT.tty` 는 사라진다.**
-(`GT.tty` 라는 이름은 `skins/terminal.js` 안에만 남는다.)
+(3단계에서 `GT.tty` 라는 이름은 완전히 없앴다. terminal.js 는 등록만 하고 전역 이름을 만들지 않는다.)
 
 ### 2.2 스킨 계약 (interface)
 
@@ -190,6 +190,19 @@ GT.skins.register('terminal', {
   ui: {}                                // 스킨이 밖에 보여 주고 싶은 요소. 계약 밖 — 다른 모듈이 의존하면 안 된다
 });
 ```
+
+**구현에서 달라진 점** <sub>3단계, 2026-09-24</sub> — 정본은 `src/content/shell/skin.js` 의 `FIELDS` · `METHODS` 다.
+
+| 무엇 | 왜 |
+|---|---|
+| `syncSidebar()` 추가 | 사이드바는 떠 있는 층이 아니라 **터미널 레이아웃 안(본문 옆)에 끼워진다.** 어디에 둘지는 스킨이 정한다. 사이드바가 부르던 `syncSidebar` + `refreshChrome` 쌍을 하나로 합쳤다 |
+| `syncFocus()` 추가 | 창 포커스에 따라 커서를 멈춘다 (`syncCursorFocus` 의 계약 이름). prompt 가 창 focus·blur 에서 부른다 |
+| `bell()` 추가 | 시각 벨. index.js 가 `ui.mode` 를 직접 뒤집던 것을 스킨 안으로 |
+| `show` `hide` `visible` 은 스킨이 아니라 `GT.skin` 에 | 셋 다 cover 의 일이다. `GT.skin.show()` = cover 켜기 + `current.focus()` |
+| `GT.skin.mount` · `destroy` 가 cover 를 맡는다 | `mount` 앞에 `cover.apply(covers)`, `destroy` 는 `finally` 로 `cover.remove()`. 스킨이 흔적 지우기를 잊어도 남지 않는다 |
+| `GT.prompt.fill(text)` | 사이드바 메뉴와 팔레트가 `ui.input.value` 에 명령을 채우던 것. 입력줄은 prompt 의 것이다 |
+| `localCount` `popup` `closePopup` `refreshChrome` 은 계약 밖 | 밖에서 부르는 곳이 없었다 |
+| `switch()` 는 아직 없다 | 두 번째 스킨이 생기는 5단계에서 만든다. 확인할 수 없는 전환 코드를 먼저 두지 않는다 |
 
 `ui` 는 남기지만 **계약이 아니다.** 지금 `index.js` 가 `ui.mode` `ui.suggest` `ui.input` 을 직접 만지는데,
 그건 전부 `setMode` `setSuggest` `prompt.el` 로 흡수된다. 남는 `ui` 접근이 있으면 테스트가 잡는다 (§5).
@@ -266,6 +279,10 @@ GT.cover = {
 `health.js` 의 `revert` 는 `GT.tty.hide()` → `GT.skin.hide()` 로 바뀐다. none 스킨에서는 명령줄을 접는다는 뜻이 된다.
 
 ### 2.6 `overlay.js` — 사이드바 · 팔레트 · 피커의 자리
+
+> **3단계에서 확인한 사실** — 사이드바는 오버레이가 아니다. 터미널이 레이아웃 안(`ui.middle`, 본문 앞)에
+> 끼워 넣는다. 그래서 계약에 `syncSidebar()` 를 두었다. 컨텍스트 메뉴 · 팔레트 · 폭 조절만 `overlayRoot()` 위에 뜬다.
+> none 스킨은 사이드바를 자기 오버레이 루트에 띄우는 식으로 `syncSidebar()` 를 구현하게 된다. `[가정]`
 
 세 모듈이 `GT.tty.shadow.querySelector('.gt-root')` 로 자리를 찾는다. 이것을
 `GT.skin.current.overlayRoot()` 로 바꾼다. **그 외에는 손대지 않는다** — 오버레이는 이미
@@ -386,7 +403,7 @@ CSS 는 지금처럼 JS 문자열로 둔다(`theme.js` 방식). 파일을 나누
 | **0** | 이 문서. README 계획 표에 줄 추가 | 없음 (문서) | — |
 | **1** [완료] | `shell/prompt.js` — `index.js` 336~560행 이동. `GT.tty.ui.input` 을 어댑터로 받는다 (0.4.2, 2026-09-24) | PATCH | IME · 기록 · 완성 · 포커스 테스트가 새 경로에서 통과. 브라우저에서 한글 `:rename 안뇽` 실측 |
 | **2** [완료] | `shell/cover.js` `shell/clipboard.js` — `tty.js` 에서 뽑는다 (0.4.3, 2026-09-24). `health.revert` 는 `GT.tty.hide()` → cover 로 이미 이어지고, `GT.skin.hide()` 로 바꾸는 것은 3단계에서 한다 | PATCH | `lifecycle` 테스트(page style 제거) 통과 |
-| **3** | `shell/skin.js` 레지스트리 + `skins/terminal.js` = `tty.js` 이동 + `register`. **`GT.tty.*` 107곳을 `GT.skin.current.*` 로.** 오버레이 세 모듈은 `overlayRoot()` | PATCH | **`GT.tty` 가 `skins/terminal.js` 밖에 없다** (테스트). 기존 1124건 통과 |
+| **3** [완료] | `shell/skin.js` 레지스트리 + `skins/terminal.js` = `tty.js` 이동 + `register`. **`GT.tty.*` 107곳을 `GT.skin.current.*` 로.** 오버레이 세 모듈은 `overlayRoot()` (0.4.4, 2026-09-24). 역할별로 커밋을 나누지 않고 한 커밋으로 했다 — 중간 상태마다 테스트를 통과시키려면 스텁을 두 벌 들고 가야 해서 오히려 위험했다 | PATCH | **`GT.tty` 가 `skins/terminal.js` 밖에 없다** (테스트). 기존 1124건 통과 |
 | **4** | 설정: `skin` 키, 스킨별 항목 표시, `theme` → `terminal.theme` 이관, `:skin` `:theme` 갱신, 옵션·팝업에 스킨 선택 | MINOR | 스킨이 하나라도 `:skin` 이 목록을 내고, 옵션 화면이 터미널 항목만 보인다 |
 | **5** | `skins/none.js` — 명령줄 · 토스트 · `covers:false` · `capturesTyping:false` | MINOR | `:skin none` 에서 원본이 온전하고 `:ls` `:rename` `Ctrl+B` 가 된다. `Ctrl+\`` 로 명령줄이 접힌다 |
 | **6** | `markdown.lines()` + 행 단위 `renderplan` (core) | PATCH | 순수 함수 테스트. 화면 변화 없음 |
@@ -436,7 +453,7 @@ CSS 는 지금처럼 JS 문자열로 둔다(`theme.js` 방식). 파일을 나누
 
 | 검사 | 왜 |
 |---|---|
-| `GT.tty` 참조가 `skins/terminal.js` 밖에 없다 | 계약 우회를 막는다. 3단계 뒤 영구 |
+| `GT.tty` 참조가 어디에도 없다 (terminal.js 도 `GT.tty` 를 만들지 않는다) | 계약 우회를 막는다. 3단계 뒤 영구 — `test/skin.test.mjs` |
 | `GT.skin.current.ui.` 참조가 core/shell 에 없다 | `ui` 는 계약이 아니다 |
 | 등록된 모든 스킨이 §2.2 의 키를 전부 갖는다 | 빠진 채 부팅되면 `:skin` 전환 때 죽는다 |
 | `prompt.js` 에 IME 가드가 있고 `skins/` 에는 `isComposing` 이 없다 | 가드가 한 곳에만 있어야 한다 |

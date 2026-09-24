@@ -315,7 +315,7 @@ mode('number');
 // --- 배선 ---
 {
   const conv = fs.readFileSync('src/content/conversation.js', 'utf8');
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   const plan = fs.readFileSync('src/content/renderplan.js', 'utf8');
   const store = fs.readFileSync('src/content/store.js', 'utf8');
   t('API 가 content_references 를 실어준다', /content_references/.test(conv) && /refs: toRefs\(m\.metadata\)/.test(conv));

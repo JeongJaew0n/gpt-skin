@@ -37,8 +37,9 @@ function boot({ capturesTyping = true } = {}) {
     console, Object, Array, String, JSON, Promise, setTimeout, AbortController, Event,
     window: win,
     GT: {
-      tty: { setSuggest: (l) => calls.suggest.push(l), setMode() {}, syncCursorFocus() {}, system() {},
-             focus: () => { calls.focus++; }, visible: () => true },
+      skin: { visible: () => true,
+              current: { setSuggest: (l) => calls.suggest.push(l), setMode() {}, syncFocus() {}, system() {},
+                         focus: () => { calls.focus++; } } },
       store: { isStreaming: () => false, userHistory: () => ['첫째', '둘째'], userSent() {} },
       commands: { parse: (l) => /^:/.test(l), complete: () => ({ candidates: [] }), applyCompletion: () => null,
                   run: async (x) => { calls.run.push(x); return x.startsWith(':'); }, openPalette() {} },

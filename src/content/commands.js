@@ -3,9 +3,9 @@ GT.commands = (function () {
   'use strict';
 
   const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x !== undefined) n.textContent = x; return n; };
-  const info = (t) => GT.tty.system('info', t);
-  const warn = (t) => GT.tty.system('warn', t);
-  const err = (t) => GT.tty.system('error', t);
+  const info = (t) => GT.skin.current.system('info', t);
+  const warn = (t) => GT.skin.current.system('warn', t);
+  const err = (t) => GT.skin.current.system('error', t);
 
   const table = (rows) => {
     const box = el('div');
@@ -31,7 +31,7 @@ GT.commands = (function () {
   const def = (name, desc, run, hint, args) => { REG.push({ name, desc, run, hint, args }); };
 
   def(':help', '명령 목록', () => {
-    GT.tty.system('info', null, table(REG.map((c) => [c.name, c.desc])));
+    GT.skin.current.system('info', null, table(REG.map((c) => [c.name, c.desc])));
   });
 
   def(':new', '새 대화', () => { GT.navigate.newChat(); });
@@ -51,7 +51,7 @@ GT.commands = (function () {
     const rows = flat.map((r) => r.kind === 'header'
       ? ['', r.label, '']
       : [String(++i), r.title, r.pinned ? '★' : '']);
-    GT.tty.system('info', null, table(rows));
+    GT.skin.current.system('info', null, table(rows));
     info(`${lastList.length} / ${g.total}개 (출처: ${g.source}) — :open <n>`);
     if (g.hasMore) info(`${g.total - g.loaded}개가 더 있습니다 — :sidebar more`);
   });
@@ -161,7 +161,7 @@ GT.commands = (function () {
 
     if (!want) {
       if (!projects.length) return err('프로젝트 목록이 비어 있습니다 — :ls 로 목록을 먼저 불러오세요');
-      GT.tty.system('info', null, table(projects.map((p, i) => [String(i), p.name, ''])));
+      GT.skin.current.system('info', null, table(projects.map((p, i) => [String(i), p.name, ''])));
       return info(`:mv ${args[0]} <번호|이름>  ·  빼려면 :mv ${args[0]} none`);
     }
 
@@ -203,7 +203,7 @@ GT.commands = (function () {
     if (!btn) return err('원본의 공유 버튼을 찾지 못했습니다 — 창이 좁으면 숨겨집니다');
 
     // 대화상자는 원본 UI 위에 뜬다. 터미널을 덮어둔 채로는 보이지 않는다.
-    GT.tty.hide();
+    GT.skin.hide();
     btn.click();
     warn('원본 공유 대화상자를 열었습니다 — 링크를 만들면 대화가 공개됩니다. 끝나면 ^` 로 돌아오세요');
   });
@@ -219,7 +219,7 @@ GT.commands = (function () {
       const n = Number(args[1]);
       if (!Number.isInteger(n)) return err(':sidebar width <16-80>');
       await GT.config.set('sidebar.width', n);
-      GT.tty.applyConfig(GT.config.all);
+      GT.skin.current.applyConfig(GT.config.all);
       return info(`sidebar.width = ${n}`);
     }
     if (a === 'clear-cache') {
@@ -249,8 +249,8 @@ GT.commands = (function () {
     next = Math.max(MIN, Math.min(MAX, next));
     if (next === cur) return info(`이미 ${cur}px`);
     await GT.config.set('font.size', next);
-    GT.tty.applyConfig(GT.config.all);
-    GT.tty.render();
+    GT.skin.current.applyConfig(GT.config.all);
+    GT.skin.current.render();
     info(`글씨 크기 ${cur} → ${next}px`);
   }, null, () => ['+', '-', 'reset', '12', '13', '15', '17']);
 
@@ -259,13 +259,13 @@ GT.commands = (function () {
     if (!name) return info(`현재 ${GT.config.get('theme')} · 가능: ${GT.theme.names().join(', ')}`);
     if (!GT.theme.names().includes(name)) return err(`알 수 없는 테마: ${name}`);
     await GT.config.set('theme', name);
-    GT.tty.applyConfig(GT.config.all);
+    GT.skin.current.applyConfig(GT.config.all);
     info(`theme = ${name}`);
   }, 'modern-dark', () => GT.theme.names());
 
   def(':config', '설정 전체 보기', () => {
     const cfg = GT.config.all;
-    GT.tty.system('info', null, table(GT.config.keys().map((k) => [k, cfg[k], k === 'enabled' ? '' : ''])));
+    GT.skin.current.system('info', null, table(GT.config.keys().map((k) => [k, cfg[k], k === 'enabled' ? '' : ''])));
     info(':set <key> <value> 로 바꿉니다');
   });
 
@@ -275,8 +275,8 @@ GT.commands = (function () {
     if (!GT.config.has(k)) return err(`알 수 없는 키: ${k}`);
     try {
       const v = await GT.config.set(k, rest.join(' '));
-      GT.tty.applyConfig(GT.config.all);
-      GT.tty.render();
+      GT.skin.current.applyConfig(GT.config.all);
+      GT.skin.current.render();
       info(`${k} = ${v}`);
     } catch (e) { err(String(e.message || e)); }
   }, null, (prev) => (prev.length ? [] : GT.config.keys()));
@@ -289,7 +289,7 @@ GT.commands = (function () {
     if (!args.length) {
       const list = await GT.picker.models();
       if (!list || !list.length) return err('모델 목록을 읽지 못했습니다');
-      GT.tty.system('info', null, table(list.map((m) => [String(m.index), m.label, m.current ? '● 현재' : ''])));
+      GT.skin.current.system('info', null, table(list.map((m) => [String(m.index), m.label, m.current ? '● 현재' : ''])));
       if (last) info(`직전 응답 모델 슬러그: ${last.model}`);
       return info(':model <번호|이름> 으로 전환합니다');
     }
@@ -345,7 +345,7 @@ GT.commands = (function () {
     if (a === 'dump' || a === 'show') {
       const rows = GT.logs(args[1]);
       if (!rows.length) return info(GT_T('cmd.log.empty'));
-      GT.tty.system('info', null, table(rows.map((r) => [
+      GT.skin.current.system('info', null, table(rows.map((r) => [
         new Date(r.at).toLocaleTimeString(undefined, { hour12: false }), r.line
       ])));
       return info(GT_T('cmd.log.dumped', rows.length, GT.logCount()));
@@ -354,7 +354,7 @@ GT.commands = (function () {
     // 스크롤백의 진단 줄까지 같이 걷어낸다. 대화는 건드리지 않는다.
     if (a === 'clear') {
       const buffered = GT.logClear();
-      const onScreen = GT.tty.clearSystem();
+      const onScreen = GT.skin.current.clearSystem();
       return info(GT_T('cmd.log.cleared', buffered, onScreen));
     }
 
@@ -374,7 +374,7 @@ GT.commands = (function () {
 
   def(':health', '점검 상태와 경고 목록', () => {
     const rows = Object.entries(GT.health.CHECKS).map(([k, v]) => [k, v.ok ? 'ok' : 'FAIL', v.label]);
-    GT.tty.system('info', null, table(rows));
+    GT.skin.current.system('info', null, table(rows));
     const rs = GT.health.reasons;
     if (rs.length) rs.forEach((r) => warn(r)); else info('경고 없음');
     const sup = GT.store.state.superseded;
@@ -454,14 +454,14 @@ export async function ${pick(VERBS).replace(/ing$/, '')}${n[0].toUpperCase() + n
   def(':messup', '화면에만 가짜 출력을 끼워 넣습니다 — :messup [횟수|clear]', (args) => {
     const a = (args[0] || '').toLowerCase();
     if (a === 'clear' || a === 'off') {
-      const n = GT.tty.clearLocal();
+      const n = GT.skin.current.clearLocal();
       info(n ? `끼워 넣은 블록 ${n}개를 걷어냈습니다` : '걷어낼 것이 없습니다');
       return;
     }
     let n = parseInt(a, 10);
     if (!Number.isFinite(n) || n < 1) n = 1;
     n = Math.min(n, 10);
-    for (let i = 0; i < n; i += 1) GT.tty.local(messup());
+    for (let i = 0; i < n; i += 1) GT.skin.current.local(messup());
     info(`${n}개 끼워 넣었습니다 — 서버로 가지 않습니다. :messup clear 로 걷어냅니다`);
   }, null, (prev) => (prev.length ? [] : ['clear']));
 
@@ -552,8 +552,7 @@ export async function ${pick(VERBS).replace(/ing$/, '')}${n[0].toUpperCase() + n
     commonPrefix,
     openPalette() {
       GT.palette.open(REG.map((c) => ({ name: c.name, desc: c.desc, hint: c.hint })), (item) => {
-        GT.tty.ui.input.value = item.name + ' ';
-        GT.tty.focus();
+        GT.prompt.fill(item.name + ' ');
       });
     }
   };

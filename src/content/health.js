@@ -62,11 +62,11 @@ GT.health = (function () {
       if (p === 'ignore') { report(); return; }
 
       warned = true;
-      try { GT.tty.system('error', text, null, { quiet: true }); } catch (_) {}
+      try { GT.skin.current.system('error', text, null, { quiet: true }); } catch (_) {}
 
       if (p === 'revert' && !reverted) {
         reverted = true;
-        try { GT.tty.setMode('BROKEN'); GT.tty.hide(); } catch (_) {}
+        try { GT.skin.current.setMode('BROKEN'); GT.skin.hide(); } catch (_) {}
         GT.log('원본 UI 로 복귀:', text);
       }
       report();
@@ -76,7 +76,7 @@ GT.health = (function () {
     soft(reason) {
       if (!note(reason)) return;
       warned = true;
-      try { GT.tty.system('warn', reason, null, { quiet: true }); } catch (_) {}
+      try { GT.skin.current.system('warn', reason, null, { quiet: true }); } catch (_) {}
       report();
     },
 

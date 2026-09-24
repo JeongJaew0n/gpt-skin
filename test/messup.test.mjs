@@ -45,9 +45,9 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
     theme: { names: () => ['modern-dark'] }, config: { keys: () => [], get: () => 13, DEFAULTS: {} },
     chats: { projects: () => [] },
     store: { state: { messages: [], superseded: 0, orphanDeltas: 0, conversationTitle: '' } },
-    tty: { system: (l, x) => said.push(l + ':' + x), applyConfig() {}, render() {}, ui: { input: {} },
-      local: (x) => local.push(x), localCount: () => local.length,
-      clearLocal() { const n = local.length; local.length = 0; return n; } },
+    skin: { hide() {}, current: { system: (l, x) => said.push(l + ':' + x), applyConfig() {}, render() {},
+      local: (x) => local.push(x),
+      clearLocal() { const n = local.length; local.length = 0; return n; } } },
     sidebar: { chats: () => [], isOpen: () => false }, convops: {},
     conversation: { idFromPath: () => 'x' }, picker: {}, navigate: {},
     health: { CHECKS: {}, reasons: [] }, palette: {}, oai: {}, compose: {}
@@ -85,7 +85,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
 
 // ---- 배선 ----
 {
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   const cmds = fs.readFileSync('src/content/commands.js', 'utf8');
   t('순서 규칙은 renderplan 이 갖는다', /GT\.renderplan\.interleave\(keys, localLog\)/.test(tty));
   t('전용 렌더가 있다', /function turnLocal\(/.test(tty));

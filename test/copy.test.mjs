@@ -164,7 +164,7 @@ function iconKind(b) {
 // --- 정적: 연결되지 않은 가짜 힌트가 남아 있지 않다 ---
 {
   const md = fs.readFileSync('src/content/markdown.js', 'utf8');
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   const clip = fs.readFileSync('src/content/shell/clipboard.js', 'utf8');
   const css = fs.readFileSync('src/content/theme.js', 'utf8');
   t("동작하지 않는 'yank/write/open' 힌트를 걷어냈다", !/yank/.test(md));

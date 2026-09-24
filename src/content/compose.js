@@ -54,7 +54,7 @@ GT.compose = (function () {
       });
     }
     await raf();
-    GT.tty.focus();
+    GT.skin.current.focus();
     return { ok: true, via: btn ? 'button' : 'enter' };
   }
 

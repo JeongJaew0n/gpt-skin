@@ -23,7 +23,7 @@ t('+ · - · reset 를 받는다',
 t('숫자도 받는다', cmds.includes(String.raw`/^\d+$/.test(a)`));
 t('범위를 벗어나지 않게 고정', /Math\.max\(MIN, Math\.min\(MAX, next\)\)/.test(cmds));
 t('reset 은 스키마 기본값을 쓴다', /DEFAULTS\['font\.size'\]/.test(cmds));
-t('바꾼 뒤 다시 그린다', /applyConfig\(GT\.config\.all\);\s*\n\s*GT\.tty\.render\(\)/.test(cmds));
+t('바꾼 뒤 다시 그린다', /applyConfig\(GT\.config\.all\);\s*\n\s*GT\.skin\.current\.render\(\)/.test(cmds));
 t('인자 없으면 현재값과 사용법', /글씨 크기 \$\{cur\}px/.test(cmds));
 
 // --- 설정 ---
@@ -32,7 +32,7 @@ t('범위가 스키마와 명령에서 같다', /min: 10, max: 24/.test(defs) &&
 
 // --- 입력줄 커서는 포커스가 있을 때만 깜빡인다 ---
 {
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   const css = fs.readFileSync('src/content/theme.js', 'utf8');
   const idx = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
 
@@ -44,8 +44,8 @@ t('범위가 스키마와 명령에서 같다', /min: 10, max: 24/.test(defs) &&
     /ui\.input\.addEventListener\('focus', syncCursorFocus\)/.test(tty)
     && /ui\.input\.addEventListener\('blur', syncCursorFocus\)/.test(tty));
   t('창 focus·blur 에도 연결한다',
-    /window\.addEventListener\('focus', \(\) => GT\.tty\.syncCursorFocus\(\), sig\(\)\)/.test(idx)
-    && /window\.addEventListener\('blur', \(\) => GT\.tty\.syncCursorFocus\(\), sig\(\)\)/.test(idx));
+    /window\.addEventListener\('focus', \(\) => GT\.skin\.current\.syncFocus\(\), sig\(\)\)/.test(idx)
+    && /window\.addEventListener\('blur', \(\) => GT\.skin\.current\.syncFocus\(\), sig\(\)\)/.test(idx));
   t('켜자마자 깜빡이지 않는다', /ui\.cursor\.dataset\.focus = '0'/.test(tty));
   t('설정을 다시 입힐 때도 맞춘다', /dressCursor\(ui\.cursor\);\s*\n\s*syncCursorFocus\(\);/.test(tty));
 

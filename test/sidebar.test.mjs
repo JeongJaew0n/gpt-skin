@@ -5,7 +5,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
 
 // --- 1. 정적: 토글 경로가 하나인가 ---
 {
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   const cmds = fs.readFileSync('src/content/commands.js', 'utf8');
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
   const prm = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
@@ -58,7 +58,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   const nav = [];
   sandbox.GT = {
     config: { get: (k) => cfg[k], set: async (k, v) => { cfg[k] = v; } },
-    tty: { syncSidebar(){}, refreshChrome(){}, focus(){}, shadow: { querySelector: () => null } },
+    skin: { current: { syncSidebar(){}, focus(){}, system(){}, overlayRoot: () => null } },
     palette: {},
     navigate: { to: (href) => nav.push(href) },
     chats: { load: async () => ({ pinned: [], projects: [], chats: [], total: 0, loaded: 0, hasMore: false, source: 'api' }),
@@ -100,8 +100,8 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   sandbox.window = sandbox; sandbox.globalThis = sandbox;
   sandbox.GT = {
     config: { get: (k) => cfg[k], set: async (k, v) => { cfg[k] = v; } },
-    tty: { syncSidebar(){}, refreshChrome(){}, focus(){}, ui:{ input:{ value:'' } },
-           shadow: { querySelector: () => null } },
+    skin: { current: { syncSidebar(){}, focus(){}, system(){}, overlayRoot: () => null } },
+    prompt: { fill() { return true; } },
     palette: {}, navigate: { to: (h) => nav.push(h) },
     chats: { load: async () => ({ pinned: [], projects: [], chats: [], total: 0, loaded: 0, hasMore: false, source: 'api' }),
              flatten: () => [] }
@@ -159,7 +159,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
 
 // --- 7. 본문을 누르면 목록이 비켜난다 (오버레이 기본 동작) ---
 {
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
   const prm = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
   const i = tty.indexOf("root.addEventListener('mousedown'");

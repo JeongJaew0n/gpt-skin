@@ -10,7 +10,7 @@ function load() {
     config: { keys: () => ['theme', 'font.size', 'sidebar.visible'], get: () => 13, DEFAULTS: {} },
     chats: { projects: () => [{ id: 'g1', name: '세무사' }, { id: 'g2', name: '공부2' }] },
     store: { state: { messages: [], superseded: 0, orphanDeltas: 0 } },
-    tty: { system(){}, applyConfig(){}, render(){}, ui: { input: {} } },
+    skin: { current: { system(){}, applyConfig(){}, render(){} }, hide(){} },
     sidebar: { chats: () => [], isOpen: () => false },
     picker: {}, navigate: {}, convops: {}, health: { CHECKS: {}, reasons: [] },
     conversation: {}, palette: {}, oai: {}, compose: {}

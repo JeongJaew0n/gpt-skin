@@ -151,7 +151,7 @@ const CHAT = { id: 7, url: 'https://chatgpt.com/c/abc' };
 
   t('lastError 를 확인한다', /chrome\.runtime\.lastError/.test(src));
   t('부팅 때 실제 표시 상태를 알린다',
-    /GT\.sendToSW\(\{ kind: 'visible', visible: GT\.tty\.visible\(\) \}\);\s*\n\s*GT\.health\.report\(\)/.test(idx));
+    /GT\.sendToSW\(\{ kind: 'visible', visible: GT\.skin\.visible\(\) \}\);\s*\n\s*GT\.health\.report\(\)/.test(idx));
 
   t('기본으로 터미널로 시작하지 않는다', /key: 'enabled'[\s\S]{0,120}def: false/.test(defaults));
 }

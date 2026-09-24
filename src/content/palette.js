@@ -97,14 +97,14 @@ GT.palette = (function () {
     if (!box) return;
     box.remove(); scrim.remove();
     box = null; scrim = null;
-    GT.tty.setMode('NORMAL');
-    GT.tty.focus();
+    GT.skin.current.setMode('NORMAL');
+    GT.skin.current.focus();
   }
 
   function open(list_, pick) {
     if (box) close();
     items = list_; onPick = pick;
-    const root = GT.tty.shadow.querySelector('.gt-root');
+    const root = GT.skin.current.overlayRoot();
     scrim = el('div', 'gt-scrim');
     scrim.addEventListener('mousedown', close);
     box = el('div', 'gt-palette');
@@ -121,7 +121,7 @@ GT.palette = (function () {
     foot = el('div', 'gt-palette-foot'); box.appendChild(foot);
 
     root.appendChild(scrim); root.appendChild(box);
-    GT.tty.setMode('COMMAND');
+    GT.skin.current.setMode('COMMAND');
     apply();
     input.focus();
 

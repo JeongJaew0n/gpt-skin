@@ -49,7 +49,7 @@ GT.sidebar = (function () {
     if (!opening || !gid || GT.chats.isProjectLoaded(gid)) return;
     busy = '프로젝트 읽는 중…'; draw();
     try { absorb(await GT.chats.loadProject(gid)); }
-    catch (e) { GT.tty.system('warn', `프로젝트를 읽지 못했습니다: ${e.message}`); }
+    catch (e) { GT.skin.current.system('warn', `프로젝트를 읽지 못했습니다: ${e.message}`); }
     busy = ''; draw();
   }
 
@@ -166,7 +166,7 @@ GT.sidebar = (function () {
     closeMenu();
     const box = el('div', 'gt-ctx');
     const rect = anchor.getBoundingClientRect();
-    const host = GT.tty.shadow.querySelector('.gt-root').getBoundingClientRect();
+    const host = GT.skin.current.overlayRoot().getBoundingClientRect();
     box.style.top = Math.round(rect.bottom - host.top + 2) + 'px';
     box.style.left = Math.round(rect.left - host.left) + 'px';
 
@@ -176,7 +176,7 @@ GT.sidebar = (function () {
       it.addEventListener('mousedown', async (e) => {
         e.preventDefault(); e.stopPropagation();
         closeMenu();
-        try { await fn(); } catch (err) { GT.tty.system('error', `실패: ${err.message}`); }
+        try { await fn(); } catch (err) { GT.skin.current.system('error', `실패: ${err.message}`); }
       });
       box.appendChild(it);
       return it;
@@ -186,23 +186,19 @@ GT.sidebar = (function () {
     act('선택 모드', () => enterSelect(rec.id));
 
     act('이름 바꾸기', () => {
-      const inp = GT.tty.ui.input;
-      inp.value = `:rename @${rec.id.slice(0, 8)} ${rec.title}`;
-      inp.dispatchEvent(new Event('input', { bubbles: true }));
-      GT.tty.focus();
-      inp.setSelectionRange(inp.value.length, inp.value.length);
-      GT.tty.system('info', '이름을 고치고 Enter 를 누르세요');
+      GT.prompt.fill(`:rename @${rec.id.slice(0, 8)} ${rec.title}`);
+      GT.skin.current.system('info', '이름을 고치고 Enter 를 누르세요');
     });
 
     act(rec.pinned ? '고정 해제' : '채팅 고정', async () => {
       await GT.convops.pin(rec.id, !rec.pinned);
-      GT.tty.system('info', rec.pinned ? '고정을 해제했습니다' : '고정했습니다');
+      GT.skin.current.system('info', rec.pinned ? '고정을 해제했습니다' : '고정했습니다');
       await refresh();
     });
 
     act('아카이브에 보관', async () => {
       await GT.convops.archive(rec.id, true);
-      GT.tty.system('info', `보관했습니다 — :archive ${rec.id.slice(0, 8)} off 로 되돌립니다`);
+      GT.skin.current.system('info', `보관했습니다 — :archive ${rec.id.slice(0, 8)} off 로 되돌립니다`);
       if (currentId() === rec.id) GT.navigate.newChat();
       await refresh();
     });
@@ -221,37 +217,33 @@ GT.sidebar = (function () {
         closeMenu();
         try {
           await GT.convops.remove(rec.id);
-          GT.tty.system('warn', `삭제 요청: ${rec.title}`);
+          GT.skin.current.system('warn', `삭제 요청: ${rec.title}`);
           if (currentId() === rec.id) GT.navigate.newChat();
           await refresh();
-        } catch (err) { GT.tty.system('error', `삭제 실패: ${err.message}`); }
+        } catch (err) { GT.skin.current.system('error', `삭제 실패: ${err.message}`); }
       };
       setTimeout(() => del.addEventListener('mousedown', once), 0);
     }, true);
 
     act('프로젝트로 이동', () => {
-      const inp = GT.tty.ui.input;
-      inp.value = `:mv ${rec.id.slice(0, 8)} `;
-      inp.dispatchEvent(new Event('input', { bubbles: true }));
-      GT.tty.focus();
-      inp.setSelectionRange(inp.value.length, inp.value.length);
-      GT.tty.system('info', '프로젝트 이름을 이어 쓰고 Enter 를 누르세요 (빼려면 none) — :mv 만 쳐도 목록이 나옵니다');
+      GT.prompt.fill(`:mv ${rec.id.slice(0, 8)} `);
+      GT.skin.current.system('info', '프로젝트 이름을 이어 쓰고 Enter 를 누르세요 (빼려면 none) — :mv 만 쳐도 목록이 나옵니다');
     });
 
     // 공유는 공개 링크를 만드는 동작이다. 우리 UI 에서 한 번 클릭으로 공개되면 안 된다.
     // 원본의 공유 대화상자를 띄워 ChatGPT 자신의 확인 절차를 거치게 한다.
     act('공유하기', () => GT.commands.run(`:share ${rec.id.slice(0, 8)}`));
 
-    GT.tty.shadow.querySelector('.gt-root').appendChild(box);
+    GT.skin.current.overlayRoot().appendChild(box);
     menuEl = box;
     setTimeout(() => {
       const away = (e) => {
         if (menuEl && !menuEl.contains(e.composedPath ? e.composedPath()[0] : e.target)) {
           closeMenu();
-          GT.tty.shadow.removeEventListener('mousedown', away, true);
+          GT.skin.current.overlayRoot().getRootNode().removeEventListener('mousedown', away, true);
         }
       };
-      GT.tty.shadow.addEventListener('mousedown', away, true);
+      GT.skin.current.overlayRoot().getRootNode().addEventListener('mousedown', away, true);
     }, 0);
   }
 
@@ -313,7 +305,7 @@ GT.sidebar = (function () {
       catch (e) { bad.push(recs[i].title); }
       busy = `보관 중 ${i + 1}/${recs.length}`; draw();
     }
-    GT.tty.system('info', `보관 ${ok}건${bad.length ? ` · 실패 ${bad.length}건: ${bad.join(', ')}` : ''}`);
+    GT.skin.current.system('info', `보관 ${ok}건${bad.length ? ` · 실패 ${bad.length}건: ${bad.join(', ')}` : ''}`);
     exitSelect();
     await refresh();
   }
@@ -326,15 +318,15 @@ GT.sidebar = (function () {
     const listing = document.createDocumentFragment();
     listing.appendChild(el('div', null, `${recs.length}개를 삭제합니다 — 되돌릴 수 없습니다`));
     recs.forEach((r) => listing.appendChild(el('div', 'gt-dim', `  ${r.id.slice(0, 8)}  ${r.title}`)));
-    GT.tty.system('warn', null, listing);
+    GT.skin.current.system('warn', null, listing);
 
     busy = `삭제 중 0/${recs.length}`; draw();
     const res = await GT.convops.removeMany(recs.map((r) => r.id), (i, n) => { busy = `삭제 중 ${i}/${n}`; draw(); });
 
     const openId = currentId();
-    GT.tty.system(res.failed.length ? 'warn' : 'info',
+    GT.skin.current.system(res.failed.length ? 'warn' : 'info',
       `삭제 ${res.done.length}건${res.failed.length ? ` · 실패 ${res.failed.length}건` : ''}`);
-    res.failed.forEach((f) => GT.tty.system('error', `  ${String(f.id).slice(0, 8)} — ${f.error}`));
+    res.failed.forEach((f) => GT.skin.current.system('error', `  ${String(f.id).slice(0, 8)} — ${f.error}`));
 
     exitSelect();
     if (openId && res.done.includes(openId)) GT.navigate.newChat();
@@ -358,7 +350,7 @@ GT.sidebar = (function () {
   function exitFilter() {
     filtering = false; query = ''; sel = 0;
     applyFilter(); draw();
-    GT.tty.focus();
+    GT.skin.current.focus();
   }
 
   function move(d) {
@@ -442,7 +434,7 @@ GT.sidebar = (function () {
       const cw = charWidth();
       const startX = e.clientX;
       const startW = root.getBoundingClientRect().width;
-      const rootEl = GT.tty.shadow.querySelector('.gt-root');
+      const rootEl = GT.skin.current.overlayRoot();
 
       const move = (ev) => {
         const px = Math.max(cw * 16, Math.min(cw * 80, startW + (ev.clientX - startX)));
@@ -454,7 +446,7 @@ GT.sidebar = (function () {
         const px = Math.max(cw * 16, Math.min(cw * 80, startW + (ev.clientX - startX)));
         rootEl.style.removeProperty('--gt-sb-w');           // 설정값이 다시 이기게 되돌린다
         await GT.config.set('sidebar.width', Math.round(px / cw));
-        GT.tty.applyConfig(GT.config.all);
+        GT.skin.current.applyConfig(GT.config.all);
       };
       window.addEventListener('mousemove', move, true);
       window.addEventListener('mouseup', up, true);
@@ -462,7 +454,7 @@ GT.sidebar = (function () {
     h.addEventListener('dblclick', async (e) => {
       e.preventDefault();
       await GT.config.reset('sidebar.width');
-      GT.tty.applyConfig(GT.config.all);
+      GT.skin.current.applyConfig(GT.config.all);
     });
     return h;
   }
@@ -512,8 +504,7 @@ GT.sidebar = (function () {
     if (!isOpen()) return false;
     dismissed = true;
     forcedOpen = false;
-    GT.tty.syncSidebar();
-    GT.tty.refreshChrome();
+    GT.skin.current.syncSidebar();
     return true;
   }
 
@@ -526,8 +517,7 @@ GT.sidebar = (function () {
     dismissed = false;
     forcedOpen = next;
     await GT.config.set('sidebar.visible', next);
-    GT.tty.syncSidebar();
-    GT.tty.refreshChrome();
+    GT.skin.current.syncSidebar();
     if (next) await refresh();
     return next;
   }

@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1170](https://img.shields.io/badge/테스트-1170_케이스-22C55E)
+![테스트 1195](https://img.shields.io/badge/테스트-1195_케이스-22C55E)
 
 </div>
 
@@ -222,7 +222,8 @@ src/content/                          ← 매니페스트 주입 순서
   theme.js                            테마 CSS 변수 + 셸 스타일
   shell/cover.js                      원본 가리기 · 스킨 호스트 (가리는 스킨 / 클릭 통과 스킨)
   shell/clipboard.js                  클립보드 복사
-  tty.js                              shadow root 셸
+  shell/skin.js                       스킨 레지스트리 · 계약 · 현재 스킨 (GT.skins · GT.skin)
+  skins/terminal.js                   terminal 스킨 — 상단바 · 스크롤백 · 입력줄
   palette.js                          퍼지 명령 팔레트
   sidebar.js                          대화 목록 오버레이
   compose.js                          원본 컴포저 주입 · 전송 · 중단
@@ -333,13 +334,13 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>34개 파일 · 1170 케이스</b></summary>
+<summary><b>35개 파일 · 1195 케이스</b></summary>
 
 <br>
 
 | 파일 | 케이스 | 무엇을 지키는가 |
 |---|--:|---|
-| `load` | 25 모듈 | 콘텐츠 스크립트를 매니페스트 순서대로 평가 — 로드 시점 예외 검출 |
+| `load` | 26 모듈 | 콘텐츠 스크립트를 매니페스트 순서대로 평가 — 로드 시점 예외 검출 |
 | `handshake` | 5 | MAIN↔ISOLATED 브리지 버퍼링과 `ready`/`pong` 핸드셰이크 |
 | `policy` | 17 | `onBreak` 정책과 드리프트 분류 |
 | `store` | 34 | 한 턴에 assistant 메시지가 여러 개 와도 한 줄만 남는가 · 보낸 질문이 두 줄이 되지 않는가 |
@@ -373,6 +374,7 @@ tools/test.sh
 | `ime` | 15 | 한글 조합 중 Enter 를 전송으로 받지 않는가 |
 | `prompt` | 24 | 입력 컨트롤러 — 입력 로직이 한 벌인가 · detach 로 핸들러가 떨어지는가 · 원본을 안 가리는 스킨에서 타이핑을 뺏지 않는가 |
 | `cover` | 20 | 원본 가리기 — 가리는/안 가리는 스타일 · 호스트 재사용 · 흔적 없이 물러나는가 · 가리기가 한 곳에만 있는가 |
+| `skin` | 25 | 스킨 계약 — 모든 스킨이 계약을 채우는가 · GT.tty·ui 우회가 없는가 · 파일 하나에 스킨 하나 · 해체가 cover 를 걷는가 · 복귀 상태에서 토글 금지 |
 
 </details>
 
@@ -391,7 +393,7 @@ tools/test.sh
 | [이미지 생성 — 결과와 과정](docs/plan/2026-09-09-image-generation.md) | 1·2단계 구현 · 2단계는 브라우저 확인 대기 |
 | [Google 확장 개발 에이전트 도구 검토](docs/plan/2026-09-11-modern-web-guidance.md) | 분석만 — `reload_extension` 도입 권고 |
 | [시트 스킨 — 스프레드시트로 보이는 대화](docs/plan/2026-09-21-sheet-skin.md) | 설계만 — 목업 있음 · 구현 대기 |
-| [스킨 구조 — terminal · sheet · none 을 갈아끼운다](docs/plan/2026-09-24-skin-architecture.md) | 설계만 — 현 구조 실측(GT.tty 107곳) · 계약 · 9단계 |
+| [스킨 구조 — terminal · sheet · none 을 갈아끼운다](docs/plan/2026-09-24-skin-architecture.md) | 1~3단계 완료 (0.4.2~0.4.4) — 입력 컨트롤러 · 원본 가리기 · 스킨 레지스트리와 terminal 스킨 |
 
 조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열여섯 건 중 열셋이 해결**됐고 한 건은 반쯤 해결됐다.
 매니페스트 캐시 건은 크롬 동작이라 감지만 하고, 선택 유실 건은 스크롤백 쪽만 고쳐졌다.

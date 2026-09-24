@@ -2,7 +2,7 @@
 // 다만 선택·버튼·다른 입력창을 뺏으면 안 된다.
 import fs from 'node:fs';
 
-const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
 // 입력 처리는 2026-09-24 에 index.js 에서 shell/prompt.js 로 옮겼다.
 const idx = fs.readFileSync('src/content/shell/prompt.js', 'utf8');
 const results = []; const t = (n, ok) => results.push([n, ok]);
@@ -18,11 +18,11 @@ t('shadow 를 뚫고 실제 대상을 본다', /composedPath\(\)\[0\]/.test(tty)
 
 // --- 타이핑 ---
 t('타이핑이 입력창으로 간다', /inp\.value \+= e\.key/.test(idx));
-t('첫 글자를 브라우저에 맡기지 않는다', /e\.preventDefault\(\);\s*\n\s*GT\.tty\.focus\(\);\s*\n\s*inp\.value/.test(idx));
+t('첫 글자를 브라우저에 맡기지 않는다', /e\.preventDefault\(\);\s*\n\s*GT\.skin\.current\.focus\(\);\s*\n\s*inp\.value/.test(idx));
 t('input 이벤트로 자동 높이도 따라간다', /inp\.dispatchEvent\(new Event\('input'/.test(idx));
 t('단축키는 가로채지 않는다', /if \(e\.metaKey \|\| e\.ctrlKey \|\| e\.altKey\) return;/.test(idx));
 t('다른 입력창에 있으면 두고 본다', /closest\('input, textarea, select, \[contenteditable="true"\]'\)\) return/.test(idx));
-t('파괴적인 키는 포커스만', /e\.key === 'Backspace' \|\| e\.key === 'Enter'[\s\S]{0,80}GT\.tty\.focus\(\)/.test(idx));
+t('파괴적인 키는 포커스만', /e\.key === 'Backspace' \|\| e\.key === 'Enter'[\s\S]{0,80}GT\.skin\.current\.focus\(\)/.test(idx));
 t('한 글자만 처리한다', /e\.key\.length === 1/.test(idx));
 
 // --- 기존 동작과 충돌하지 않는가 ---

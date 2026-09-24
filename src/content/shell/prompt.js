@@ -16,7 +16,7 @@ GT.prompt = (function () {
 
   // 후보 목록이 떠 있는지는 여기서 기억한다. 스킨의 DOM 을 들여다보지 않는다.
   let suggestOpen = false;
-  const suggest = (list, note) => { suggestOpen = !!(list && list.length); GT.tty.setSuggest(list, note); };
+  const suggest = (list, note) => { suggestOpen = !!(list && list.length); GT.skin.current.setSuggest(list, note); };
 
   let resetHistory = () => {};
 
@@ -57,13 +57,13 @@ GT.prompt = (function () {
     }
 
     input.addEventListener('input', () => { autosize(); refreshSuggest(); }, sig());
-    input.addEventListener('focus', () => GT.tty.setMode(GT.store.isStreaming() ? 'STREAM' : 'INSERT'), sig());
-    input.addEventListener('blur', () => GT.tty.setMode(GT.store.isStreaming() ? 'STREAM' : 'NORMAL'), sig());
+    input.addEventListener('focus', () => GT.skin.current.setMode(GT.store.isStreaming() ? 'STREAM' : 'INSERT'), sig());
+    input.addEventListener('blur', () => GT.skin.current.setMode(GT.store.isStreaming() ? 'STREAM' : 'NORMAL'), sig());
 
     // 창이 뒤로 가면 입력줄은 포커스를 유지하지만 타이핑은 이쪽으로 오지 않는다.
     // 그때도 커서를 멈춘다.
-    window.addEventListener('focus', () => GT.tty.syncCursorFocus(), sig());
-    window.addEventListener('blur', () => GT.tty.syncCursorFocus(), sig());
+    window.addEventListener('focus', () => GT.skin.current.syncFocus(), sig());
+    window.addEventListener('blur', () => GT.skin.current.syncFocus(), sig());
 
     // IME(한글) 조합 중에는 이 핸들러가 아무것도 하지 않는다.
     //
@@ -180,8 +180,8 @@ GT.prompt = (function () {
       } else if (e.key === 'c' && e.ctrlKey) {
         e.preventDefault();
         GT.compose.stop()
-          ? GT.tty.system('info', '중단 요청', null, { quiet: true })
-          : GT.tty.system('warn', '중단 버튼을 찾지 못했습니다', null, { quiet: true });
+          ? GT.skin.current.system('info', '중단 요청', null, { quiet: true })
+          : GT.skin.current.system('warn', '중단 버튼을 찾지 못했습니다', null, { quiet: true });
       }
     }, sig());
 
@@ -192,7 +192,7 @@ GT.prompt = (function () {
     window.addEventListener('keydown', (e) => {
       if (composing(e)) return;
       if (e.key === '`' && e.ctrlKey) { e.preventDefault(); opts.toggle(); return; }
-      if (!GT.tty.visible()) return;
+      if (!GT.skin.visible()) return;
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); GT.commands.openPalette(); return; }
       if (e.key === 'b' && e.ctrlKey) { e.preventDefault(); GT.sidebar.toggle(); return; }
 
@@ -219,7 +219,7 @@ GT.prompt = (function () {
       if (e.key === 'Escape' && GT.compose.stopButton()) {
         e.preventDefault();
         GT.compose.stop();
-        GT.tty.system('info', '중단 요청 (esc)', null, { quiet: true });
+        GT.skin.current.system('info', '중단 요청 (esc)', null, { quiet: true });
         return;
       }
       // 입력창이 비어 있을 때만 '/' 를 사이드바 검색으로 가로챈다.
@@ -242,11 +242,11 @@ GT.prompt = (function () {
       if (!inp || !opts.capturesTyping) return;
       if (e.key.length === 1) {
         e.preventDefault();
-        GT.tty.focus();
+        GT.skin.current.focus();
         inp.value += e.key;                 // 방금 포커스했으니 캐럿은 끝이다
         inp.dispatchEvent(new Event('input', { bubbles: true }));
       } else if (e.key === 'Backspace' || e.key === 'Enter') {
-        GT.tty.focus();                     // 파괴적인 키는 포커스만 옮기고 맡긴다
+        GT.skin.current.focus();                     // 파괴적인 키는 포커스만 옮기고 맡긴다
       }
     }, sig(true));
 
@@ -258,6 +258,16 @@ GT.prompt = (function () {
     detach,
     // 대화를 옮기면 기록 위치를 비운다. 그대로 두면 엉뚱한 줄을 가리킨다.
     resetHistory() { resetHistory(); },
+    // 입력줄에 글을 채우고 포커스한다. 커서는 끝에. 후보·높이는 input 이벤트로 따라온다.
+    // 사이드바 메뉴('이름 바꾸기' 등)와 팔레트가 명령을 채워 줄 때 쓴다.
+    fill(text) {
+      if (!input) return false;
+      input.value = String(text == null ? '' : text);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      GT.skin.current.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+      return true;
+    },
     get attached() { return !!input; }
   };
 })();

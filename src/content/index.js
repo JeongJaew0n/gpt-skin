@@ -10,7 +10,7 @@
   'use strict';
   const missing = [];
   if (typeof GT === 'undefined') missing.push('GT (protocol.js)');
-  else ['config', 'oai', 'store', 'chats', 'conversation', 'convops', 'markdown', 'renderplan', 'theme', 'tty', 'palette', 'sidebar', 'compose', 'picker', 'navigate', 'commands', 'health', 'cover', 'clipboard', 'prompt']
+  else ['config', 'oai', 'store', 'chats', 'conversation', 'convops', 'markdown', 'renderplan', 'theme', 'skins', 'skin', 'palette', 'sidebar', 'compose', 'picker', 'navigate', 'commands', 'health', 'cover', 'clipboard', 'prompt']
     .forEach((k) => { if (!GT[k]) missing.push('GT.' + k); });
   if (typeof GT_DEFAULTS === 'undefined') missing.push('GT_DEFAULTS (shared/defaults.js)');
   if (typeof GT_T !== 'function') missing.push('GT_T (shared/i18n.js)');
@@ -59,7 +59,7 @@
   'use strict';
 
   // 모듈이 빠졌으면 부팅하지 않는다. 위 preflight 가 이미 알렸다.
-  if (typeof GT === 'undefined' || !GT.config || !GT.tty || !GT.health) return;
+  if (typeof GT === 'undefined' || !GT.config || !GT.skin || !GT.health) return;
 
   // ---------------------------------------------------------------- 생명주기
   //
@@ -83,7 +83,7 @@
     gone = true;
     disposers.forEach((d) => { try { d(); } catch (_) {} });
     disposers.length = 0;
-    try { GT.tty.destroy(); } catch (_) {}
+    try { GT.skin.destroy(); } catch (_) {}
     GT.log('물러남:', why, '— 페이지를 새로고침하면 새 코드로 다시 붙는다');
     notifyGone();
   }
@@ -157,7 +157,7 @@
   GT.on('image', (p) => {
     if (p && p.phase === 'start') {
       drewThisTurn = true;
-      if (GT.store.drawing(true)) GT.tty.render();
+      if (GT.store.drawing(true)) GT.skin.current.render();
       GT.log('그림을 만들기 시작했다', p.id || '');
     }
   });
@@ -201,7 +201,7 @@
         pull(`image-${tries}`).then(() => {
           const has = GT.store.state.messages.some((m) => m.images && m.images.length);
           if (has || tries >= IMAGE_PULL_TRIES) {
-            if (GT.store.drawing(false)) GT.tty.render();
+            if (GT.store.drawing(false)) GT.skin.current.render();
             if (!has) GT.log('그림을 만들었다는 신호는 받았지만 원본에서 찾지 못했다');
             return;
           }
@@ -213,7 +213,7 @@
 
     // 스트림 결과를 fiber 원문과 대조한다
     setTimeout(() => GT.toMain('verify', { id: p.id }), 400);
-    if (GT.config.get('bell') === 'visual') flash();
+    if (GT.config.get('bell') === 'visual') GT.skin.current.bell();
   });
   // fiber 가 아직 다 안 그려졌으면 몇 번 더 본다.
   // 접두사 검사로는 못 잡는다 — 인용 마커의 표기가 달라 첫 인용부터 갈라지고,
@@ -263,7 +263,7 @@
     // 여기까지 왔으면 fiber 가 스트림만큼 길거나 더 길다. 그때만 교정으로 받는다.
     // (인용 마커가 치환되면서 길어지는 경우가 이에 해당한다)
     rec.text = fiber;
-    GT.tty.render();
+    GT.skin.current.render();
     GT.health.reconcile(streamed, fiber);
   });
 
@@ -278,27 +278,21 @@
   });
   await domReady();
 
-  GT.tty.mount(cfg);
-  GT.store.onChange(() => GT.tty.render());
+  GT.skin.use(cfg.skin);
+  GT.skin.mount(cfg);
+  GT.store.onChange(() => GT.skin.current.render());
   GT.config.onChange((c) => {
     GT_SET_LOCALE(c.locale);
-    GT.tty.applyConfig(c);          // epoch 이 올라가 모든 노드를 다시 만든다
-    GT.tty.render();
+    GT.skin.current.applyConfig(c);          // epoch 이 올라가 모든 노드를 다시 만든다
+    GT.skin.current.render();
   });
   // 추론 수준이 바뀌는 동안 상단바가 즉시 따라오게 한다 (1초 틱을 기다리지 않는다)
-  if (GT.picker && GT.picker.onChange) GT.picker.onChange(() => GT.tty.renderChrome());
+  if (GT.picker && GT.picker.onChange) GT.picker.onChange(() => GT.skin.current.renderChrome());
 
   function cleanTitle(t) {
     return String(t || '').replace(/\s*[-–—]\s*ChatGPT\s*$/i, '').replace(/^ChatGPT$/i, '');
   }
 
-  function flash() {
-    const m = GT.tty.ui.mode;
-    if (!m) return;
-    const prev = m.style.filter;
-    m.style.filter = 'invert(1)';
-    setTimeout(() => { m.style.filter = prev; }, 120);
-  }
 
   // ------------------------------------------------------------------ 부팅 점검
   const waitFor = (sel, ms) => new Promise((res) => {
@@ -335,7 +329,7 @@
 
   // ------------------------------------------------------------------- 입력 처리
   // 키 처리는 GT.prompt 에 있다. 여기서는 위젯을 넘겨 주기만 한다.
-  GT.prompt.attach(GT.tty.prompt, { toggle: () => toggle(), capturesTyping: true });
+  GT.prompt.attach(GT.skin.current.prompt, { toggle: () => GT.skin.toggle(), capturesTyping: GT.skin.current.capturesTyping });
   disposers.push(() => GT.prompt.detach());
 
   // pagehide 에서는 해체하지 않는다.
@@ -346,23 +340,18 @@
   // 사이드바 — 최초 로드, 대화 전환 시 갱신, 창 크기 변화 시 표시 여부 재계산
   if (GT.sidebar.shouldShow()) GT.sidebar.refresh();
   listen(window, 'resize', () => {
-    GT.tty.syncSidebar();
+    GT.skin.current.syncSidebar();
     if (GT.sidebar.element && GT.sidebar.element.isConnected) GT.sidebar.draw();
   });
 
-  function toggle() {
-    if (GT.health.degraded) return;
-    GT.tty.visible() ? GT.tty.hide() : GT.tty.show();
-    GT.sendToSW({ kind: 'visible', visible: GT.tty.visible() });
-  }
 
   // 동기로 응답하므로 true 를 돌려주면 안 된다.
   // true 는 "나중에 응답하겠다"는 뜻이라, 처리하지 않는 메시지의 포트가 열린 채 남아
   // "message port closed before a response was received" 가 뜬다.
   chrome.runtime.onMessage.addListener((msg, _s, reply) => {
     if (!msg) return;
-    if (msg.kind === 'toggle') { toggle(); reply({ visible: GT.tty.visible() }); }
-    else if (msg.kind === 'state') reply({ visible: GT.tty.visible(), degraded: GT.health.degraded });
+    if (msg.kind === 'toggle') { GT.skin.toggle(); reply({ visible: GT.skin.visible() }); }
+    else if (msg.kind === 'state') reply({ visible: GT.skin.visible(), degraded: GT.health.degraded });
   });
 
   // 라우팅(SPA) — 대화가 바뀌면 다시 수확한다
@@ -383,7 +372,7 @@
     }
   });
   // 이 틱의 목적은 시계와 경과시간이다. 본문을 갈아엎을 이유가 없다.
-  every(1000, () => { if (GT.tty.visible()) GT.tty.renderChrome(); });
+  every(1000, () => { if (GT.skin.visible()) GT.skin.current.renderChrome(); });
 
   // '생각 중' 은 이벤트의 가장자리가 아니라 상태에서 끌어낸다.
   //
@@ -395,10 +384,10 @@
   every(200, () => {
     const generating = !!GT.compose.stopButton();
     const want = generating && !GT.store.state.streamingId;
-    if (GT.store.setThinking(want)) GT.tty.render();
+    if (GT.store.setThinking(want)) GT.skin.current.render();
   });
   // 회전자는 더 자주 돈다. 렌더가 아니라 해당 노드의 글자만 바꾸므로 싸다.
-  every(90, () => { if (GT.tty.visible()) GT.tty.tickSpin(); });
+  every(90, () => { if (GT.skin.visible()) GT.skin.current.tick(); });
 
   // 확장이 다시 로드됐는지 지켜본다. 감지되면 조용히 물러난다.
   every(4000, () => { if (!contextAlive()) shutdown('확장이 다시 로드됨'); });
@@ -442,11 +431,11 @@
     if (root) observe(obs, root, { childList: true, subtree: true });
   })();
 
-  if (cfg.enabled) GT.tty.show();
+  if (cfg.enabled) GT.skin.show();
   // 배지·팝업이 실제 상태를 알아야 한다. 이걸 안 보내면 서비스 워커가
   // '점검이 멀쩡하니 켜져 있겠지' 로 추측한다 — 기본이 꺼짐이 되면서 그 추측이 틀리게 됐다.
-  GT.sendToSW({ kind: 'visible', visible: GT.tty.visible() });
+  GT.sendToSW({ kind: 'visible', visible: GT.skin.visible() });
   GT.health.report();
-  GT.tty.system('info', `gpt-skin ${GT_VERSION} · build ${GT_BUILD} — :help 로 명령, ^\` 로 원본 토글`,
+  GT.skin.current.system('info', `gpt-skin ${GT_VERSION} · build ${GT_BUILD} — :help 로 명령, ^\` 로 원본 토글`,
     null, { quiet: true });
 })();

@@ -24,7 +24,7 @@ GT.clipboard = (function () {
       const ok = document.execCommand('copy');
       ta.remove();
       // 포커스를 입력줄로 돌려놓는다
-      try { if (GT.tty && GT.tty.focus) GT.tty.focus(); } catch (_) {}
+      try { GT.skin.current.focus(); } catch (_) {}
       return !!ok;
     } catch (_) { return false; }
   }

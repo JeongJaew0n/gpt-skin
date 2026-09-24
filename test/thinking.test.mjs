@@ -86,7 +86,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
 
 // --- 렌더 쪽 배선 ---
 {
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
   const css = fs.readFileSync('src/content/theme.js', 'utf8');
 
@@ -107,9 +107,9 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
     /drawing \? GT\.store\.drawingElapsed\(\) : GT\.store\.thinkingElapsed\(\)/.test(tty));
   t('스트리밍 블록도 같은 회전자를 쓴다', /el\('span', 'gt-spin'/.test(tty));
 
-  t('틱이 등록돼 있다', /every\(90, \(\) => \{ if \(GT\.tty\.visible\(\)\) GT\.tty\.tickSpin\(\); \}\)/.test(idx));
-  t('틱은 터미널이 보일 때만 돈다', /if \(GT\.tty\.visible\(\)\) GT\.tty\.tickSpin\(\)/.test(idx));
-  t('tickSpin 을 밖으로 내보낸다', /system, tickSpin,/.test(tty));
+  t('틱이 등록돼 있다', /every\(90, \(\) => \{ if \(GT\.skin\.visible\(\)\) GT\.skin\.current\.tick\(\); \}\)/.test(idx));
+  t('틱은 터미널이 보일 때만 돈다', /if \(GT\.skin\.visible\(\)\) GT\.skin\.current\.tick\(\)/.test(idx));
+  t('tickSpin 을 계약의 tick 으로 내보낸다', /tick: tickSpin,/.test(tty));
 
   t('스타일이 있다', /\.gt-thinking-live/.test(css));
   t('모션을 줄이는 설정을 존중한다', /prefers-reduced-motion/.test(css));
@@ -153,7 +153,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('생성 중인지는 중단 버튼으로 본다',
     /const generating = !!GT\.compose\.stopButton\(\);/.test(idx));
   t('본문이 흐르면 끈다', /const want = generating && !GT\.store\.state\.streamingId;/.test(idx));
-  t('바뀔 때만 다시 그린다', /if \(GT\.store\.setThinking\(want\)\) GT\.tty\.render\(\);/.test(idx));
+  t('바뀔 때만 다시 그린다', /if \(GT\.store\.setThinking\(want\)\) GT\.skin\.current\.render\(\);/.test(idx));
   t('왜 이렇게 하는지 문서를 가리킨다', /thinking-indicator-flicker\.md/.test(idx));
 }
 

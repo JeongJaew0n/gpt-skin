@@ -57,7 +57,7 @@ const msg = (id, role, text) => ({ id, role, text });
 {
   const idx = fs.readFileSync('src/content/index.js', 'utf8');
   const prm = fs.readFileSync('src/content/shell/prompt.js', 'utf8');   // esc 처리는 전역 키와 함께 옮겨 갔다
-  const tty = fs.readFileSync('src/content/tty.js', 'utf8');
+  const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
 
   t('대화 id 가 없으면 수확하지 않는다', /if \(GT\.conversation\.idFromPath\(\)\) \{/.test(idx));
   t('새 대화 화면에서는 store 를 바로 비운다',

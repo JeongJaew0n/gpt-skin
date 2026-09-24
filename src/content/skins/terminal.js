@@ -1,6 +1,7 @@
-// gpt-skin — tty 셸. shadow root 안에 전부 그린다.
-// 원본 가리기와 호스트는 GT.cover(shell/cover.js), 클립보드는 GT.clipboard 가 맡는다.
-GT.tty = (function () {
+// gpt-skin — terminal 스킨. 상단바 · 스크롤백 · 입력줄을 shadow root 안에 전부 그린다.
+// 원본 가리기와 호스트는 GT.cover, 입력 키 처리는 GT.prompt, 클립보드는 GT.clipboard 가 맡는다.
+// 스킨 계약: src/content/shell/skin.js · docs/plan/2026-09-24-skin-architecture.md §2.2
+(function () {
   'use strict';
 
   const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x !== undefined) n.textContent = x; return n; };
@@ -695,21 +696,46 @@ GT.tty = (function () {
     render();
   }
 
-  return {
-    get ui() { return ui; },
-    get shadow() { return shadow; },
+  // 시각 벨. 상태줄의 모드 표시를 잠깐 뒤집는다.
+  function bell() {
+    const m = ui.mode;
+    if (!m) return;
+    const prev = m.style.filter;
+    m.style.filter = 'invert(1)';
+    setTimeout(() => { m.style.filter = prev; }, 120);
+  }
+
+  GT.skins.register({
+    id: 'terminal',
+    label: { ko: '터미널', en: 'Terminal' },
+    covers: true,                 // 원본을 가리고 전체 화면을 쓴다
+    capturesTyping: true,         // 아무 데서나 타이핑하면 입력줄로
+    get themes() { return GT.theme.THEMES; },
+    defaultTheme: 'modern-dark',
+    configKeys: ['cursor.style', 'cursor.blink', 'scanlines', 'gutter.markers', 'wrap.columns', 'timestamps'],
+    hiddenCommands: [],
+
+    get ui() { return ui; },      // 계약 밖. 다른 모듈이 의존하면 안 된다 (test/skin.test.mjs 가 막는다)
     // 입력 위젯을 GT.prompt 에 넘긴다. 키 처리는 거기 있고, 여기는 위젯과 높이 규칙만 안다.
     get prompt() {
       return {
-        el: ui.input,
+        el: ui.input || null,
         autosize() { const i = ui.input; if (!i) return; i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 240) + 'px'; }
       };
     },
-    mount(cfg) { GT.cover.apply(true); build(); applyConfig(cfg); return root; },
-    applyConfig, syncSidebar, refreshChrome, renderChrome, popup, closePopup, setSuggest,
-    render, setMode, system, tickSpin, syncCursorFocus,
+    mount(cfg) { build(); applyConfig(cfg); return root; },
+    // 확장이 다시 로드되면 이 스크립트는 고아가 된다. 호스트 제거는 GT.skin.destroy 가 cover 로 한다.
+    destroy() {
+      pool.clear();
+      host = null; shadow = null; root = null;
+    },
+    applyConfig,
+    render,
+    renderChrome,
+    tick: tickSpin,
+    syncSidebar,
+    system,
     clearSystem() { const n = systemLog.length; systemLog.length = 0; render(); return n; },
-
     // 화면에만 끼워 넣는 블록. 지금 마지막 메시지를 앵커로 잡는다.
     local(text) {
       const s = GT.store.state;
@@ -720,17 +746,13 @@ GT.tty = (function () {
       render();
       return localLog.length;
     },
-    localCount() { return localLog.length; },
     clearLocal() { const n = localLog.length; localLog.length = 0; render(); return n; },
-    // 확장이 다시 로드되면 이 스크립트는 고아가 된다. 그때 화면에서 완전히 물러난다.
-    destroy() {
-      GT.cover.remove();
-      pool.clear();
-      host = null; shadow = null; root = null;
-    },
-    show() { GT.cover.on(); ui.input && ui.input.focus(); },
-    hide() { GT.cover.off(); },
-    visible() { return GT.cover.isOn(); },
-    focus: focusInput
-  };
+    setMode,
+    setSuggest,
+    syncFocus: syncCursorFocus,
+    bell,
+    focus: focusInput,
+    // 사이드바 · 팔레트 · 메뉴가 붙는 자리
+    overlayRoot() { return root; }
+  });
 })();
