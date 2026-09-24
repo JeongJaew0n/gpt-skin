@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1265](https://img.shields.io/badge/테스트-1265_케이스-22C55E)
+![테스트 1324](https://img.shields.io/badge/테스트-1324_케이스-22C55E)
 
 </div>
 
@@ -110,6 +110,21 @@ tools/package.sh      # dist/gpt-skin-<version>.zip
 
 ---
 
+## 스킨
+
+ChatGPT 위에 씌우는 화면의 종류다. `:skin <이름>` 또는 설정 화면에서 고르면 열려 있는 탭에 바로 적용된다.
+
+| 스킨 | 무엇 | 여닫기 |
+|---|---|---|
+| `terminal` <sub>기본</sub> | 원본을 덮고 터미널로 다시 그린다 | <kbd>Ctrl</kbd>+<kbd>&#96;</kbd> |
+| `none` | 원본 화면을 그대로 둔다. 명령줄과 결과 패널만 띄운다 | <kbd>Ctrl</kbd>+<kbd>;</kbd> 로 열고 빈 줄에서 <kbd>esc</kbd> · <kbd>Ctrl</kbd>+<kbd>&#96;</kbd> |
+
+none 에서는 원본 컴포저에 치는 글자를 가로채지 않고, 원본 클릭도 그대로 원본으로 간다.
+`:font` `:theme` `:messup` 은 none 에서 쓸 수 없다. 대화 목록은 <kbd>Ctrl</kbd>+<kbd>B</kbd> 로 직접 열 때만 뜬다.
+구조는 [스킨 구조 설계](docs/plan/2026-09-24-skin-architecture.md) 에 있다.
+
+---
+
 ## 명령
 
 `:` 로 시작하면 입력줄 위에 후보가 뜨고 <kbd>Tab</kbd> 으로 완성한다.
@@ -136,7 +151,7 @@ tools/package.sh      # dist/gpt-skin-<version>.zip
 <tr><td><code>:effort &lt;0-2 | 낮음·중간·높음 | +·-&gt;</code></td><td>추론 수준</td></tr>
 <tr><td><code>:sidebar &lt;on|off|toggle|more|width n&gt;</code></td><td>사이드바 <sub>(<code>clear-cache</code> 도 받는다)</sub></td></tr>
 <tr><td><code>:font &lt;10-24 | + | - | reset&gt;</code></td><td>글씨 크기</td></tr>
-<tr><td><code>:skin [이름]</code></td><td>스킨 목록 / 바꾸기 <sub>(지금은 <code>terminal</code> 하나 · 저장 후 새로고침하면 적용)</sub></td></tr>
+<tr><td><code>:skin [terminal|none]</code></td><td>스킨 목록 / 바로 바꾸기 <sub>(저장된다 · none 은 원본 화면에 명령줄만)</sub></td></tr>
 <tr><td><code>:theme &lt;이름&gt;</code></td><td>지금 스킨의 테마 <sub>(<code>terminal.theme</code> 에 저장)</sub></td></tr>
 
 <tr><td colspan="2"><b>설정 · 점검</b></td></tr>
@@ -227,6 +242,7 @@ src/content/                          ← 매니페스트 주입 순서
   shell/clipboard.js                  클립보드 복사
   shell/skin.js                       스킨 레지스트리 · 계약 · 현재 스킨 (GT.skins · GT.skin)
   skins/terminal.js                   terminal 스킨 — 상단바 · 스크롤백 · 입력줄
+  skins/none.js                       none 스킨 — 원본 그대로 · Ctrl+; 명령줄 · 결과 패널
   palette.js                          퍼지 명령 팔레트
   sidebar.js                          대화 목록 오버레이
   compose.js                          원본 컴포저 주입 · 전송 · 중단
@@ -337,7 +353,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>37개 파일 · 1265 케이스</b></summary>
+<summary><b>38개 파일 · 1324 케이스</b></summary>
 
 <br>
 
@@ -380,6 +396,7 @@ tools/test.sh
 | `skin` | 26 | 스킨 계약 — 모든 스킨이 계약을 채우는가 · GT.tty·ui 우회가 없는가 · 파일 하나에 스킨 하나 · 해체가 cover 를 걷는가 · 복귀 상태에서 토글 금지 |
 | `skinconfig` | 35 | 스킨 설정 — skin 선택지 = 스킨 파일 · 스킨 전용 항목 필터 · theme 이관이 한 번만, 사용자 값을 덮지 않는가 · `:skin` `:theme` |
 | `lines` | 34 | 줄 단위 마크다운 — 한 행에 한 줄 · 문법이 한 벌인가 · 스트리밍 중 앞 행을 다시 만들지 않는가 |
+| `none` | 50 | none 스킨 — Ctrl+; 열기 · esc 닫기 · 타이핑 비가로채기 · 숨긴 명령 · 스킨 전환과 실패 시 되돌리기 · 사이드바는 직접 열 때만 |
 
 </details>
 
@@ -398,7 +415,7 @@ tools/test.sh
 | [이미지 생성 — 결과와 과정](docs/plan/2026-09-09-image-generation.md) | 1·2단계 구현 · 2단계는 브라우저 확인 대기 |
 | [Google 확장 개발 에이전트 도구 검토](docs/plan/2026-09-11-modern-web-guidance.md) | 분석만 — `reload_extension` 도입 권고 |
 | [시트 스킨 — 스프레드시트로 보이는 대화](docs/plan/2026-09-21-sheet-skin.md) | 설계만 — 목업 있음 · 구현 대기 |
-| [스킨 구조 — terminal · sheet · none 을 갈아끼운다](docs/plan/2026-09-24-skin-architecture.md) | 1~4 · 6단계 완료 (0.4.2~0.5.1) — 입력 컨트롤러 · 원본 가리기 · 스킨 레지스트리와 terminal 스킨 · 스킨 설정 · 줄 단위 마크다운 · 5단계(none)는 브라우저 실측 대기 |
+| [스킨 구조 — terminal · sheet · none 을 갈아끼운다](docs/plan/2026-09-24-skin-architecture.md) | 1~6단계 완료 (0.4.2~0.6.0) — terminal · none 스킨, 실시간 전환 · 7~8단계(sheet) 남음 |
 
 조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열여섯 건 중 열셋이 해결**됐고 한 건은 반쯤 해결됐다.
 매니페스트 캐시 건은 크롬 동작이라 감지만 하고, 선택 유실 건은 스크롤백 쪽만 고쳐졌다.

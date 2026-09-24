@@ -283,6 +283,11 @@
   GT.store.onChange(() => GT.skin.current.render());
   GT.config.onChange((c) => {
     GT_SET_LOCALE(c.locale);
+    // 옵션 화면에서 스킨을 바꾸면 열려 있는 탭도 바로 따라간다. 저장은 이미 됐다.
+    if (c.skin && c.skin !== GT.skin.current.id && GT.skins.get(c.skin)) {
+      GT.skin.switch(c.skin, { persist: false });
+      return;
+    }
     GT.skin.current.applyConfig(c);          // epoch 이 올라가 모든 노드를 다시 만든다
     GT.skin.current.render();
   });
@@ -329,7 +334,7 @@
 
   // ------------------------------------------------------------------- 입력 처리
   // 키 처리는 GT.prompt 에 있다. 여기서는 위젯을 넘겨 주기만 한다.
-  GT.prompt.attach(GT.skin.current.prompt, { toggle: () => GT.skin.toggle(), capturesTyping: GT.skin.current.capturesTyping });
+  GT.skin.attachPrompt();
   disposers.push(() => GT.prompt.detach());
 
   // pagehide 에서는 해체하지 않는다.

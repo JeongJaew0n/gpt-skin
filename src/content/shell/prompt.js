@@ -9,7 +9,7 @@ GT.prompt = (function () {
   let input = null;
   let autosizeImpl = null;
   let ctl = null;                         // 이번 attach 의 리스너를 한 번에 떼는 AbortController
-  let opts = { toggle() {}, capturesTyping: true };
+  let opts = { toggle() {}, capturesTyping: true, openCode: null, escapeHides: false };
 
   const sig = (capture) => (capture ? { capture: true, signal: ctl.signal } : { signal: ctl.signal });
   const autosize = () => { if (autosizeImpl) autosizeImpl(); };
@@ -151,6 +151,11 @@ GT.prompt = (function () {
       }
       // 기록을 보고 있었으면 쓰던 초안으로 돌아간다. 보고 있지 않으면 흘려보낸다 —
       // 그래야 esc 가 생성 중단으로 간다.
+      // 원본을 가리지 않는 스킨(none)은 빈 입력줄에서 esc 로 물러난다.
+      // 전역 키(캡처 단계)가 먼저 돈다 — 생성 중단이나 사이드바 닫기가 esc 를 가져갔으면 손대지 않는다.
+      if (e.key === 'Escape' && opts.escapeHides && histIdx === null && !e.defaultPrevented && input.value === '') {
+        e.preventDefault(); GT.skin.hide(); return;
+      }
       if (e.key === 'Escape' && histIdx !== null) {
         e.preventDefault();
         const draft = histDraft;
@@ -192,6 +197,11 @@ GT.prompt = (function () {
     window.addEventListener('keydown', (e) => {
       if (composing(e)) return;
       if (e.key === '`' && e.ctrlKey) { e.preventDefault(); opts.toggle(); return; }
+      // 스킨이 숨어 있을 때 여는 키 (none 의 Ctrl+;). 물리 키(e.code)로 본다.
+      // 실측 2026-09-24: 원본은 컴포저 포커스 상태에서 Ctrl+; 를 막지도 쓰지도 않는다.
+      if (opts.openCode && e.ctrlKey && !e.metaKey && !e.altKey && e.code === opts.openCode && !GT.skin.visible()) {
+        e.preventDefault(); GT.skin.show(); return;
+      }
       if (!GT.skin.visible()) return;
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); GT.commands.openPalette(); return; }
       if (e.key === 'b' && e.ctrlKey) { e.preventDefault(); GT.sidebar.toggle(); return; }

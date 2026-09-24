@@ -9,7 +9,9 @@ GT.skins = (function () {
   'use strict';
 
   // 값. 화면에 보일 이름은 여기 없다 — i18n 사전의 opt.skin.choice.<id> 가 정본이다.
-  const FIELDS = ['id', 'covers', 'capturesTyping', 'themes', 'defaultTheme', 'configKeys', 'hiddenCommands'];
+  // keys: { open, escapeHides } — open 은 스킨이 숨어 있을 때 여는 키의 e.code (없으면 null),
+  //   escapeHides 는 빈 입력줄에서 esc 가 스킨을 숨기는가. 키 처리 자체는 GT.prompt 가 한다.
+  const FIELDS = ['id', 'covers', 'capturesTyping', 'keys', 'themes', 'defaultTheme', 'configKeys', 'hiddenCommands'];
   // 함수
   const METHODS = [
     'mount', 'destroy', 'applyConfig',                    // 생명주기
@@ -73,6 +75,55 @@ GT.skin = (function () {
     // 확장이 다시 로드되면 흔적 없이 물러난다.
     destroy() {
       try { this.current.destroy(); } finally { GT.cover.remove(); }
+    },
+    // 입력 컨트롤러를 지금 스킨의 위젯에 붙인다. 스킨이 바뀔 때마다 다시 부른다.
+    attachPrompt() {
+      const s = this.current;
+      GT.prompt.attach(s.prompt, {
+        toggle: () => this.toggle(),
+        capturesTyping: s.capturesTyping,
+        openCode: (s.keys && s.keys.open) || null,
+        escapeHides: !!(s.keys && s.keys.escapeHides)
+      });
+    },
+    // 스킨을 바꾼다. store 는 건드리지 않는다 — 대화 내용은 껍데기와 무관하다.
+    // 실패하면 이전 스킨으로 되돌리고 오류를 돌려준다.
+    // docs/plan/2026-09-24-skin-architecture.md §2.3
+    async switch(id, opts) {
+      const persist = !opts || opts.persist !== false;
+      const next = GT.skins.get(id);
+      if (!next) return { ok: false, reason: 'unknown' };
+      const prev = this.current;
+      if (next === prev) return { ok: true, same: true };
+      const wasVisible = this.visible();
+      const mountOne = (s) => {
+        cur = s;
+        GT.cover.apply(s.covers);
+        s.mount(GT.config.all);
+        if (GT.prompt.attached !== undefined) this.attachPrompt();
+        s.syncSidebar();
+        if (GT.sidebar && GT.sidebar.element && GT.sidebar.element.isConnected) GT.sidebar.draw();
+        s.render();
+        s.renderChrome();
+        if (GT.store && GT.store.isStreaming && GT.store.isStreaming()) s.setMode('STREAM');
+      };
+      // 열려 있던 오버레이는 옮기지 않는다
+      try { if (GT.palette && GT.palette.isOpen && GT.palette.isOpen()) GT.palette.close(); } catch (_) {}
+      try { if (GT.sidebar && GT.sidebar.closeMenu) GT.sidebar.closeMenu(); } catch (_) {}
+      try { GT.prompt.detach(); } catch (_) {}
+      try { prev.destroy(); } catch (_) {}
+      try {
+        mountOne(next);
+      } catch (e) {
+        try { next.destroy(); } catch (_) {}
+        mountOne(prev);
+        if (wasVisible) GT.cover.on(); else GT.cover.off();
+        return { ok: false, reason: String((e && e.message) || e) };
+      }
+      if (wasVisible) this.show(); else this.hide();
+      if (persist) await GT.config.set('skin', id);
+      GT.sendToSW({ kind: 'visible', visible: this.visible() });
+      return { ok: true };
     },
     show() { GT.cover.on(); this.current.focus(); },
     hide() { GT.cover.off(); },

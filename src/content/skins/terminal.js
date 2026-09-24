@@ -709,6 +709,7 @@
     id: 'terminal',
     covers: true,                 // 원본을 가리고 전체 화면을 쓴다
     capturesTyping: true,         // 아무 데서나 타이핑하면 입력줄로
+    keys: { open: null, escapeHides: false },   // 여닫기는 Ctrl+` 하나
     get themes() { return GT.theme.THEMES; },
     defaultTheme: 'modern-dark',
     // 정본은 스키마의 skin: 'terminal' 표시다. 여기에 또 적으면 갈린다.

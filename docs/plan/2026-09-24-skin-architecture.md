@@ -405,7 +405,7 @@ CSS 는 지금처럼 JS 문자열로 둔다(`theme.js` 방식). 파일을 나누
 | **2** [완료] | `shell/cover.js` `shell/clipboard.js` — `tty.js` 에서 뽑는다 (0.4.3, 2026-09-24). `health.revert` 는 `GT.tty.hide()` → cover 로 이미 이어지고, `GT.skin.hide()` 로 바꾸는 것은 3단계에서 한다 | PATCH | `lifecycle` 테스트(page style 제거) 통과 |
 | **3** [완료] | `shell/skin.js` 레지스트리 + `skins/terminal.js` = `tty.js` 이동 + `register`. **`GT.tty.*` 107곳을 `GT.skin.current.*` 로.** 오버레이 세 모듈은 `overlayRoot()` (0.4.4, 2026-09-24). 역할별로 커밋을 나누지 않고 한 커밋으로 했다 — 중간 상태마다 테스트를 통과시키려면 스텁을 두 벌 들고 가야 해서 오히려 위험했다 | PATCH | **`GT.tty` 가 `skins/terminal.js` 밖에 없다** (테스트). 기존 1124건 통과 |
 | **4** [완료] | 설정: `skin` 키, 스킨별 항목 표시, `theme` → `terminal.theme` 이관, `:skin` `:theme` 갱신, 옵션에 스킨 선택 (0.5.0, 2026-09-24). **5단계로 넘긴 것** — 팝업의 스킨 선택(선택지가 하나라 뜻이 없다), `:skin` 실시간 전환(`GT.skin.switch`, 두 번째 스킨이 있어야 확인된다), `enabled` 와 `skin: none` 합치기(none 이 있어야 판단된다), `hiddenCommands` 적용(숨길 명령이 있는 스킨이 none 부터다). 스킨 정의의 `label` 은 없앴다 — 이름은 사전 `opt.skin.choice.<id>` 가 정본이다. `configKeys` 는 스키마의 `skin:` 표시에서 끌어온다 | MINOR | 스킨이 하나라도 `:skin` 이 목록을 내고, 옵션 화면이 터미널 항목만 보인다 |
-| **5** | `skins/none.js` — 명령줄 · 토스트 · `covers:false` · `capturesTyping:false` | MINOR | `:skin none` 에서 원본이 온전하고 `:ls` `:rename` `Ctrl+B` 가 된다. `Ctrl+\`` 로 명령줄이 접힌다 |
+| **5** [완료] | `skins/none.js` — 명령줄 · 출력 패널 · `covers:false` · `capturesTyping:false` (0.6.0, 2026-09-24). `GT.skin.switch()` 로 `:skin` 과 옵션 화면 변경이 바로 적용된다. `hiddenCommands` 적용. 계약에 `keys` 필드 추가. 아래 '5단계 실측' 참고 | MINOR | `:skin none` 에서 원본이 온전하고 `:ls` `:rename` `Ctrl+B` 가 된다. `Ctrl+\`` 로 명령줄이 접힌다 |
 | **6** [완료] | `markdown.lines()` + 행 단위 `renderplan` (core) (0.5.1, 2026-09-24). 블록 판별을 `blocks()` 로 떼어 터미널 렌더와 `lines()` 가 같은 문법을 쓴다. 떼어 내기 전후 렌더 트리를 원문 18가지로 비교해 전부 같음을 확인했다. 행 계획은 `renderplan.rows()` — 기존 `reconcile` 을 그대로 쓴다. 스트리밍을 한 글자씩 흉내 내면 한 틱에 최대 두 행만 다시 만든다 | PATCH | 순수 함수 테스트. 화면 변화 없음 |
 | **7** | `skins/sheet.js` 1단계 — 보이고, 읽고, 보낸다 (시트 문서 §6-1) | MINOR | 시트 문서 §7 회귀 목록 |
 | **8** | sheet 2·3단계 | MINOR | 시트 문서 |
@@ -427,6 +427,48 @@ CSS 는 지금처럼 JS 문자열로 둔다(`theme.js` 방식). 파일을 나누
 - none 스킨은 원본을 가리지 않고 타이핑을 가로채지 않는다. store·tap 은 계속 돈다.
 - `theme` 은 스킨별 키로 갈라진다. 기존 값은 `terminal.theme` 으로 한 번 복사한다.
 - 스킨 추가 = 파일 하나 + 매니페스트 한 줄 + `register()`.
+
+### 5단계 실측 <sub>2026-09-24, chatgpt.com 새 대화 화면 · macOS Chrome · 창 733×811</sub>
+
+**`Ctrl+;` · `Ctrl+.` · `Ctrl+'` 를 원본이 쓰는가** `[확정]` — 쓰지 않는다.
+원본 컴포저(`#prompt-textarea`)에 포커스를 두고 실제 키를 눌렀다. 창 캡처 단계에 기록용 리스너를 달고
+300ms 뒤 상태를 비교했다.
+
+```
+key  code       ctrl  defaultPrevented  주소·포커스·대화상자·메뉴  컴포저 글자
+;    Semicolon  true  false             그대로                    그대로(빈 줄)
+.    Period     true  false             그대로                    그대로
+'    Quote      true  false             그대로                    그대로
+```
+
+→ none 의 여는 키는 `Ctrl+;`, 판별은 `e.code === 'Semicolon'` (레이아웃 무관).
+주의: 자동화 창이 뒤에 있을 때(`visibilityState: hidden`)는 키가 전혀 전달되지 않았다. 스크린샷으로 앞에 둔 뒤 다시 쟀다.
+
+**클릭 통과** `[확정]` — 통한다.
+우리 호스트와 같은 구조(`position:fixed; inset:0; z-index:2147483000; pointer-events:none`, shadow root 안에
+`pointer-events:auto` 막대 하나)를 임시로 넣었다.
+
+```
+elementFromPoint(컴포저 중앙)   → P (원본 컴포저 안 문단)       우리 호스트가 아니다
+elementFromPoint(막대 위)       → #__probe_host (막대, 재타기팅)
+실제 클릭(컴포저)               → 캡처된 대상 P, activeElement = prompt-textarea
+실제 클릭(막대, 아래에 원본 링크) → 캡처된 대상 bar, 주소 그대로 (링크 안 눌림)
+```
+
+**원본의 색 모드** — `html.light`, `color-scheme: light`, 본문 배경 `rgb(252, 252, 252)`.
+none 의 위젯은 자기 배경(터미널 기본 팔레트)을 칠해 원본 모드와 무관하게 읽히게 했다.
+
+**5단계에서 정한 것**
+- 명령줄에 명령이 아닌 글을 치면 **보낸다** (터미널과 같은 경로, `compose.send`). §2.9 의 '1차에서는 안내만' 가정을 바꿨다 —
+  경로가 이미 검증돼 있고 막을 이유가 없다.
+- 사이드바는 **Ctrl+B 로 직접 열었을 때만** 원본 위에 띄운다 (`sidebar.state().forcedOpen`). 원본에 이미 목록이 있다.
+- 조용한 info(부팅 배너 등)는 원본 위에 띄우지 않고 로그로만 남긴다. error · warn 과 명령 결과는 띄운다.
+- `enabled` 와 `skin: none` 은 **합치지 않았다.** `enabled` 는 '처음부터 스킨을 보인다' 이고, none 에서는 명령줄이 열린 채 시작한다.
+  합치는 것은 되돌리기 어렵고 팝업 토글의 뜻이 바뀌므로 사용자 결정으로 남긴다. `[미정]`
+
+**아직 브라우저로 안 본 것** `[미정]` — 확장을 다시 로드한 뒤 확인한다.
+- none 에서 `Ctrl+;` · esc · `Ctrl+B` 사이드바 · `⌘K` 팔레트가 원본 위에서 동작하고 읽히는가
+- `:skin none` ↔ `:skin terminal` 실시간 전환에서 흔적(호스트 · 스타일 · 클래스)이 남지 않는가
 
 ### 가정 `[가정]` — 브라우저에서 확인해야 한다
 - none 스킨의 명령줄 여는 키 `Ctrl+;` 를 원본이 쓰지 않는다.

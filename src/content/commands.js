@@ -30,8 +30,14 @@ GT.commands = (function () {
   // args: 인자 후보를 돌려주는 함수(선택). 이미 입력된 앞 인자들을 받는다.
   const def = (name, desc, run, hint, args) => { REG.push({ name, desc, run, hint, args }); };
 
+  // 지금 스킨에서 쓸 수 있는 명령. 스킨이 hiddenCommands 로 뺀 것은 목록·팔레트·완성에서 숨긴다.
+  const hidden = () => {
+    try { return GT.skin.current.hiddenCommands || []; } catch (_) { return []; }
+  };
+  const usable = () => REG.filter((c) => !hidden().includes(c.name));
+
   def(':help', '명령 목록', () => {
-    GT.skin.current.system('info', null, table(REG.map((c) => [c.name, c.desc])));
+    GT.skin.current.system('info', null, table(usable().map((c) => [c.name, c.desc])));
   });
 
   def(':new', '새 대화', () => { GT.navigate.newChat(); });
@@ -267,8 +273,8 @@ GT.commands = (function () {
     info(`${key} = ${name}`);
   }, 'modern-dark', () => themeNames());
 
-  // 스킨 고르기. 지금은 저장만 하고 새로고침 때 적용한다 —
-  // 실시간 전환(GT.skin.switch)은 두 번째 스킨이 생길 때 만든다 (스킨 구조 5단계).
+  // 스킨 고르기. 바로 바꾸고 저장한다 (GT.skin.switch).
+  // 결과 줄은 새 스킨에 찍는다 — 이전 스킨은 이미 해체됐다.
   def(':skin', GT_T('cmd.skin.desc'), async (args) => {
     const names = GT.skins.names();
     const cur = GT.skin.current.id;
@@ -279,8 +285,9 @@ GT.commands = (function () {
     }
     if (!names.includes(id)) return err(GT_T('cmd.skin.unknown', id, names.join(', ')));
     if (id === cur) return info(GT_T('cmd.skin.already', GT.skins.label(id)));
-    await GT.config.set('skin', id);
-    info(GT_T('cmd.skin.saved', GT.skins.label(id)));
+    const r = await GT.skin.switch(id);
+    if (!r.ok) return err(GT_T('cmd.skin.failed', GT.skins.label(id), r.reason));
+    GT.skin.current.system('info', GT_T('cmd.skin.switched', GT.skins.label(id)));
   }, null, () => GT.skins.names());
 
   // 지금 스킨에서 뜻이 있는 항목만 보여 준다. 다른 스킨의 항목도 :set 으로는 바꿀 수 있다.
@@ -508,6 +515,7 @@ export async function ${pick(VERBS).replace(/ing$/, '')}${n[0].toUpperCase() + n
     if (!p) return false;
     const cmd = REG.find((c) => c.name === p.name);
     if (!cmd) { err(`알 수 없는 명령입니다: ${p.name} — :help`); return true; }
+    if (hidden().includes(cmd.name)) { err(GT_T('cmd.hidden', cmd.name, GT.skins.label(GT.skin.current.id))); return true; }
     try { await cmd.run(p.args); } catch (e) { err(String((e && e.message) || e)); }
     return true;
   }
@@ -538,7 +546,7 @@ export async function ${pick(VERBS).replace(/ing$/, '')}${n[0].toUpperCase() + n
     // 아직 명령 이름을 치는 중
     if (parts.length === 0 || (parts.length === 1 && !endsWithSpace)) {
       const token = parts[0] || '';
-      const candidates = REG.map((c) => c.name).filter((n) => lower(n).startsWith(lower(token)));
+      const candidates = usable().map((c) => c.name).filter((n) => lower(n).startsWith(lower(token)));
       return { kind: 'command', token, candidates };
     }
 
@@ -573,7 +581,7 @@ export async function ${pick(VERBS).replace(/ing$/, '')}${n[0].toUpperCase() + n
     applyCompletion,
     commonPrefix,
     openPalette() {
-      GT.palette.open(REG.map((c) => ({ name: c.name, desc: c.desc, hint: c.hint })), (item) => {
+      GT.palette.open(usable().map((c) => ({ name: c.name, desc: c.desc, hint: c.hint })), (item) => {
         GT.prompt.fill(item.name + ' ');
       });
     }
