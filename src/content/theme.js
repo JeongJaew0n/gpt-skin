@@ -407,7 +407,7 @@ GT.theme = (function () {
 `;
 
   function vars(cfg) {
-    const t = THEMES[cfg.theme] || THEMES['modern-dark'];
+    const t = THEMES[cfg['terminal.theme']] || THEMES['modern-dark'];
     const decls = Object.entries(t).map(([k, v]) => `${k}:${v}`).join(';');
     return `.gt-root{${decls};`
       + `--gt-font:${cfg['font.family']};`

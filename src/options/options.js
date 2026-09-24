@@ -33,8 +33,9 @@
     await chrome.storage.sync.set({ [key]: v });
     markSaved();
     refreshCount();
-    // 언어를 바꾸면 이 화면의 모든 문구가 바뀐다. 다시 그리는 게 가장 간단하다.
-    if (key === 'locale') location.reload();
+    // 언어를 바꾸면 이 화면의 모든 문구가 바뀐다. 스킨을 바꾸면 보여 줄 항목이 바뀐다.
+    // 둘 다 다시 그리는 게 가장 간단하다.
+    if (key === 'locale' || key === 'skin') location.reload();
     return v;
   }
 
@@ -80,7 +81,8 @@
 
   // ------------------------------------------------------------------ 렌더
   const sections = [];
-  GT_SCHEMA.forEach((f) => {
+  // 지금 스킨의 항목과 공용 항목만. 다른 스킨의 값도 저장돼 있고 스킨을 바꾸면 다시 보인다.
+  GT_FIELDS_FOR(current.skin).forEach((f) => {
     const title = GT_SECTION(f);
     let s = sections.find((x) => x.name === title);
     if (!s) { s = { name: title, fields: [] }; sections.push(s); }

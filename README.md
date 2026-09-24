@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1195](https://img.shields.io/badge/테스트-1195_케이스-22C55E)
+![테스트 1231](https://img.shields.io/badge/테스트-1231_케이스-22C55E)
 
 </div>
 
@@ -136,11 +136,12 @@ tools/package.sh      # dist/gpt-skin-<version>.zip
 <tr><td><code>:effort &lt;0-2 | 낮음·중간·높음 | +·-&gt;</code></td><td>추론 수준</td></tr>
 <tr><td><code>:sidebar &lt;on|off|toggle|more|width n&gt;</code></td><td>사이드바 <sub>(<code>clear-cache</code> 도 받는다)</sub></td></tr>
 <tr><td><code>:font &lt;10-24 | + | - | reset&gt;</code></td><td>글씨 크기</td></tr>
-<tr><td><code>:theme &lt;modern-dark|crt-green&gt;</code></td><td>테마</td></tr>
+<tr><td><code>:skin [이름]</code></td><td>스킨 목록 / 바꾸기 <sub>(지금은 <code>terminal</code> 하나 · 저장 후 새로고침하면 적용)</sub></td></tr>
+<tr><td><code>:theme &lt;이름&gt;</code></td><td>지금 스킨의 테마 <sub>(<code>terminal.theme</code> 에 저장)</sub></td></tr>
 
 <tr><td colspan="2"><b>설정 · 점검</b></td></tr>
 <tr><td><code>:help</code></td><td>명령 목록</td></tr>
-<tr><td><code>:config</code></td><td>설정 전체 보기</td></tr>
+<tr><td><code>:config</code></td><td>설정 보기 <sub>(지금 스킨의 항목과 공용 항목)</sub></td></tr>
 <tr><td><code>:set &lt;key&gt; &lt;value&gt;</code></td><td>설정 변경</td></tr>
 <tr><td><code>:options</code></td><td>확장 설정 화면 열기</td></tr>
 <tr><td><code>:health</code></td><td>점검 상태와 경고 목록</td></tr>
@@ -198,6 +199,8 @@ tools/package.sh      # dist/gpt-skin-<version>.zip
 
 `:health` 로 현재 점검 상태와 경고 목록을 본다.
 설정 항목은 [`src/shared/defaults.js`](src/shared/defaults.js) 의 `GT_SCHEMA` **한 곳**에서 정의되고, 옵션 화면은 거기서 생성된다.
+`skin: '<id>'` 가 붙은 항목(커서·스캔라인·테마 등)은 그 스킨에서만 보인다. 저장은 다 한다.
+예전의 `theme` 키는 첫 부팅 때 한 번 `terminal.theme` 으로 옮긴다 — 옛 키는 지우지 않는다.
 
 ---
 
@@ -334,7 +337,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>35개 파일 · 1195 케이스</b></summary>
+<summary><b>36개 파일 · 1231 케이스</b></summary>
 
 <br>
 
@@ -374,7 +377,8 @@ tools/test.sh
 | `ime` | 15 | 한글 조합 중 Enter 를 전송으로 받지 않는가 |
 | `prompt` | 24 | 입력 컨트롤러 — 입력 로직이 한 벌인가 · detach 로 핸들러가 떨어지는가 · 원본을 안 가리는 스킨에서 타이핑을 뺏지 않는가 |
 | `cover` | 20 | 원본 가리기 — 가리는/안 가리는 스타일 · 호스트 재사용 · 흔적 없이 물러나는가 · 가리기가 한 곳에만 있는가 |
-| `skin` | 25 | 스킨 계약 — 모든 스킨이 계약을 채우는가 · GT.tty·ui 우회가 없는가 · 파일 하나에 스킨 하나 · 해체가 cover 를 걷는가 · 복귀 상태에서 토글 금지 |
+| `skin` | 26 | 스킨 계약 — 모든 스킨이 계약을 채우는가 · GT.tty·ui 우회가 없는가 · 파일 하나에 스킨 하나 · 해체가 cover 를 걷는가 · 복귀 상태에서 토글 금지 |
+| `skinconfig` | 35 | 스킨 설정 — skin 선택지 = 스킨 파일 · 스킨 전용 항목 필터 · theme 이관이 한 번만, 사용자 값을 덮지 않는가 · `:skin` `:theme` |
 
 </details>
 
@@ -393,7 +397,7 @@ tools/test.sh
 | [이미지 생성 — 결과와 과정](docs/plan/2026-09-09-image-generation.md) | 1·2단계 구현 · 2단계는 브라우저 확인 대기 |
 | [Google 확장 개발 에이전트 도구 검토](docs/plan/2026-09-11-modern-web-guidance.md) | 분석만 — `reload_extension` 도입 권고 |
 | [시트 스킨 — 스프레드시트로 보이는 대화](docs/plan/2026-09-21-sheet-skin.md) | 설계만 — 목업 있음 · 구현 대기 |
-| [스킨 구조 — terminal · sheet · none 을 갈아끼운다](docs/plan/2026-09-24-skin-architecture.md) | 1~3단계 완료 (0.4.2~0.4.4) — 입력 컨트롤러 · 원본 가리기 · 스킨 레지스트리와 terminal 스킨 |
+| [스킨 구조 — terminal · sheet · none 을 갈아끼운다](docs/plan/2026-09-24-skin-architecture.md) | 1~4단계 완료 (0.4.2~0.5.0) — 입력 컨트롤러 · 원본 가리기 · 스킨 레지스트리와 terminal 스킨 · 스킨 설정 |
 
 조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열여섯 건 중 열셋이 해결**됐고 한 건은 반쯤 해결됐다.
 매니페스트 캐시 건은 크롬 동작이라 감지만 하고, 선택 유실 건은 스크롤백 쪽만 고쳐졌다.

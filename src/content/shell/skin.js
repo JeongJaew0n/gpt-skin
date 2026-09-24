@@ -8,8 +8,8 @@
 GT.skins = (function () {
   'use strict';
 
-  // 값
-  const FIELDS = ['id', 'label', 'covers', 'capturesTyping', 'themes', 'defaultTheme', 'configKeys', 'hiddenCommands'];
+  // 값. 화면에 보일 이름은 여기 없다 — i18n 사전의 opt.skin.choice.<id> 가 정본이다.
+  const FIELDS = ['id', 'covers', 'capturesTyping', 'themes', 'defaultTheme', 'configKeys', 'hiddenCommands'];
   // 함수
   const METHODS = [
     'mount', 'destroy', 'applyConfig',                    // 생명주기
@@ -43,7 +43,8 @@ GT.skins = (function () {
     register,
     missing,
     get: (id) => defs.get(id) || null,
-    names: () => Array.from(defs.keys())
+    names: () => Array.from(defs.keys()),
+    label: (id) => GT_T('opt.skin.choice.' + id)
   };
 })();
 

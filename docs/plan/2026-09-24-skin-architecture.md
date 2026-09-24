@@ -404,7 +404,7 @@ CSS 는 지금처럼 JS 문자열로 둔다(`theme.js` 방식). 파일을 나누
 | **1** [완료] | `shell/prompt.js` — `index.js` 336~560행 이동. `GT.tty.ui.input` 을 어댑터로 받는다 (0.4.2, 2026-09-24) | PATCH | IME · 기록 · 완성 · 포커스 테스트가 새 경로에서 통과. 브라우저에서 한글 `:rename 안뇽` 실측 |
 | **2** [완료] | `shell/cover.js` `shell/clipboard.js` — `tty.js` 에서 뽑는다 (0.4.3, 2026-09-24). `health.revert` 는 `GT.tty.hide()` → cover 로 이미 이어지고, `GT.skin.hide()` 로 바꾸는 것은 3단계에서 한다 | PATCH | `lifecycle` 테스트(page style 제거) 통과 |
 | **3** [완료] | `shell/skin.js` 레지스트리 + `skins/terminal.js` = `tty.js` 이동 + `register`. **`GT.tty.*` 107곳을 `GT.skin.current.*` 로.** 오버레이 세 모듈은 `overlayRoot()` (0.4.4, 2026-09-24). 역할별로 커밋을 나누지 않고 한 커밋으로 했다 — 중간 상태마다 테스트를 통과시키려면 스텁을 두 벌 들고 가야 해서 오히려 위험했다 | PATCH | **`GT.tty` 가 `skins/terminal.js` 밖에 없다** (테스트). 기존 1124건 통과 |
-| **4** | 설정: `skin` 키, 스킨별 항목 표시, `theme` → `terminal.theme` 이관, `:skin` `:theme` 갱신, 옵션·팝업에 스킨 선택 | MINOR | 스킨이 하나라도 `:skin` 이 목록을 내고, 옵션 화면이 터미널 항목만 보인다 |
+| **4** [완료] | 설정: `skin` 키, 스킨별 항목 표시, `theme` → `terminal.theme` 이관, `:skin` `:theme` 갱신, 옵션에 스킨 선택 (0.5.0, 2026-09-24). **5단계로 넘긴 것** — 팝업의 스킨 선택(선택지가 하나라 뜻이 없다), `:skin` 실시간 전환(`GT.skin.switch`, 두 번째 스킨이 있어야 확인된다), `enabled` 와 `skin: none` 합치기(none 이 있어야 판단된다), `hiddenCommands` 적용(숨길 명령이 있는 스킨이 none 부터다). 스킨 정의의 `label` 은 없앴다 — 이름은 사전 `opt.skin.choice.<id>` 가 정본이다. `configKeys` 는 스키마의 `skin:` 표시에서 끌어온다 | MINOR | 스킨이 하나라도 `:skin` 이 목록을 내고, 옵션 화면이 터미널 항목만 보인다 |
 | **5** | `skins/none.js` — 명령줄 · 토스트 · `covers:false` · `capturesTyping:false` | MINOR | `:skin none` 에서 원본이 온전하고 `:ls` `:rename` `Ctrl+B` 가 된다. `Ctrl+\`` 로 명령줄이 접힌다 |
 | **6** | `markdown.lines()` + 행 단위 `renderplan` (core) | PATCH | 순수 함수 테스트. 화면 변화 없음 |
 | **7** | `skins/sheet.js` 1단계 — 보이고, 읽고, 보낸다 (시트 문서 §6-1) | MINOR | 시트 문서 §7 회귀 목록 |
@@ -441,7 +441,7 @@ CSS 는 지금처럼 JS 문자열로 둔다(`theme.js` 방식). 파일을 나누
 - **스킨 전환 중 스트리밍이 진행 중이면?** store 는 계속 쌓이므로 새 스킨이 `render()` 하면 따라온다.
   단, `setMode('STREAM')` 을 누가 다시 불러 주나 — `skin.switch()` 끝에 `store.isStreaming()` 을 보고 부른다. 구현하며 확정.
 - **`enabled: false` 의 뜻.** 지금은 "터미널을 켜지 않는다". 스킨이 여럿이면 "skin = none" 과 같은가?
-  같다면 `enabled` 를 없애고 `skin: none` 으로 합칠 수 있다. 팝업의 토글이 바뀐다. → 4단계에서 정한다.
+  같다면 `enabled` 를 없애고 `skin: none` 으로 합칠 수 있다. 팝업의 토글이 바뀐다. → ~~4단계에서 정한다~~ **5단계에서 정한다** (none 스킨이 있어야 판단된다).
   기울어진 쪽: **합친다.** 상태가 둘(enabled × skin) 이면 `enabled:false, skin:sheet` 같은 조합이 생긴다.
 - **계약 검사를 어디까지 하나.** 테스트에 DOM 이 없다. (a) 스킨 파일이 계약의 키를 전부 갖는지만 본다(정규식),
   (b) 최소 DOM 스텁을 만들어 `mount → render → destroy` 를 돌린다. → 9단계에서. (a) 는 3단계부터 둔다.

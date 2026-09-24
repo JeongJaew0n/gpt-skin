@@ -10,7 +10,9 @@ function load() {
     config: { keys: () => ['theme', 'font.size', 'sidebar.visible'], get: () => 13, DEFAULTS: {} },
     chats: { projects: () => [{ id: 'g1', name: '세무사' }, { id: 'g2', name: '공부2' }] },
     store: { state: { messages: [], superseded: 0, orphanDeltas: 0 } },
-    skin: { current: { system(){}, applyConfig(){}, render(){} }, hide(){} },
+    // :theme 은 지금 스킨의 테마 목록에서 고른다
+    skin: { current: { id: 'terminal', themes: { 'modern-dark': {}, 'crt-green': {}, amber: {} }, system(){}, applyConfig(){}, render(){} }, hide(){} },
+    skins: { names: () => ['terminal'], label: (id) => id },
     sidebar: { chats: () => [], isOpen: () => false },
     picker: {}, navigate: {}, convops: {}, health: { CHECKS: {}, reasons: [] },
     conversation: {}, palette: {}, oai: {}, compose: {}

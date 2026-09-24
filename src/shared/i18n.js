@@ -12,6 +12,7 @@
 var GT_I18N = {
   ko: {
     // ---------------------------------------------------------------- 설정
+    'opt.section.skin': '스킨',
     'opt.section.behavior': '동작',
     'opt.section.sidebar': '사이드바',
     'opt.section.display': '표시',
@@ -23,6 +24,9 @@ var GT_I18N = {
     'opt.locale.choice.ko': '한국어',
     'opt.locale.choice.en': 'English',
 
+    'opt.skin.label': '스킨',
+    'opt.skin.help': 'ChatGPT 위에 씌울 화면의 종류입니다. 바꾸면 ChatGPT 탭을 새로고침해야 적용됩니다.',
+    'opt.skin.choice.terminal': '터미널',
     'opt.enabled.label': 'ChatGPT 를 열면 바로 터미널로',
     'opt.enabled.help': '기본은 꺼짐 — 원본 UI 로 시작합니다. 툴바 아이콘이나 Ctrl+` 로 그때그때 켭니다.',
 
@@ -38,6 +42,15 @@ var GT_I18N = {
     'opt.log.label': '콘솔 진단 로그',
     'opt.log.help': '개발자 콘솔에 [gpt-skin] 진단 줄을 남깁니다. :log off 로도 끕니다.',
 
+    'cmd.skin.desc': '스킨 — 인자 없으면 목록, :skin <이름> 으로 바꿉니다',
+    'cmd.skin.state': '지금 스킨: $1 · 가능: $2',
+    'cmd.skin.unknown': '알 수 없는 스킨입니다: $1 (가능: $2)',
+    'cmd.skin.already': '이미 $1 스킨입니다',
+    'cmd.skin.saved': '$1 스킨으로 저장했습니다. 이 탭을 새로고침하면 적용됩니다',
+    'cmd.theme.desc': '테마 — 지금 스킨의 테마 목록에서 고릅니다',
+    'cmd.theme.state': '지금 테마: $1 · 가능: $2',
+    'cmd.theme.unknown': '알 수 없는 테마입니다: $1',
+    'cmd.theme.none': '$1 스킨에는 고를 테마가 없습니다',
     'cmd.log.desc': '콘솔 진단 로그 — :log [on|off]',
     'cmd.log.state.on': '콘솔 진단 로그: 켜짐 — :log off 로 끕니다',
     'cmd.log.state.off': '콘솔 진단 로그: 꺼짐 — :log on 으로 켭니다',
@@ -57,7 +70,7 @@ var GT_I18N = {
     'opt.sidebar.minColumns.label': '이보다 좁으면 처음에 접어둠 (칸)',
     'opt.sidebar.minColumns.help': '0 이면 항상 표시합니다. 목록은 본문 위에 덮이므로 좁은 창에서는 기본값을 접어 둡니다. 손잡이로 열면 폭과 무관하게 열립니다.',
 
-    'opt.theme.label': '테마',
+    'opt.terminal.theme.label': '테마',
     'opt.font.family.label': '폰트',
     'opt.font.family.help': '설치돼 있지 않으면 뒤쪽 스택으로 폴백합니다.',
     'opt.font.size.label': '글자 크기 (px)',
@@ -109,6 +122,7 @@ var GT_I18N = {
   },
 
   en: {
+    'opt.section.skin': 'Skin',
     'opt.section.behavior': 'Behavior',
     'opt.section.sidebar': 'Sidebar',
     'opt.section.display': 'Display',
@@ -120,6 +134,9 @@ var GT_I18N = {
     'opt.locale.choice.ko': '한국어',
     'opt.locale.choice.en': 'English',
 
+    'opt.skin.label': 'Skin',
+    'opt.skin.help': 'Which interface to lay over ChatGPT. Reload the ChatGPT tab to apply a change.',
+    'opt.skin.choice.terminal': 'Terminal',
     'opt.enabled.label': 'Start in the terminal on ChatGPT',
     'opt.enabled.help': 'Off by default — starts with the original UI. Turn it on per tab from the toolbar icon or Ctrl+`.',
 
@@ -135,6 +152,15 @@ var GT_I18N = {
     'opt.log.label': 'Console diagnostics',
     'opt.log.help': 'Writes [gpt-skin] diagnostic lines to the developer console. :log off turns it off too.',
 
+    'cmd.skin.desc': 'Skin — lists skins, or :skin <name> to change',
+    'cmd.skin.state': 'Current skin: $1 · available: $2',
+    'cmd.skin.unknown': 'Unknown skin: $1 (available: $2)',
+    'cmd.skin.already': 'Already using the $1 skin',
+    'cmd.skin.saved': 'Saved the $1 skin. Reload this tab to apply it',
+    'cmd.theme.desc': 'Theme — pick from the current skin\'s themes',
+    'cmd.theme.state': 'Current theme: $1 · available: $2',
+    'cmd.theme.unknown': 'Unknown theme: $1',
+    'cmd.theme.none': 'The $1 skin has no themes to pick',
     'cmd.log.desc': 'Console diagnostics — :log [on|off]',
     'cmd.log.state.on': 'Console diagnostics: on — :log off to turn off',
     'cmd.log.state.off': 'Console diagnostics: off — :log on to turn on',
@@ -154,7 +180,7 @@ var GT_I18N = {
     'opt.sidebar.minColumns.label': 'Collapse initially below this width (columns)',
     'opt.sidebar.minColumns.help': '0 always shows it. The list overlays the thread, so it starts collapsed in narrow windows. The handle opens it regardless of width.',
 
-    'opt.theme.label': 'Theme',
+    'opt.terminal.theme.label': 'Theme',
     'opt.font.family.label': 'Font',
     'opt.font.family.help': 'Falls back through the stack if not installed.',
     'opt.font.size.label': 'Font size (px)',

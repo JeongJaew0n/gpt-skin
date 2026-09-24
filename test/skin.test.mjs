@@ -44,6 +44,7 @@ function loadRegistry(extra = {}) {
   const sb = {
     console, Object, Array, Map, String, Error, setTimeout,
     document: { createElement: () => ({ style: {}, dataset: {}, appendChild() {}, addEventListener() {} }) },
+    chrome: { runtime: { getManifest: () => ({ version: '0.0.0' }) } }, navigator: { language: 'ko' },
     GT: {
       cover: { apply() {}, remove: () => { calls.coverRemoved++; }, on: () => { calls.coverOn = true; },
                off: () => { calls.coverOn = false; }, isOn: () => calls.coverOn },
@@ -54,6 +55,9 @@ function loadRegistry(extra = {}) {
     }
   };
   vm.createContext(sb);
+  // 스킨 정의는 스키마(configKeys)와 사전(이름)을 읽는다 — 매니페스트 순서대로 먼저 싣는다
+  vm.runInContext(read('src/shared/i18n.js'), sb, { filename: 'i18n.js' });
+  vm.runInContext(read('src/shared/defaults.js'), sb, { filename: 'defaults.js' });
   vm.runInContext(read('src/content/shell/skin.js'), sb, { filename: 'skin.js' });
   return { sb, GT: sb.GT, calls };
 }
@@ -78,7 +82,10 @@ function loadRegistry(extra = {}) {
     const def = GT.skins.get(id);
     t(`${id}: 계약을 전부 채운다`, GT.skins.missing(def).length === 0);
     t(`${id}: 원본을 안 가리면 타이핑도 안 뺏는다`, def.covers || def.capturesTyping === false);
-    t(`${id}: 이름이 ko·en 둘 다 있다`, !!(def.label && def.label.ko && def.label.en));
+    // 이름은 사전이 정본이다 — 스킨 정의에 또 적지 않는다
+    t(`${id}: 이름이 ko·en 사전에 있다`, !!(sb.GT_I18N.ko['opt.skin.choice.' + id] && sb.GT_I18N.en['opt.skin.choice.' + id]));
+    t(`${id}: configKeys 는 스키마의 skin 표시와 같다`,
+      def.configKeys.join() === sb.GT_SCHEMA.filter((f) => f.skin === id).map((f) => f.key).join());
     t(`${id}: 기본 테마가 테마 목록에 있다`, def.defaultTheme in def.themes);
     t(`${id}: prompt 가 el·autosize 를 준다`, 'el' in def.prompt && typeof def.prompt.autosize === 'function');
   }

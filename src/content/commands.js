@@ -254,18 +254,40 @@ GT.commands = (function () {
     info(`글씨 크기 ${cur} → ${next}px`);
   }, null, () => ['+', '-', 'reset', '12', '13', '15', '17']);
 
-  def(':theme', `테마 — ${GT.theme.names().join(' · ')}`, async (args) => {
+  // 테마는 지금 스킨의 목록에서 고르고 '<스킨>.theme' 에 쓴다.
+  const themeNames = () => Object.keys(GT.skin.current.themes || {});
+  def(':theme', GT_T('cmd.theme.desc'), async (args) => {
+    const key = GT.skin.current.id + '.theme';
     const name = args[0];
-    if (!name) return info(`현재 ${GT.config.get('theme')} · 가능: ${GT.theme.names().join(', ')}`);
-    if (!GT.theme.names().includes(name)) return err(`알 수 없는 테마: ${name}`);
-    await GT.config.set('theme', name);
+    if (!themeNames().length) return err(GT_T('cmd.theme.none', GT.skins.label(GT.skin.current.id)));
+    if (!name) return info(GT_T('cmd.theme.state', GT.config.get(key), themeNames().join(', ')));
+    if (!themeNames().includes(name)) return err(GT_T('cmd.theme.unknown', name));
+    await GT.config.set(key, name);
     GT.skin.current.applyConfig(GT.config.all);
-    info(`theme = ${name}`);
-  }, 'modern-dark', () => GT.theme.names());
+    info(`${key} = ${name}`);
+  }, 'modern-dark', () => themeNames());
 
+  // 스킨 고르기. 지금은 저장만 하고 새로고침 때 적용한다 —
+  // 실시간 전환(GT.skin.switch)은 두 번째 스킨이 생길 때 만든다 (스킨 구조 5단계).
+  def(':skin', GT_T('cmd.skin.desc'), async (args) => {
+    const names = GT.skins.names();
+    const cur = GT.skin.current.id;
+    const id = args[0];
+    if (!id) {
+      return info(GT_T('cmd.skin.state', GT.skins.label(cur),
+        names.map((n) => `${n} (${GT.skins.label(n)})`).join(', ')));
+    }
+    if (!names.includes(id)) return err(GT_T('cmd.skin.unknown', id, names.join(', ')));
+    if (id === cur) return info(GT_T('cmd.skin.already', GT.skins.label(id)));
+    await GT.config.set('skin', id);
+    info(GT_T('cmd.skin.saved', GT.skins.label(id)));
+  }, null, () => GT.skins.names());
+
+  // 지금 스킨에서 뜻이 있는 항목만 보여 준다. 다른 스킨의 항목도 :set 으로는 바꿀 수 있다.
   def(':config', '설정 전체 보기', () => {
     const cfg = GT.config.all;
-    GT.skin.current.system('info', null, table(GT.config.keys().map((k) => [k, cfg[k], k === 'enabled' ? '' : ''])));
+    const keys = GT_FIELDS_FOR(GT.skin.current.id).map((f) => f.key);
+    GT.skin.current.system('info', null, table(keys.map((k) => [k, cfg[k], ''])));
     info(':set <key> <value> 로 바꿉니다');
   });
 

@@ -28,8 +28,26 @@ GT.config = (function () {
       try {
         const got = await chrome.storage.sync.get(DEFAULTS);
         current = { ...DEFAULTS, ...got };
+        await this.migrate();
       } catch (_) { current = { ...DEFAULTS }; }
       return current;
+    },
+    // 키 이름이 바뀐 설정을 옮긴다 (GT_MIGRATIONS). 새 키가 저장소에 있으면 건드리지 않는다 —
+    // get(DEFAULTS) 는 기본값을 채워 돌려주므로 '있는가' 는 키 목록으로 따로 묻는다.
+    async migrate() {
+      const list = typeof GT_MIGRATIONS === 'undefined' ? [] : GT_MIGRATIONS;
+      if (!list.length) return [];
+      const keys = list.flatMap((m) => [m.from, m.to]);
+      const raw = await chrome.storage.sync.get(keys);
+      const moved = [];
+      for (const m of list) {
+        if (m.to in raw || !(m.from in raw)) continue;
+        const v = GT_COERCE(m.to, raw[m.from]);
+        current[m.to] = v;
+        await chrome.storage.sync.set({ [m.to]: v });
+        moved.push(m);
+      }
+      return moved;
     },
     async set(k, raw) {
       if (!this.has(k)) throw new Error(`알 수 없는 설정 키: ${k}`);

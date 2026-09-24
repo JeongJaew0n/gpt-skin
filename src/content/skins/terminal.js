@@ -707,12 +707,12 @@
 
   GT.skins.register({
     id: 'terminal',
-    label: { ko: '터미널', en: 'Terminal' },
     covers: true,                 // 원본을 가리고 전체 화면을 쓴다
     capturesTyping: true,         // 아무 데서나 타이핑하면 입력줄로
     get themes() { return GT.theme.THEMES; },
     defaultTheme: 'modern-dark',
-    configKeys: ['cursor.style', 'cursor.blink', 'scanlines', 'gutter.markers', 'wrap.columns', 'timestamps'],
+    // 정본은 스키마의 skin: 'terminal' 표시다. 여기에 또 적으면 갈린다.
+    get configKeys() { return GT_SCHEMA.filter((f) => f.skin === 'terminal').map((f) => f.key); },
     hiddenCommands: [],
 
     get ui() { return ui; },      // 계약 밖. 다른 모듈이 의존하면 안 된다 (test/skin.test.mjs 가 막는다)
