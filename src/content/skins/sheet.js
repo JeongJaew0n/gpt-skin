@@ -16,7 +16,7 @@
   const THEMES = {
     green: {
       '--gt-bg-0': '#ffffff', '--gt-bg-1': '#ffffff', '--gt-bg-2': '#f3f3f3', '--gt-bg-3': '#e6e6e6',
-      '--gt-border': '#d4d4d4', '--gt-fg': '#1e1e1e', '--gt-fg-dim': '#616161', '--gt-fg-faint': '#9e9e9e',
+      '--gt-border': '#d4d4d4', '--gt-fg': '#1e1e1e', '--gt-fg-dim': '#616161', '--gt-fg-faint': '#9e9e9e', '--gt-fg-strong': '#000000',
       '--gt-green': '#217346', '--gt-magenta': '#7a3ad1', '--gt-cyan': '#0b7a75',
       '--gt-yellow': '#9d5d00', '--gt-red': '#c42b1c', '--gt-blue': '#0563c1',
       '--gs-accent': '#217346', '--gs-accent-d': '#1a5c38', '--gs-hdr': '#f5f5f5', '--gs-hdr-b': '#c6c6c6',
@@ -24,7 +24,7 @@
     },
     blue: {
       '--gt-bg-0': '#ffffff', '--gt-bg-1': '#ffffff', '--gt-bg-2': '#f2f5fa', '--gt-bg-3': '#e3e9f3',
-      '--gt-border': '#d0d7e2', '--gt-fg': '#1b1f27', '--gt-fg-dim': '#5b6474', '--gt-fg-faint': '#98a1b0',
+      '--gt-border': '#d0d7e2', '--gt-fg': '#1b1f27', '--gt-fg-dim': '#5b6474', '--gt-fg-faint': '#98a1b0', '--gt-fg-strong': '#000000',
       '--gt-green': '#1f7a45', '--gt-magenta': '#6a3fc4', '--gt-cyan': '#0b6f8a',
       '--gt-yellow': '#9d5d00', '--gt-red': '#c42b1c', '--gt-blue': '#1d5fbf',
       '--gs-accent': '#2b5797', '--gs-accent-d': '#1e3f70', '--gs-hdr': '#f3f5f9', '--gs-hdr-b': '#c3cbd8',
@@ -60,12 +60,20 @@
   background: transparent; color: var(--gt-fg); font: inherit; line-height: 1.5; min-height: 1.5em; }
 .gs-input::placeholder { color: var(--gt-fg-faint); }
 .gs-fxbody .gt-suggest { padding: 2px 0 0; font-size: 11px; }
-.gs-grid { flex: 1 1 auto; min-height: 0; overflow: auto; background: #fff; outline: 0; }
-.gs-grid table { border-collapse: collapse; table-layout: fixed; width: 100%; }
-.gs-grid th, .gs-grid td { border: 1px solid var(--gt-border); padding: 1px 6px; font-weight: 400;
-  vertical-align: top; text-align: left; line-height: 1.5; }
-.gs-grid thead th { position: sticky; top: 0; z-index: 1; background: var(--gs-hdr); color: #444;
-  text-align: center; border-color: var(--gs-hdr-b); font-size: 11px; }
+/* 기준 높이를 0 으로 둔다. auto 면 크롬이 행을 하나 끼울 때마다 격자 내용 전체의 높이를 다시 잰다 —
+   하네스 실측(1390행): 행 하나 추가 뒤 레이아웃 11.5ms → flex-basis 0 으로 0.2ms. contain 은 그 격리를 굳힌다. */
+.gs-grid { flex: 1 1 0; min-height: 0; overflow: auto; background: #fff; outline: 0; contain: strict; }
+/* 격자는 표 요소(tr/td)를 쓰되 배치는 CSS 그리드로 한다. 표 배치는 칸 하나가 바뀌어도 모든 행을
+   다시 잰다 — 하네스 실측: 1390행에서 칸 하나 바꾼 뒤 레이아웃 18.4ms. 행마다 그리드로 두고 화면 밖 행은
+   content-visibility 로 건너뛴다. */
+.gs-grid table, .gs-grid thead, .gs-grid tbody { display: block; }
+.gs-grid colgroup { display: none; }
+.gs-grid tr { display: grid; grid-template-columns: 44px 72px minmax(0, 1fr) 64px; }
+.gs-grid tbody tr { content-visibility: auto; contain-intrinsic-size: auto 23px; }
+.gs-grid thead { position: sticky; top: 0; z-index: 1; }
+.gs-grid th, .gs-grid td { border-right: 1px solid var(--gt-border); border-bottom: 1px solid var(--gt-border);
+  padding: 1px 6px; font-weight: 400; text-align: left; line-height: 1.5; min-width: 0; }
+.gs-grid thead th { background: var(--gs-hdr); color: #444; text-align: center; border-color: var(--gs-hdr-b); font-size: 11px; }
 .gs-grid thead th[data-on="1"] { background: var(--gs-hdron); color: var(--gs-hdron-fg); font-weight: 600; }
 .gs-grid td.gs-rn { background: var(--gs-hdr); color: #444; text-align: center; border-color: var(--gs-hdr-b);
   font-size: 11px; user-select: none; }
@@ -130,6 +138,10 @@
   let chatsPath = '';
   const systemLog = [];
   let sysSeq = 0;
+  // 메시지 키 → 펼친 행과 행 서명. 바뀌지 않은 메시지를 매번 다시 펴지 않는다.
+  // 하네스 실측(1351행 대화에서 긴 답 스트리밍): 캐시 전 한 델타 21.9ms(중앙값) — 매 델타마다
+  // 150개 메시지 전부를 markdown.lines 로 다시 펴고 모든 행 서명을 다시 만들었다.
+  const memo = new Map();
 
   const T = (k, ...a) => GT_T(k, ...a);
   const cols = () => ['A', 'B', 'C'];
@@ -282,12 +294,33 @@
     }));
   }
 
+  // 행을 다시 펴야 하는지 가르는 지문. 행을 만드는 데 쓰는 값을 전부 넣는다 — 빠뜨리면 낡은 행이 남는다.
+  // 본문은 길이가 아니라 문자열 전체를 비교한다 (길이가 같고 내용만 바뀌는 교정이 실제로 있다).
+  function fingerprint(m) {
+    return [m.role, m.text || '', m.streaming ? 1 : 0, m.model || '', m.at || 0,
+      (m.images || []).map((im) => im.pointer).join(','), (m.parts || []).join(','), (m.refs || []).length].join('\u0001');
+  }
+
+  function rowsCached(mk, m) {
+    const fp = fingerprint(m);
+    const hit = memo.get(mk);
+    if (hit && hit.fp === fp) return hit;
+    const entry = { fp, rows: rowsOf(m), sigs: null, sigEpoch: -1 };
+    memo.set(mk, entry);
+    return entry;
+  }
+
   function plan(state) {
     const out = [];
+    const live = new Set();
     state.messages.forEach((m, idx) => {
       const mk = m.id ? 'm:' + m.id : 'i:' + idx;
-      rowsOf(m).forEach((r, i) => out.push({ key: mk + ':' + i, msgKey: mk, refs: m.refs || [], row: r }));
+      live.add(mk);
+      const entry = rowsCached(mk, m);
+      entry.rows.forEach((r, i) => out.push({ key: mk + ':' + i, msgKey: mk, refs: m.refs || [], row: r, memo: entry, at: i }));
     });
+    // 대화를 옮기면 이전 대화의 캐시를 버린다
+    [...memo.keys()].forEach((k) => { if (!live.has(k)) memo.delete(k); });
     systemLog.forEach((rec) => out.push({ key: 's:' + rec.id, sys: rec }));
     if (GT.store.isThinking()) out.push({ key: 'thinking', live: 'thinking' });
     if (GT.store.isDrawing()) out.push({ key: 'drawing', live: 'drawing' });
@@ -358,7 +391,18 @@
       }
       // 서명: 행 내용 + 그리기 전 인용 번호 상태 + 설정 세대 + 인용 출처 개수.
       // 인용 번호가 앞 행에서 이어지므로, 앞에서 번호가 밀리면 이 행도 다시 그린다.
-      const sig = JSON.stringify([it.row || null, it.sys ? it.sys.id : null, it.live || null, before, it.row ? it.refs.length : 0, epoch]);
+      // 메시지가 그대로면 지난번 서명을 쓴다 (같은 행 · 같은 시작 번호 상태 → 같은 서명).
+      let sig;
+      const mm = it.memo;
+      if (mm && mm.sigEpoch === epoch && mm.sigs && mm.sigs[it.at] && mm.sigs[it.at].before[0] === before[0] && mm.sigs[it.at].before[1] === before[1]) {
+        sig = mm.sigs[it.at].sig;
+      } else {
+        sig = JSON.stringify([it.row || null, it.sys ? it.sys.id : null, it.live || null, before, it.row ? it.refs.length : 0, epoch]);
+        if (mm) {
+          if (mm.sigEpoch !== epoch || !mm.sigs) { mm.sigs = []; mm.sigEpoch = epoch; }
+          mm.sigs[it.at] = { sig, before: before.slice() };
+        }
+      }
       let rec = pool.get(it.key);
       if (rec && rec.sig === sig) {
         if (rec.after && ctx) { ctx.seen = rec.after[0]; ctx.n = rec.after[1]; }
@@ -638,6 +682,7 @@
     mount(cfg) { build(); applyConfig(cfg); return root; },
     destroy() {
       pool.clear();
+      memo.clear();
       systemLog.length = 0;
       sel = null; chats = []; chatsAt = 0; chatsPath = '';
       shadow = null; root = null; varStyle = null;

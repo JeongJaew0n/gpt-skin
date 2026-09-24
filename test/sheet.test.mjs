@@ -244,6 +244,40 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   t('하네스가 진짜 입력 컨트롤러와 명령을 싣는다', html.includes('src/content/shell/prompt.js') && html.includes('src/content/commands.js'));
 }
 
+// ---------------------------------------------------------------- 밝은 스킨과 공유하는 CSS (하네스 실측 2026-09-24)
+{
+  const theme = read('src/content/theme.js');
+  const css = theme.slice(theme.indexOf('const CSS = `'), theme.indexOf('`;', theme.indexOf('const CSS = `')));
+  // color: #fff 처럼 글자색을 박으면 시트의 흰 바탕에서 사라진다. var(--x, #fff) 의 기본값은 괜찮다.
+  const fixed = (css.match(/(^|[;{\s])color:\s*(#[0-9a-f]{3,8}|rgba?\([^)]*\)|white|black)/gim) || []);
+  t('공유 CSS 는 글자색을 고정값으로 쓰지 않는다', fixed.length === 0);
+  if (fixed.length) console.log('    ', fixed.join(' | '));
+  const { S } = load();
+  t('시트 테마가 강조 글자색을 정의한다', Object.values(S.themes).every((th) => th['--gt-fg-strong'] && th['--gt-fg-strong'] !== '#fff' && th['--gt-fg-strong'] !== '#ffffff'));
+  const sheet = read('src/content/skins/sheet.js');
+  t('격자는 기준 높이 0 (행 추가마다 전체를 재지 않게)', /\.gs-grid \{ flex: 1 1 0;[^}]*contain: strict;/.test(sheet));
+  t('화면 밖 행은 배치를 건너뛴다', /\.gs-grid tbody tr \{ content-visibility: auto;/.test(sheet));
+}
+
+// ---------------------------------------------------------------- 바뀌지 않은 메시지는 다시 펴지 않는다
+{
+  const { S, state, sb } = load();
+  S.mount({ 'font.size': 13 });
+  state.messages = [{ id: 'a1', role: 'assistant', text: '하나\n\n둘' }, { id: 'a2', role: 'assistant', text: '셋', streaming: true }];
+  S.render();
+  const orig = sb.GT.markdown.lines; let calls = 0;
+  sb.GT.markdown.lines = (...a) => { calls++; return orig(...a); };
+  state.messages[1] = { ...state.messages[1], text: '셋 넷' };
+  S.render();
+  t('스트리밍 중인 메시지만 다시 편다', calls === 1);
+  calls = 0; S.render();
+  t('아무것도 안 바뀌면 다시 펴지 않는다', calls === 0);
+  state.messages[0] = { ...state.messages[0], text: '하나\n\n넷' };   // 길이 그대로, 내용만
+  S.render();
+  t('길이가 같아도 내용이 바뀌면 다시 편다', calls === 1 && S.ui.body.children[1].textContent.includes('넷'));
+  sb.GT.markdown.lines = orig;
+}
+
 // ---------------------------------------------------------------- 시트 탭
 {
   const { S, calls } = load();

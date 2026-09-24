@@ -179,7 +179,9 @@ GT.theme = (function () {
 
 /* ---- markdown ---- */
 .gt-p { white-space: pre-wrap; word-break: break-word; }
-.gt-h { font-weight: 700; color: #fff; }
+/* 강조 글자색은 변수로 둔다. 밝은 스킨(sheet)이 이 CSS 를 같이 쓰는데, 흰색을 박아 두면 흰 바탕에서 사라진다
+   (하네스 실측 2026-09-24: 시트의 **굵게** 가 안 보였다). 터미널 테마는 기본값 흰색 그대로다. */
+.gt-h { font-weight: 700; color: var(--gt-fg-strong, #fff); }
 .gt-h1 { font-size: 1.18em; } .gt-h2 { font-size: 1.1em; } .gt-h3 { font-size: 1.04em; }
 .gt-hr { border-top: 1px solid var(--gt-bg-3); }
 .gt-li { display: flex; gap: 12px; }
@@ -191,7 +193,7 @@ GT.theme = (function () {
 .gt-quote-bar { width: 2px; flex: 0 0 auto; background: var(--gt-border); }
 .gt-quote-body { color: var(--gt-fg-dim); display: flex; flex-direction: column; gap: 8px; }
 .gt-code-inline { color: var(--gt-cyan); background: var(--gt-bg-2); padding: 1px 5px; }
-.gt-strong { font-weight: 700; color: #fff; }
+.gt-strong { font-weight: 700; color: var(--gt-fg-strong, #fff); }
 .gt-em { font-style: italic; }
 .gt-link { color: var(--gt-blue); text-decoration: none; }
 .gt-link:hover { text-decoration: underline; }
