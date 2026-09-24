@@ -72,7 +72,7 @@
 .gs-grid > table > tbody > tr { content-visibility: auto; contain-intrinsic-size: auto 23px; }
 .gs-grid > table > thead { position: sticky; top: 0; z-index: 1; }
 .gs-grid > table > * > tr > th, .gs-grid > table > * > tr > td { border-right: 1px solid var(--gt-border); border-bottom: 1px solid var(--gt-border);
-  padding: 1px 6px; font-weight: 400; text-align: left; line-height: 1.5; min-width: 0; }
+  padding: 1px 6px; font-weight: 400; text-align: left; line-height: var(--gt-lh); min-width: 0; }
 .gs-grid > table > thead > tr > th { background: var(--gs-hdr); color: #444; text-align: center; border-color: var(--gs-hdr-b); font-size: 11px; }
 .gs-grid > table > thead > tr > th[data-on="1"] { background: var(--gs-hdron); color: var(--gs-hdron-fg); font-weight: 600; }
 .gs-grid td.gs-rn { background: var(--gs-hdr); color: #444; text-align: center; border-color: var(--gs-hdr-b);
@@ -256,7 +256,7 @@
     const t = THEMES[cfg['sheet.theme']] || THEMES.green;
     const decls = Object.entries(t).map(([k, v]) => `${k}:${v}`).join(';');
     varStyle.textContent = `.gt-root{${decls};--gt-font:inherit;--gt-size:${cfg['font.size']}px;`
-      + `--gt-lh:1.5;--gt-sb-w:${Number(cfg['sidebar.width']) || 30}ch;font-size:${cfg['font.size']}px;}`;
+      + `--gt-lh:${Number(cfg['line.height']) || 1.5};--gt-sb-w:${Number(cfg['sidebar.width']) || 30}ch;font-size:${cfg['font.size']}px;}`;
     if (ui.ribbon) ui.ribbon.hidden = cfg['sheet.ribbon'] === false;
     epoch += 1;
   }
@@ -666,7 +666,7 @@
     persistSidebar: false,
     themes: THEMES,
     defaultTheme: 'green',
-    get configKeys() { return GT_SCHEMA.filter((f) => f.skin === 'sheet').map((f) => f.key); },
+    get configKeys() { return GT_SCHEMA.filter((f) => f.skin && GT_SKIN_HAS(f, 'sheet')).map((f) => f.key); },
     // :messup 은 스크롤백에 가짜 블록을 끼우는 진단이다. 시트에는 끼울 자리를 두지 않았다.
     hiddenCommands: [':messup'],
 

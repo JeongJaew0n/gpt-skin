@@ -299,7 +299,7 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
 
 // ---------------------------------------------------------------- 명령 결과 · 생각 중 · 설정
 {
-  const { S, state, setThinking, cfg, calls } = load();
+  const { S, state, setThinking, cfg, calls, sb } = load();
   S.mount({ 'font.size': 13 });
   state.messages = [{ id: 'u1', role: 'user', text: '질문' }];
   S.system('info', '이름을 바꿨습니다');
@@ -328,6 +328,9 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   S.ui.rtabs.dispatch('dblclick');
   t('리본 탭을 두 번 누르면 설정을 뒤집는다', calls.cfgSet.some(([k]) => k === 'sheet.ribbon'));
   t('파랑 테마', S.themes.blue['--gs-accent'] === '#2b5797');
+  S.applyConfig({ 'font.size': 13, 'line.height': 2, 'sheet.theme': 'green' });
+  const varCss = sb.__shadow.children.filter((n) => n.tagName === 'STYLE').map((n) => n.textContent).join('');
+  t('시트가 줄 간격 설정을 따른다', /--gt-lh:2;/.test(varCss));
   S.ui.status.children[2].children[2].children[2].dispatch('click');
   t('상태 표시줄 + 는 글자 크게', calls.run.at(-1) === ':font +');
   void cfg;

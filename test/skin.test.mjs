@@ -85,7 +85,7 @@ function loadRegistry(extra = {}) {
     // 이름은 사전이 정본이다 — 스킨 정의에 또 적지 않는다
     t(`${id}: 이름이 ko·en 사전에 있다`, !!(sb.GT_I18N.ko['opt.skin.choice.' + id] && sb.GT_I18N.en['opt.skin.choice.' + id]));
     t(`${id}: configKeys 는 스키마의 skin 표시와 같다`,
-      def.configKeys.join() === sb.GT_SCHEMA.filter((f) => f.skin === id).map((f) => f.key).join());
+      def.configKeys.join() === sb.GT_SCHEMA.filter((f) => f.skin && sb.GT_SKIN_HAS(f, id)).map((f) => f.key).join());
     t(`${id}: 기본 테마가 테마 목록에 있다`, def.defaultTheme in def.themes);
     t(`${id}: prompt 가 el·autosize 를 준다`, 'el' in def.prompt && typeof def.prompt.autosize === 'function');
   }

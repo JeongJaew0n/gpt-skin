@@ -167,7 +167,7 @@
     // 고를 테마가 없다. 위젯 색은 터미널 기본 팔레트로 고정한다.
     get themes() { return { 'modern-dark': GT.theme.THEMES['modern-dark'] }; },
     defaultTheme: 'modern-dark',
-    get configKeys() { return GT_SCHEMA.filter((f) => f.skin === 'none').map((f) => f.key); },
+    get configKeys() { return GT_SCHEMA.filter((f) => f.skin && GT_SKIN_HAS(f, 'none')).map((f) => f.key); },
     // 글씨 크기 · 테마는 원본이 정한다. :messup 은 스크롤백이 없어 끼울 자리가 없다.
     hiddenCommands: [':font', ':theme', ':messup'],
 

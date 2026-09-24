@@ -27,7 +27,14 @@ function shared(extra = {}) {
 
   const tagged = sb.GT_SCHEMA.filter((x) => x.skin);
   t('스킨 전용 항목이 있다', tagged.length > 0);
-  t('스킨 전용 표시는 있는 스킨만 가리킨다', tagged.every((x) => SKIN_IDS.includes(x.skin)));
+  t('스킨 전용 표시는 있는 스킨만 가리킨다', tagged.every((x) => [].concat(x.skin).every((id) => SKIN_IDS.includes(id))));
+  // 시트가 실제로 쓰지 않는 공용 항목을 보여 주지 않는다 (옵션 화면 확인 2026-09-24)
+  const sheetKeys = sb.GT_FIELDS_FOR('sheet').map((x) => x.key);
+  t('시트에는 쓰지 않는 글꼴·그림 항목이 안 보인다', !sheetKeys.includes('font.family') && !sheetKeys.includes('image') && !sheetKeys.includes('image.columns'));
+  t('시트에는 인용·줄 간격이 보인다', sheetKeys.includes('citations') && sheetKeys.includes('line.height'));
+  const noneKeys = sb.GT_FIELDS_FOR('none').map((x) => x.key);
+  t('none 에는 대화 렌더 항목이 안 보인다', !noneKeys.includes('citations') && !noneKeys.includes('image'));
+  t('여러 스킨 표시를 읽는다', sb.GT_SKIN_HAS({ skin: ['terminal', 'none'] }, 'none') && !sb.GT_SKIN_HAS({ skin: ['terminal', 'none'] }, 'sheet') && sb.GT_SKIN_HAS({}, 'sheet'));
   t('옛 theme 키는 스키마에 없다', !sb.GT_SCHEMA.some((x) => x.key === 'theme'));
   t('테마는 스킨 이름을 앞에 단다', sb.GT_SCHEMA.some((x) => x.key === 'terminal.theme' && x.skin === 'terminal'));
 
