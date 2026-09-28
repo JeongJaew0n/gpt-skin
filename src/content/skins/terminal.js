@@ -117,7 +117,7 @@
     ui.stat2 = el('span', 'gt-status-seg', '');
     // 로그가 켜졌는지 꺼졌는지 화면 어디에도 없어서 알 수가 없었다.
     ui.stat3 = el('span', 'gt-status-seg gt-log-state', '');
-    ui.hint = el('span', 'gt-status-hint', '⌘K 팔레트   :help   esc·^C 중단');
+    ui.hint = el('span', 'gt-status-hint', GT_T('term.hint', GT_MOD() + 'K'));
     st.appendChild(ui.mode); st.appendChild(ui.stat1); st.appendChild(ui.stat2);
     st.appendChild(ui.stat3);
     st.appendChild(el('span', 'gt-spacer')); st.appendChild(ui.hint);

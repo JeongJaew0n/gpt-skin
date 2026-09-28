@@ -74,7 +74,15 @@
 
     termUsable = true;
     termOn = !!state.visible;
-    ui.helpTerm.textContent = '이 탭에만 적용됩니다.';
+    // 경고(노랑 배지)가 있으면 무엇인지 여기서 말한다. 배지 툴팁까지 찾아가지 않아도 되게 (UX 조사 A2).
+    const reasons = Array.isArray(state.reasons) ? state.reasons : [];
+    if (state.warned && reasons.length) {
+      ui.rowTerm.dataset.warned = '1';
+      ui.helpTerm.textContent = GT_T('popup.warned', reasons.length, reasons[0]);
+    } else {
+      delete ui.rowTerm.dataset.warned;
+      ui.helpTerm.textContent = '이 탭에만 적용됩니다.';
+    }
     paintTerminal();
   }
 

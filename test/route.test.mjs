@@ -65,7 +65,8 @@ const msg = (id, role, text) => ({ id, role, text });
 
   t('esc 가 생성을 멈춘다', /Escape' && GT\.compose\.stopButton\(\)/.test(prm));
   t('멈췄다고 알려준다', /중단 요청 \(esc\)/.test(prm));
-  t('상태줄에 esc 를 적어둔다', /esc·\^C 중단/.test(tty));
+  // 상태줄 안내는 2026-09-29 에 사전(term.hint)으로 옮겼다 — 수정키는 운영체제에 맞춘다
+  t('상태줄에 esc 를 적어둔다', /GT_T\('term\.hint'/.test(tty) && /'term\.hint': '[^']*esc·\^C 중단'/.test(fs.readFileSync('src/shared/i18n.js', 'utf8')));
 
   // 우선순위: 선택 모드 → 사이드바 → 중단
   const iSel = prm.indexOf("GT.sidebar.selecting");

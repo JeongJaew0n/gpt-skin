@@ -104,6 +104,8 @@
 .gs-caret { display: inline-block; width: 7px; height: 1.1em; vertical-align: text-bottom; background: var(--gs-accent);
   margin-left: 2px; animation: gs-blink 1s steps(1) infinite; }
 @keyframes gs-blink { 50% { opacity: 0; } }
+/* 움직임 줄이기 — 터미널 커서와 같게 멈춘다 (WCAG 2.2.2 · UX 조사 A3) */
+@media (prefers-reduced-motion: reduce) { .gs-caret { animation: none; } }
 .gs-grid a { color: var(--gt-blue); }
 .gs-grid .gt-sys-body { white-space: pre-wrap; }
 .gs-tabs { flex: 0 0 auto; display: flex; align-items: stretch; height: 26px; padding: 0 4px;

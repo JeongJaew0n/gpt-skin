@@ -149,6 +149,25 @@ GT.skin = (function () {
       GT.sendToSW({ kind: 'visible', visible: this.visible() });
       return { ok: true };
     },
+    // 스크린리더에 상태를 알린다. 눈에 보이지 않는 role=status 요소 하나에 글을 쓴다.
+    // 생성의 시작과 끝에만 부른다 — 토큰마다 쓰면 스크린리더가 빠뜨리거나 되풀이한다 (UX 조사 A5).
+    announce(text) {
+      let root = null;
+      try { root = this.current.overlayRoot(); } catch (_) { return false; }
+      if (!root) return false;
+      let n = null;
+      for (const c of Array.from(root.children || [])) { if (c.dataset && c.dataset.gtAnnounce === '1') { n = c; break; } }
+      if (!n) {
+        n = document.createElement('div');
+        n.dataset.gtAnnounce = '1';
+        n.setAttribute('role', 'status');
+        n.setAttribute('aria-live', 'polite');
+        n.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;';
+        root.appendChild(n);
+      }
+      n.textContent = String(text || '');
+      return true;
+    },
     show() { GT.cover.on(); this.current.focus(); },
     hide() {
       const had = focusInHost();

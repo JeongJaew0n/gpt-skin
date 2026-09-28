@@ -80,6 +80,10 @@ var GT_I18N = {
 
     'cmd.reload.desc': '확장을 다시 읽습니다 (코드를 고친 뒤). 탭은 새로고침하지 않고 그대로 이어집니다',
     'cmd.reload.going': '확장을 다시 읽습니다. 잠시 뒤 새 코드로 이어집니다',
+    'term.hint': '$1 팔레트   :help   esc·^C 중단',
+    'status.answering': '응답 중',
+    'status.answered': '응답 완료',
+    'popup.warned': '경고 $1개 — $2 · :health 로 전체를 봅니다',
     'cmd.skin.desc': '스킨 — 인자 없으면 목록, :skin <이름> 으로 바꿉니다',
     'cmd.skin.state': '지금 스킨: $1 · 가능: $2',
     'cmd.skin.unknown': '알 수 없는 스킨입니다: $1 (가능: $2)',
@@ -236,6 +240,10 @@ var GT_I18N = {
 
     'cmd.reload.desc': 'Reload the extension (after editing code). The tab carries on without a refresh',
     'cmd.reload.going': 'Reloading the extension. The new code takes over in a moment',
+    'term.hint': '$1 palette   :help   esc·^C stop',
+    'status.answering': 'Answering',
+    'status.answered': 'Answer complete',
+    'popup.warned': '$1 warning(s) — $2 · :health shows all',
     'cmd.skin.desc': 'Skin — lists skins, or :skin <name> to change',
     'cmd.skin.state': 'Current skin: $1 · available: $2',
     'cmd.skin.unknown': 'Unknown skin: $1 (available: $2)',
@@ -354,3 +362,13 @@ var GT_T = function (key) {
     return v === undefined || v === null ? m : String(v);
   });
 };
+
+// 단축키 표기의 수정키. 맥은 ⌘, 그 밖은 Ctrl+ — 윈도우 사용자에게 ⌘K 라고 쓰면 누를 수 없는 키다.
+// 크롬은 맥에서 ⌘K, 윈도우에서 Ctrl+K 를 같은 뜻으로 받는다(우리 처리기도 metaKey || ctrlKey).
+var GT_IS_MAC = function () {
+  try {
+    var p = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+    return /mac/i.test(p);
+  } catch (_) { return false; }
+};
+var GT_MOD = function () { return GT_IS_MAC() ? '\u2318' : 'Ctrl+'; };

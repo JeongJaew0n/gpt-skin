@@ -326,9 +326,16 @@
   chrome.runtime.onMessage.addListener((msg, _s, reply) => {
     if (!msg) return;
     if (msg.kind === 'toggle') { GT.skin.toggle(); reply({ visible: GT.skin.visible() }); }
-    else if (msg.kind === 'state') reply({ visible: GT.skin.visible(), degraded: GT.health.degraded });
+    else if (msg.kind === 'state') reply({ visible: GT.skin.visible(), degraded: GT.health.degraded,
+      warned: GT.health.warned, reasons: GT.health.reasons });
   });
-  GT.store.onChange(() => GT.skin.current.render());
+  // 생성의 시작과 끝을 스크린리더에 알린다 (가장자리에서만 — 토큰마다가 아니다).
+  let wasStreaming = false;
+  GT.store.onChange(() => {
+    const now = !!GT.store.state.streamingId;
+    if (now !== wasStreaming) { wasStreaming = now; GT.skin.announce(GT_T(now ? 'status.answering' : 'status.answered')); }
+    GT.skin.current.render();
+  });
   GT.config.onChange((c) => {
     GT_SET_LOCALE(c.locale);
     // 옵션 화면에서 스킨을 바꾸면 열려 있는 탭도 바로 따라간다. 저장은 이미 됐다.
