@@ -1,6 +1,6 @@
 // gpt-skin — none 스킨. 원본 화면을 그대로 두고, 우리 명령만 쓸 수 있게 한다.
 // 원본 위에 명령줄 하나와 그 결과를 보여 줄 패널만 띄운다. 평소에는 닫혀 있다.
-//   Ctrl+;  명령줄 열기      esc (빈 줄)  닫기      Ctrl+`  열기/닫기
+//   Ctrl+;  명령줄 열기      esc (빈 줄) · 바깥을 누름  닫기      Ctrl+`  열기/닫기
 // 스킨 계약: src/content/shell/skin.js · docs/plan/2026-09-24-skin-architecture.md §2.9
 //
 // 실측 2026-09-24 (docs/plan/2026-09-24-skin-architecture.md §5단계 실측)
@@ -84,6 +84,15 @@
     ui.dock.appendChild(ui.bar);
     root.appendChild(ui.dock);
 
+    // 결과 패널을 눌렀다고 명령줄에서 초점이 빠지면, 이어서 친 글자가 갈 곳이 없다.
+    // 글자를 드래그해 고른 게 아니면(복사하려는 중) 명령줄로 초점을 돌려준다 — 터미널 스킨과 같다.
+    // 실측(하네스, 2026-09-28): 이게 없으면 패널을 누른 뒤 초점이 문서 본문으로 갔다.
+    ui.out.addEventListener('mouseup', () => {
+      const sel = shadow && shadow.getSelection ? shadow.getSelection() : document.getSelection();
+      if (sel && String(sel).length) return;
+      focus();
+    });
+
     shadow.appendChild(root);
   }
 
@@ -158,7 +167,36 @@
 
   function focus() { if (ui.input) ui.input.focus(); }
 
-  GT.skins.register({
+  // 명령줄 바깥으로 나가면 닫는다. 예전에는 원본을 누르면 명령줄이 떠 있는 채로 남아,
+  // 다시 돌아올 길이 안 보였다 (사용자 보고 2026-09-28).
+  //
+  // '바깥' 은 우리 호스트 밖이다. 명령 결과를 드래그해 복사하거나, ⌘K 팔레트 · Ctrl+B 목록을
+  // 여는 것은 모두 호스트 안(shadow root)이라 닫지 않는다. 그래서 blur 대신 composedPath 로 본다 —
+  // blur 로 보면 결과 패널을 누르기만 해도(초점을 받지 않는 요소라) 닫혀 버린다.
+  // 브라우저 창을 떠나는 것(다른 앱)은 닫지 않는다. 돌아오면 초점이 명령줄로 돌아온다.
+  let offOutside = null;
+  function outsideOf(e) {
+    const host = document.getElementById(GT.cover.HOST_ID);
+    if (!host) return false;
+    const path = (e.composedPath && e.composedPath()) || [];
+    return !path.includes(host);
+  }
+  function watchOutside() {
+    const onEvent = (e) => {
+      if (!GT.skin.visible() || GT.skin.current !== SKIN) return;
+      if (outsideOf(e)) GT.skin.hide();
+    };
+    // 캡처 단계에서 본다 — 원본이 버블을 막아도 놓치지 않게
+    document.addEventListener('pointerdown', onEvent, true);
+    document.addEventListener('focusin', onEvent, true);
+    offOutside = () => {
+      document.removeEventListener('pointerdown', onEvent, true);
+      document.removeEventListener('focusin', onEvent, true);
+      offOutside = null;
+    };
+  }
+
+  const SKIN = {
     id: 'none',
     covers: false,              // 원본을 가리지 않는다. 호스트는 클릭을 통과시킨다
     capturesTyping: false,      // 원본 컴포저에 치는 글자를 가로채지 않는다
@@ -178,8 +216,9 @@
         autosize() { const i = ui.input; if (!i) return; i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 160) + 'px'; }
       };
     },
-    mount(cfg) { build(); applyConfig(cfg); return root; },
+    mount(cfg) { build(); applyConfig(cfg); watchOutside(); return root; },
     destroy() {
+      if (offOutside) offOutside();
       shadow = null; root = null; varStyle = null;
       Object.keys(ui).forEach((k) => { delete ui[k]; });
     },
@@ -204,5 +243,6 @@
     },
     focus,
     overlayRoot() { return root; }
-  });
+  };
+  GT.skins.register(SKIN);
 })();

@@ -282,10 +282,19 @@ function mockDom() {
 function loadNone(sidebarState, shouldShow = true) {
   const mk = mockDom();
   const logged = [];
-  const sb = base({ document: { createElement: mk } });
+  // 문서 수준 리스너를 기록한다 — '바깥을 누르면 닫는다' 를 실제로 쏴 보려고
+  const docListeners = [];
+  const hostEl = { id: 'gpt-skin-host' };
+  const skinState = { visible: true, hides: 0 };
+  const sb = base({ document: {
+    createElement: mk,
+    getElementById: (id) => (id === 'gpt-skin-host' ? hostEl : null),
+    addEventListener: (type, fn, cap) => docListeners.push({ type, fn, cap }),
+    removeEventListener: (type, fn) => { const i = docListeners.findIndex((l) => l.type === type && l.fn === fn); if (i >= 0) docListeners.splice(i, 1); }
+  } });
   let cfgLog = true;
   sb.GT = {
-    cover: { host: () => { sb.__shadow = mk('#shadow'); return { shadow: sb.__shadow }; } },
+    cover: { HOST_ID: 'gpt-skin-host', host: () => { sb.__shadow = mk('#shadow'); return { shadow: sb.__shadow }; } },
     theme: { CSS: '', THEMES: { 'modern-dark': {} }, vars: (c) => 'theme=' + c['terminal.theme'] },
     sidebar: { build: () => mk('sidebar'), state: () => sidebarState, shouldShow: () => shouldShow },
     config: { get: (k) => (k === 'log' ? cfgLog : undefined) },
@@ -294,7 +303,13 @@ function loadNone(sidebarState, shouldShow = true) {
   vm.runInContext(read('src/content/shell/skin.js'), sb, { filename: 'skin.js' });
   vm.runInContext(read('src/content/skins/none.js'), sb, { filename: 'none.js' });
   const N = sb.GT.skins.get('none');
-  return { N, mk, logged, setLog: (v) => { cfgLog = v; }, sb };
+  // 셸의 GT.skin 을 흉내 — none 이 지금 스킨이고, 보이는지 · hide 가 불렸는지 센다
+  sb.GT.skin = { get current() { return N; }, visible: () => skinState.visible,
+    hide: () => { skinState.visible = false; skinState.hides += 1; } };
+  // 이벤트를 쏜다. inside=true 면 경로에 우리 호스트가 있다(명령줄·결과 패널·팔레트 등)
+  const fire = (type, inside) => docListeners.filter((l) => l.type === type)
+    .forEach((l) => l.fn({ composedPath: () => (inside ? [{}, hostEl, {}] : [{}, {}]) }));
+  return { N, mk, logged, setLog: (v) => { cfgLog = v; }, sb, fire, skinState, docListeners };
 }
 {
   const { N, logged } = loadNone({ forcedOpen: false });
@@ -319,6 +334,39 @@ function loadNone(sidebarState, shouldShow = true) {
   N.syncSidebar();
   t('사용자가 열지 않았으면 사이드바를 띄우지 않는다', !root.kids.some((k) => k.tagName === 'sidebar'));
   t('숨긴 명령: 글씨 · 테마 · messup', [':font', ':theme', ':messup'].every((c) => N.hiddenCommands.includes(c)));
+}
+// --- 명령줄 바깥으로 나가면 닫는다 (2026-09-28 사용자 보고) ---
+// 원본을 누르면 명령줄이 떠 있는 채로 남아 돌아올 길이 안 보였다.
+{
+  const { N, fire, skinState, docListeners } = loadNone({ forcedOpen: false });
+  N.mount({});
+  t('문서에 캡처 단계로 건다', docListeners.some((l) => l.type === 'pointerdown' && l.cap === true)
+    && docListeners.some((l) => l.type === 'focusin' && l.cap === true));
+
+  fire('pointerdown', true);
+  t('명령 결과 패널 등 안쪽을 누르면 닫지 않는다', skinState.visible === true && skinState.hides === 0);
+  fire('focusin', true);
+  t('팔레트 · 목록 입력 등 안쪽으로 초점이 가면 닫지 않는다', skinState.visible === true);
+
+  fire('pointerdown', false);
+  t('원본을 누르면 닫는다', skinState.visible === false && skinState.hides === 1);
+
+  skinState.visible = true;
+  fire('focusin', false);
+  t('Tab 등으로 초점이 원본으로 가면 닫는다', skinState.visible === false && skinState.hides === 2);
+
+  // 닫혀 있을 때는 아무 일도 없다 (원본을 쓰는 평상시)
+  fire('pointerdown', false);
+  t('닫혀 있을 때 원본을 눌러도 hide 를 또 부르지 않는다', skinState.hides === 2);
+
+  N.destroy();
+  t('스킨을 떼면 문서 리스너도 뗀다', docListeners.length === 0);
+}
+{
+  // 결과 패널을 누르면 명령줄로 초점을 돌려준다 — 글자를 고르는 중(복사)이면 두고 (하네스 실측)
+  const src = read('src/content/skins/none.js');
+  t('결과 패널 mouseup 에서 명령줄로 초점', /ui\.out\.addEventListener\('mouseup'[\s\S]{0,220}?focus\(\);/.test(src));
+  t('글자를 고르는 중이면 두고 간다', /if \(sel && String\(sel\)\.length\) return;/.test(src));
 }
 {
   const { N } = loadNone({ forcedOpen: true });
