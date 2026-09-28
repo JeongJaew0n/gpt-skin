@@ -5,12 +5,21 @@ GT.compose = (function () {
   'use strict';
 
   // 원본 입력창. 화면마다 모양이 다르다 — 앞에서부터 찾는다.
-  //   #prompt-textarea                  ProseMirror(contenteditable). 로그인 화면
+  //   #prompt-textarea                  ProseMirror(contenteditable). 로그인 화면 (예전 모양)
+  //   form[data-chatgpt-composer] [contenteditable="true"]
+  //                                     같은 ProseMirror 인데 id 가 없어졌다. 로그인 화면
+  //                                     (실측 2026-09-28: #prompt-textarea 없음, 이 폼 안의 contenteditable 하나뿐.
+  //                                      이것을 못 찾아 Enter 를 쳐도 원본 입력창에 글이 들어가지 않았다)
   //   textarea#mobile-composer-prompt   평범한 textarea. 비로그인 화면
   //                                     (실측 2026-09-28: 이 화면엔 #prompt-textarea 가 없고 이것 하나뿐)
   //   textarea[name="prompt"]           위 textarea 의 name. id 가 바뀌어도 잡으려고
   // 부팅 점검(index.js)도 같은 목록을 쓴다 — 두 곳에 적으면 갈린다.
-  const COMPOSERS = ['#prompt-textarea', 'textarea#mobile-composer-prompt', 'textarea[name="prompt"]'];
+  const COMPOSERS = [
+    '#prompt-textarea',
+    'form[data-chatgpt-composer] [contenteditable="true"]',
+    'textarea#mobile-composer-prompt',
+    'textarea[name="prompt"]'
+  ];
   const SELECTOR = COMPOSERS.join(', ');
   const raf = () => new Promise((r) => requestAnimationFrame(() => r()));
 

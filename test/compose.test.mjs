@@ -75,6 +75,18 @@ const makeTextarea = (Proto) => {
   t('둘 다 있으면 ProseMirror 를 고른다', C.composer() === pm);
 }
 {
+  // 실측 2026-09-28: 로그인 화면의 ProseMirror 에서 id="prompt-textarea" 가 없어졌다.
+  // 남은 표식은 감싼 폼의 data-chatgpt-composer. 이걸 못 찾으면 Enter 를 쳐도 원본에 글이 안 들어간다.
+  const FORM_PM = 'form[data-chatgpt-composer] [contenteditable="true"]';
+  const pm = { tagName: 'DIV', focused: false, focus() { this.focused = true; }, dispatchEvent() { return true; } };
+  let used = false;
+  const { C } = load({ make: () => ({ [FORM_PM]: pm }), execCommand: (cmd) => { used = cmd === 'insertText'; return true; } });
+  t('id 가 없는 ProseMirror 를 컴포저 폼 안에서 찾는다', C.composer() === pm);
+  t('그 입력창에 글을 넣는다', C.inject('x') === true && used && pm.focused);
+  t('textarea 보다 먼저 찾는다 (로그인 화면이 기본)', C.COMPOSERS.indexOf(FORM_PM) >= 0
+    && C.COMPOSERS.indexOf(FORM_PM) < C.COMPOSERS.indexOf('textarea#mobile-composer-prompt'));
+}
+{
   const { C } = load({ make: () => ({}) });
   t('없으면 null', C.composer() === null);
   t('없으면 넣기 실패', C.inject('x') === false);
