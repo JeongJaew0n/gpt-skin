@@ -18,7 +18,7 @@ const iMount = at('GT.skin.mount(cfg);');
 const iKeys = at('GT.skin.attachPrompt();');
 const iPopup = at('chrome.runtime.onMessage.addListener(');
 const iWaitTap = at('await waitTap(');
-const iComposer = at("await waitFor('#prompt-textarea'");
+const iComposer = at('await waitFor(GT.compose.SELECTOR');
 const iThread = at("await waitFor('#thread, main'");
 const iDegraded = at('if (GT.health.degraded) return;');
 
@@ -38,6 +38,10 @@ t('Ctrl+; 는 원본 복귀 상태에서 다시 열지 않는다',
 t('Ctrl+` 경로(toggle)도 거절한다',
   /toggle\(\) \{\s*\n\s*if \(GT\.health\.degraded\) return this\.visible\(\);/.test(fs.readFileSync('src/content/shell/skin.js', 'utf8')));
 t('왜 앞에 두는지 적어 뒀다', /실측\(비로그인 ChatGPT, 2026-09-28\)/.test(idx));
+
+// --- 입력창을 찾는 목록은 compose 한 곳에만 있다 ---
+t('점검은 compose 의 목록으로 기다린다', /await waitFor\(GT\.compose\.SELECTOR, 15000\)/.test(code));
+t('index 에 입력창 선택자를 박아 두지 않았다', !/prompt-textarea|mobile-composer/.test(code));
 
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });

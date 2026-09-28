@@ -360,7 +360,7 @@
     GT.health.fail('tap', 'MAIN world 스크립트가 5초 안에 응답하지 않았다');
   }
 
-  const okComposer = await waitFor('#prompt-textarea', 15000);
+  const okComposer = await waitFor(GT.compose.SELECTOR, 15000);
   okComposer ? GT.health.pass('composer')
              : GT.health.fail('composer', '15초 안에 나타나지 않았다');
 
