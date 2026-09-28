@@ -311,6 +311,15 @@
   GT.skin.attachPrompt();
   disposers.push(() => GT.prompt.detach());
 
+  // 켜 두었으면(설정 enabled · 옛 인스턴스에서 이어받음) 여기서 곧바로 켠다.
+  // 예전에는 아래 부팅 점검(최대 35초) 뒤에 켜서, 새로고침·업데이트 뒤 그만큼 원본 화면이 보였다.
+  // 단, 점검이 실패하면 원본으로 돌아가기로 한 경우(onBreak = revert)만은 점검을 기다린다 —
+  // 먼저 켰다가 실패하면 켜졌다 꺼지는 깜빡임이 된다. 기본값(warn)은 실패해도 내리지 않으므로 기다릴 이유가 없다.
+  // docs/issue/2026-09-28-shortcuts-dead-after-refresh.md §4
+  const autoShow = !!(cfg.enabled || inherited);
+  const showEarly = autoShow && cfg.onBreak !== 'revert';
+  if (showEarly) GT.skin.show();
+
   // 동기로 응답하므로 true 를 돌려주면 안 된다.
   // true 는 "나중에 응답하겠다"는 뜻이라, 처리하지 않는 메시지의 포트가 열린 채 남아
   // "message port closed before a response was received" 가 뜬다.
@@ -461,7 +470,7 @@
     if (root) observe(obs, root, { childList: true, subtree: true });
   })();
 
-  if (cfg.enabled || inherited) GT.skin.show();
+  if (autoShow && !showEarly) GT.skin.show();   // onBreak = revert — 점검을 통과한 뒤에 켠다
   // 배지·팝업이 실제 상태를 알아야 한다. 이걸 안 보내면 서비스 워커가
   // '점검이 멀쩡하니 켜져 있겠지' 로 추측한다 — 기본이 꺼짐이 되면서 그 추측이 틀리게 됐다.
   GT.sendToSW({ kind: 'visible', visible: GT.skin.visible() });

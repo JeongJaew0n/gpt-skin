@@ -39,6 +39,18 @@ t('Ctrl+` 경로(toggle)도 거절한다',
   /toggle\(\) \{\s*\n\s*if \(GT\.health\.degraded\) return this\.visible\(\);/.test(fs.readFileSync('src/content/shell/skin.js', 'utf8')));
 t('왜 앞에 두는지 적어 뒀다', /실측\(비로그인 ChatGPT, 2026-09-28\)/.test(idx));
 
+// --- 켜 두었으면 점검을 기다리지 않고 켠다 (0.11.2) ---
+// 예전에는 점검(최대 35초) 뒤에 켜서 새로고침·업데이트 뒤 그만큼 원본이 보였다.
+const iEarly = at('if (showEarly) GT.skin.show();');
+const iLate = at('if (autoShow && !showEarly) GT.skin.show();');
+t('자동 켜짐이 두 갈래다 (먼저 · 나중)', iEarly > 0 && iLate > 0);
+t('기본값이면 점검 대기보다 먼저 켠다', iEarly < iWaitTap && iEarly < iComposer && iEarly < iThread);
+t('단축키를 연결한 뒤에 켠다 (켜자마자 키가 먹게)', iKeys < iEarly);
+t('onBreak = revert 면 먼저 켜지 않는다 (켜졌다 꺼지는 깜빡임)', /const showEarly = autoShow && cfg\.onBreak !== 'revert';/.test(code));
+t('revert 는 원본 복귀 판정 뒤에 켠다', iDegraded < iLate);
+t('켜는 조건은 설정 또는 이어받음', /const autoShow = !!\(cfg\.enabled \|\| inherited\);/.test(code));
+t('show 를 부르는 곳은 그 둘뿐', (code.match(/GT\.skin\.show\(\);/g) || []).length === 2);
+
 // --- 입력창을 찾는 목록은 compose 한 곳에만 있다 ---
 t('점검은 compose 의 목록으로 기다린다', /await waitFor\(GT\.compose\.SELECTOR, 15000\)/.test(code));
 t('index 에 입력창 선택자를 박아 두지 않았다', !/prompt-textarea|mobile-composer/.test(code));

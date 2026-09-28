@@ -210,7 +210,8 @@ const mainFiles = manifest.content_scripts.find((c) => c.world === 'MAIN').js;
   t('옛 것은 교대 신호에 물러난다', /listen\(pageRoot, 'gpt-skin:takeover'/.test(idx));
   t('켜 둔 상태를 알리기 전에 읽는다',
     idx.indexOf('const inherited = ') < idx.indexOf("dispatchEvent(new CustomEvent('gpt-skin:takeover'))"));
-  t('켜 둔 상태를 이어받는다', /if \(cfg\.enabled \|\| inherited\) GT\.skin\.show\(\);/.test(idx));
+  // 이어받은 상태는 autoShow 로 켠다 (0.11.2 부터 점검 앞에서)
+  t('켜 둔 상태를 이어받는다', /const autoShow = !!\(cfg\.enabled \|\| inherited\);/.test(idx) && /if \(showEarly\) GT\.skin\.show\(\);/.test(idx));
   // 옛 것이 고아 감지로 먼저 물러나 화면을 치운 경우에도 이어받는다 (헤드리스 실측에서 잃었다)
   t('물러날 때 켜져 있었음을 남긴다', /if \(MY\.cover\.isOn\(\)\) pageRoot\.dataset\.gptSkinWasOn = '1'/.test(idx));
   t('남긴 표식을 읽고 지운다', /pageRoot\.dataset\.gptSkinWasOn === '1'/.test(idx) && /delete pageRoot\.dataset\.gptSkinWasOn/.test(idx));
