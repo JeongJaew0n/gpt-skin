@@ -155,6 +155,16 @@
     const res = await ask({ kind: 'palette' });
     if (res && res.ok) window.close();
   });
+  // 진단 복사 — 문제를 알릴 때 붙여 넣을 글(버전 · 빌드 · 스킨 · 점검 · 경고). 대화 내용은 없다.
+  $('#diag').textContent = GT_T('popup.diag');
+  $('#diag').title = GT_T('popup.diag.help');
+  $('#diag').addEventListener('click', async () => {
+    const res = await ask({ kind: 'diag' });
+    const text = res && res.text ? res.text
+      : `gpt-skin ${chrome.runtime.getManifest ? chrome.runtime.getManifest().version : '?'} · build ${GT_BUILD}\n(${GT_T('popup.diag.notab')})`;
+    try { await navigator.clipboard.writeText(text); $('#diag').textContent = GT_T('popup.diag.done'); }
+    catch (_) { $('#diag').textContent = GT_T('popup.diag.fail'); }
+  });
   // 크롬이 확장 단축키를 바꾸는 화면. 확장 페이지에서는 chrome:// 주소로 탭을 열 수 있다.
   $('#shortcuts').textContent = GT_T('popup.shortcuts');
   $('#shortcuts').title = GT_T('popup.shortcuts.help');

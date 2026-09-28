@@ -218,6 +218,9 @@ GT.theme = (function () {
 .gt-key { color: var(--gt-fg-dim); }
 .gt-key-hint { color: var(--gt-fg-faint); }
 .gt-palette-keys { flex: 0 0 auto; font-size: 11px; margin-right: 8px; }
+.gt-below { all: unset; cursor: pointer; padding: 0 10px; color: var(--gt-cyan); }
+.gt-below[hidden] { display: none; }
+.gt-below:hover { text-decoration: underline; }
 
 /* ---- 상태줄의 로그 표시 ---- */
 .gt-log-state[data-on="0"] { color: var(--gt-fg-faint); }

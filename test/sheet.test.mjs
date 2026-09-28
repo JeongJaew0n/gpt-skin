@@ -283,6 +283,48 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   sb.GT.markdown.lines = orig;
 }
 
+// ---------------------------------------------------------------- 묶음 4 — 새 내용 알림 · 메시지 복사 (2026-09-29)
+{
+  const { S, state } = load();
+  S.mount({ 'font.size': 13 });
+  state.messages = [{ id: 'u1', role: 'user', text: '질문' }];
+  const g = S.ui.grid;
+  Object.assign(g, { scrollTop: 0, clientHeight: 100, scrollHeight: 1000 });     // 위로 올려 둔 상태
+  S.render();
+  t('처음 그릴 때 위에 있으면 알린다 (내용이 바뀌었다)', S.ui.below.hidden === false);
+  S.ui.below.hidden = true;
+  S.render();
+  t('바뀐 게 없으면 알리지 않는다', S.ui.below.hidden === true);
+  state.messages = [...state.messages, { id: 'a1', role: 'assistant', text: '답' }];
+  S.render();
+  t('위로 올려 둔 사이 새 내용이 오면 알린다', S.ui.below.hidden === false);
+  S.ui.below.dispatch('mousedown');
+  t('누르면 바닥으로 가고 사라진다', S.ui.below.hidden === true && g.scrollTop === 1000);
+  S.ui.below.hidden = false;
+  Object.assign(g, { scrollTop: 900, clientHeight: 100, scrollHeight: 1000 });
+  g.dispatch('scroll');
+  t('바닥까지 내리면 사라진다', S.ui.below.hidden === true);
+  state.messages = [...state.messages, { id: 'a2', role: 'assistant', text: '또' }];
+  S.render();
+  t('바닥에 있으면 알리지 않고 따라간다', S.ui.below.hidden === true);
+}
+{
+  const { S, state, calls } = load();
+  S.mount({ 'font.size': 13 });
+  state.messages = [{ id: 'u1', role: 'user', text: '한 줄' }, { id: 'a1', role: 'assistant', text: '첫 문단\n\n- 항목 **굵게**' }];
+  S.system('info', '명령 결과');
+  S.render();
+  S.ui.body.children[2].children[0].dispatch('mousedown');          // 답의 둘째 행 번호
+  t('행 번호를 누르면 메시지 전체를 고른다', S.ui.body.children[1].dataset.msgsel === '1' && S.ui.body.children[2].dataset.msgsel === '1' && S.ui.body.children[0].dataset.msgsel !== '1');
+  t('이름 상자는 행 범위', S.ui.namebox.textContent === '2:3');
+  S.ui.grid.dispatch('keydown', { key: 'c', metaKey: true });
+  t('⌘C 는 메시지 원문(마크다운)을 복사한다', calls.copy.at(-1) === '첫 문단\n\n- 항목 **굵게**');
+  S.ui.body.children[3].children[0].dispatch('mousedown');          // 명령 결과 행
+  t('명령 결과 행은 메시지가 아니라 고르지 않는다', S.ui.body.children[3].dataset.msgsel !== '1' && S.ui.namebox.textContent === '2:3');
+  S.ui.body.children[0].children[2].dispatch('mousedown');          // 셀을 누르면 셀 선택으로
+  t('셀을 누르면 메시지 선택이 풀린다', S.ui.body.children[1].dataset.msgsel !== '1' && S.ui.namebox.textContent === 'B1');
+}
+
 // ---------------------------------------------------------------- 시트 탭
 {
   const { S, calls } = load();
@@ -331,7 +373,7 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   S.applyConfig({ 'font.size': 13, 'line.height': 2, 'sheet.theme': 'green' });
   const varCss = sb.__shadow.children.filter((n) => n.tagName === 'STYLE').map((n) => n.textContent).join('');
   t('시트가 줄 간격 설정을 따른다', /--gt-lh:2;/.test(varCss));
-  S.ui.status.children[2].children[2].children[2].dispatch('click');
+  S.ui.status.children[2].children[3].children[2].dispatch('click');
   t('상태 표시줄 + 는 글자 크게', calls.run.at(-1) === ':font +');
   void cfg;
 }

@@ -323,9 +323,25 @@
   // 동기로 응답하므로 true 를 돌려주면 안 된다.
   // true 는 "나중에 응답하겠다"는 뜻이라, 처리하지 않는 메시지의 포트가 열린 채 남아
   // "message port closed before a response was received" 가 뜬다.
+  function diagText() {
+    const ua = (navigator.userAgent.match(/Chrome\/[\d.]+/) || ['Chrome/?'])[0];
+    const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '?';
+    const checks = Object.entries(GT.health.CHECKS).map(([k, v]) => `${k}:${v.ok ? 'ok' : 'FAIL'}`).join(' ');
+    const reasons = GT.health.reasons;
+    return [
+      `gpt-skin ${GT_VERSION} · build ${GT_BUILD}`,
+      `${ua} · ${plat} · locale ${GT_LOCALE}`,
+      `skin ${GT.skin.current.id} · visible ${GT.skin.visible() ? 'yes' : 'no'} · onBreak ${GT.config.get('onBreak')} · degraded ${GT.health.degraded ? 'yes' : 'no'}`,
+      `checks ${checks}`,
+      `warnings ${reasons.length}` + (reasons.length ? '\n' + reasons.map((r) => '  - ' + r).join('\n') : '')
+    ].join('\n');
+  }
+
   chrome.runtime.onMessage.addListener((msg, _s, reply) => {
     if (!msg) return;
     if (msg.kind === 'toggle') { GT.skin.toggle(); reply({ visible: GT.skin.visible() }); }
+    // 팝업의 '진단 복사' — 문제를 알릴 때 붙여 넣을 글. 대화 제목 · 본문 · 주소는 넣지 않는다 (UX 조사 B6).
+    else if (msg.kind === 'diag') reply({ text: diagText() });
     // 팝업의 '명령 열기' — 스킨이 꺼져 있으면 켜고 팔레트를 연다 (UX 조사 B2: 입구가 단축키뿐이면 발견성이 없다)
     else if (msg.kind === 'palette') {
       // 켜기는 사용자 토글과 같은 경로로 — 복귀 상태면 거절하고, 켜면 배지(서비스 워커)에 알린다

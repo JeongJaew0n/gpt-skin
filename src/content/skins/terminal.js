@@ -120,6 +120,15 @@
     ui.hint = el('span', 'gt-status-hint', GT_T('term.hint', GT_MOD() + 'K'));
     st.appendChild(ui.mode); st.appendChild(ui.stat1); st.appendChild(ui.stat2);
     st.appendChild(ui.stat3);
+    // 위로 스크롤해 둔 사이 새 내용이 오면 알린다. 누르거나 바닥까지 내리면 사라진다 (UX 조사 B4).
+    ui.below = el('button', 'gt-below', GT_T('below.new'));
+    ui.below.type = 'button';
+    ui.below.hidden = true;
+    ui.below.addEventListener('mousedown', (e) => { e.preventDefault(); ui.scroll.scrollTop = ui.scroll.scrollHeight; ui.below.hidden = true; });
+    ui.scroll.addEventListener('scroll', () => {
+      if (!ui.below.hidden && ui.scroll.scrollTop + ui.scroll.clientHeight >= ui.scroll.scrollHeight - 40) ui.below.hidden = true;
+    });
+    st.appendChild(ui.below);
     st.appendChild(el('span', 'gt-spacer')); st.appendChild(ui.hint);
     root.appendChild(st);
 
@@ -597,6 +606,7 @@
     const changed = renderScrollback();
     renderChrome();
     if (changed && stickBottom) ui.scroll.scrollTop = ui.scroll.scrollHeight;
+    else if (changed && ui.below) ui.below.hidden = false;
   }
 
   // 설정과 창 폭에 따라 사이드바를 붙이거나 뗀다.

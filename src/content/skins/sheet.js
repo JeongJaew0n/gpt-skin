@@ -124,6 +124,10 @@
   background: var(--gs-accent); color: #fff; font-size: 11px; white-space: nowrap; }
 .gs-status[data-bell="1"] { background: var(--gt-yellow); }
 .gs-status .gs-right { margin-left: auto; display: flex; gap: 14px; align-items: center; }
+.gs-below { all: unset; cursor: pointer; color: #fff; text-decoration: underline; }
+.gs-below[hidden] { display: none; }
+.gs-grid > table > * > tr[data-msgsel="1"] > td { background: var(--gs-hdron); }
+.gs-grid > table > * > tr[data-msgsel="1"] > td.gs-rn { color: var(--gs-hdron-fg); font-weight: 600; }
 .gs-zoom { display: flex; align-items: center; gap: 4px; }
 `;
 
@@ -144,6 +148,7 @@
   // 하네스 실측(1351행 대화에서 긴 답 스트리밍): 캐시 전 한 델타 21.9ms(중앙값) — 매 델타마다
   // 150개 메시지 전부를 markdown.lines 로 다시 펴고 모든 행 서명을 다시 만들었다.
   const memo = new Map();
+  const msgText = new Map();       // 메시지 키 → 원문. 메시지 복사(B5)가 쓴다
 
   const T = (k, ...a) => GT_T(k, ...a);
   const cols = () => ['A', 'B', 'C'];
@@ -215,6 +220,9 @@
     table.appendChild(ui.tail);
     ui.grid.appendChild(table);
     ui.grid.addEventListener('mousedown', onGridDown);
+    ui.grid.addEventListener('scroll', () => {
+      if (ui.below && !ui.below.hidden && ui.grid.scrollTop + ui.grid.clientHeight >= ui.grid.scrollHeight - 40) ui.below.hidden = true;
+    });
     ui.grid.addEventListener('keydown', onGridKey);
 
     ui.tabs = el('div', 'gs-tabs');
@@ -243,6 +251,12 @@
     zo.addEventListener('click', () => GT.commands.run(':font -'));
     zi.addEventListener('click', () => GT.commands.run(':font +'));
     zoom.appendChild(zo); zoom.appendChild(ui.zoom); zoom.appendChild(zi);
+    // 위로 스크롤해 둔 사이 새 행이 오면 알린다 (UX 조사 B4)
+    ui.below = el('button', 'gs-below', T('below.new'));
+    ui.below.type = 'button';
+    ui.below.hidden = true;
+    ui.below.addEventListener('mousedown', (e) => { e.preventDefault(); ui.grid.scrollTop = ui.grid.scrollHeight; ui.below.hidden = true; });
+    right.appendChild(ui.below);
     right.appendChild(ui.count); right.appendChild(ui.chars); right.appendChild(zoom);
     ui.status.appendChild(ui.mode); ui.status.appendChild(ui.cell); ui.status.appendChild(right);
 
@@ -318,11 +332,13 @@
     state.messages.forEach((m, idx) => {
       const mk = m.id ? 'm:' + m.id : 'i:' + idx;
       live.add(mk);
+      msgText.set(mk, m.text || '');
       const entry = rowsCached(mk, m);
       entry.rows.forEach((r, i) => out.push({ key: mk + ':' + i, msgKey: mk, refs: m.refs || [], row: r, memo: entry, at: i }));
     });
     // 대화를 옮기면 이전 대화의 캐시를 버린다
     [...memo.keys()].forEach((k) => { if (!live.has(k)) memo.delete(k); });
+    [...msgText.keys()].forEach((k) => { if (!live.has(k)) msgText.delete(k); });
     systemLog.forEach((rec) => out.push({ key: 's:' + rec.id, sys: rec }));
     if (GT.store.isThinking()) out.push({ key: 'thinking', live: 'thinking' });
     if (GT.store.isDrawing()) out.push({ key: 'drawing', live: 'drawing' });
@@ -464,6 +480,13 @@
 
   function address() {
     if (!sel) return 'B' + (ui.body ? ui.body.children.length + 1 : 1);
+    if (sel.msg) {
+      // 스프레드시트에서 여러 행을 고른 것처럼 '첫 행:끝 행'
+      const nums = [];
+      Array.from(ui.body.children).forEach((tr, i) => { if (msgKeyOf(tr) === sel.msg) nums.push(i + 1); });
+      if (!nums.length) return 'B' + (ui.body.children.length + 1);
+      return nums[0] + ':' + nums[nums.length - 1];
+    }
     const rows = allRows();
     const idx = rows.findIndex((tr) => tr.dataset.key === sel.key || tr === sel.tr);
     return sel.col + (idx + 1);
@@ -481,7 +504,12 @@
   function paintSel() {
     if (!root) return;
     root.querySelectorAll('[data-sel="1"]').forEach((n) => { n.dataset.sel = '0'; });
+    root.querySelectorAll('[data-msgsel="1"]').forEach((n) => { n.dataset.msgsel = '0'; });
     if (!sel) return;
+    if (sel.msg) {
+      Array.from(ui.body.children).forEach((tr) => { if (msgKeyOf(tr) === sel.msg) tr.dataset.msgsel = '1'; });
+      return;
+    }
     const tr = sel.tr && sel.tr.isConnected ? sel.tr : ui.body.querySelector(`tr[data-key="${CSS.escape(sel.key || '')}"]`);
     if (!tr) { sel = null; return; }
     sel.tr = tr;
@@ -496,9 +524,26 @@
     updateNamebox();
   }
 
+  // 행 번호 칸을 누르면 그 메시지의 행 전체를 고른다. ⌘C 는 메시지 원문을 복사한다 (UX 조사 B5).
+  // 명령 결과 · 생각 중 행은 메시지가 아니라 고르지 않는다.
+  const msgKeyOf = (tr) => {
+    const k = (tr && tr.dataset && tr.dataset.key) || '';
+    if (!/^(m|i):/.test(k)) return null;
+    return k.slice(0, k.lastIndexOf(':'));
+  };
+  function selectMessage(tr) {
+    const mk = msgKeyOf(tr);
+    if (!mk) return false;
+    sel = { msg: mk, key: tr.dataset.key, tr, col: 'B' };
+    paintSel();
+    updateNamebox();
+    return true;
+  }
+
   function onGridDown(e) {
     const td = e.target.closest && e.target.closest('td');
-    if (!td || td.classList.contains('gs-rn')) return;
+    if (td && td.classList.contains('gs-rn')) { selectMessage(td.parentElement); return; }
+    if (!td) return;
     const tr = td.parentElement;
     const col = cols()[[...tr.children].indexOf(td) - 1];
     if (!col) return;
@@ -509,6 +554,15 @@
   // 글자를 치면 전역 키 처리가 수식 입력줄로 옮겨 준다 (capturesTyping).
   function onGridKey(e) {
     if (!sel) return;
+    if (sel.msg) {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'c' || e.key === 'C')) {
+        const picked = (shadow.getSelection ? shadow.getSelection() : document.getSelection());
+        if (picked && String(picked).length) return;
+        const text = msgText.get(sel.msg);
+        if (text != null) { e.preventDefault(); GT.clipboard.copy(text); }
+      }
+      return;
+    }
     const rows = allRows();
     let r = rows.indexOf(sel.tr);
     let c = cols().indexOf(sel.col);
@@ -609,6 +663,7 @@
     paintSel();
     renderChrome();
     if (changed && stickBottom) ui.grid.scrollTop = ui.grid.scrollHeight;
+    else if (changed && ui.below) ui.below.hidden = false;
   }
 
   function tick() {
@@ -685,6 +740,7 @@
     destroy() {
       pool.clear();
       memo.clear();
+      msgText.clear();
       systemLog.length = 0;
       sel = null; chats = []; chatsAt = 0; chatsPath = '';
       shadow = null; root = null; varStyle = null;
