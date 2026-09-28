@@ -298,6 +298,27 @@
 
   GT.skin.use(cfg.skin);
   GT.skin.mount(cfg);
+
+  // ------------------------------------------------------------------- 입력 처리
+  // 단축키(Ctrl+\` · Ctrl+; · ⌘K · Ctrl+B)와 팝업 토글은 **스킨을 붙이자마자** 연결한다.
+  //
+  // 예전에는 아래 부팅 점검(tap 최대 5초 · 컴포저 최대 15초 · 스레드 최대 15초) 뒤에 연결해서,
+  // 새로고침 직후 그동안 단축키도 팝업도 먹지 않았다. 컴포저를 못 찾는 화면이면 15초를 꼬박 기다렸다.
+  // 실측(비로그인 ChatGPT, 2026-09-28): 새로고침 후 13.9초까지 안 먹고 16.2초부터 먹었다.
+  // 점검은 '원본이 멀쩡한가' 를 보는 것이지 키를 받을 준비와는 상관이 없다.
+  // 점검이 실패해 원본으로 돌아가면(degraded) toggle · show 가 스스로 거절한다.
+  // docs/issue/2026-09-28-shortcuts-dead-after-refresh.md
+  GT.skin.attachPrompt();
+  disposers.push(() => GT.prompt.detach());
+
+  // 동기로 응답하므로 true 를 돌려주면 안 된다.
+  // true 는 "나중에 응답하겠다"는 뜻이라, 처리하지 않는 메시지의 포트가 열린 채 남아
+  // "message port closed before a response was received" 가 뜬다.
+  chrome.runtime.onMessage.addListener((msg, _s, reply) => {
+    if (!msg) return;
+    if (msg.kind === 'toggle') { GT.skin.toggle(); reply({ visible: GT.skin.visible() }); }
+    else if (msg.kind === 'state') reply({ visible: GT.skin.visible(), degraded: GT.health.degraded });
+  });
   GT.store.onChange(() => GT.skin.current.render());
   GT.config.onChange((c) => {
     GT_SET_LOCALE(c.locale);
@@ -350,11 +371,6 @@
   // onBreak 가 warn/ignore 면 문제를 안고서도 계속 간다 — 사용자가 그렇게 고른 것이다.
   if (GT.health.degraded) return;
 
-  // ------------------------------------------------------------------- 입력 처리
-  // 키 처리는 GT.prompt 에 있다. 여기서는 위젯을 넘겨 주기만 한다.
-  GT.skin.attachPrompt();
-  disposers.push(() => GT.prompt.detach());
-
   // pagehide 에서는 해체하지 않는다.
   // 진짜 언로드면 어차피 문서가 사라지므로 정리할 이유가 없고,
   // bfcache 로 들어간 것이라면 페이지가 되살아나는데 우리는 이미 자폭한 뒤다.
@@ -367,15 +383,6 @@
     if (GT.sidebar.element && GT.sidebar.element.isConnected) GT.sidebar.draw();
   });
 
-
-  // 동기로 응답하므로 true 를 돌려주면 안 된다.
-  // true 는 "나중에 응답하겠다"는 뜻이라, 처리하지 않는 메시지의 포트가 열린 채 남아
-  // "message port closed before a response was received" 가 뜬다.
-  chrome.runtime.onMessage.addListener((msg, _s, reply) => {
-    if (!msg) return;
-    if (msg.kind === 'toggle') { GT.skin.toggle(); reply({ visible: GT.skin.visible() }); }
-    else if (msg.kind === 'state') reply({ visible: GT.skin.visible(), degraded: GT.health.degraded });
-  });
 
   // 라우팅(SPA) — 대화가 바뀌면 다시 수확한다
   let lastPath = location.pathname;

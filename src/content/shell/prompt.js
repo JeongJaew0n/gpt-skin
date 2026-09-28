@@ -201,7 +201,8 @@ GT.prompt = (function () {
       // 실측 2026-09-24: 원본은 컴포저 포커스 상태에서 Ctrl+; 를 막지도 쓰지도 않는다.
       if (opts.openCode && e.ctrlKey && !e.metaKey && !e.altKey && e.code === opts.openCode) {
         e.preventDefault();
-        if (GT.skin.visible()) GT.skin.hide(); else GT.skin.show();
+        // 키는 부팅 점검보다 먼저 연결된다. 점검이 실패해 원본으로 돌아간 상태면 다시 열지 않는다(toggle 과 같다).
+        if (GT.skin.visible()) GT.skin.hide(); else if (!(GT.health && GT.health.degraded)) GT.skin.show();
         return;
       }
       if (!GT.skin.visible()) return;
