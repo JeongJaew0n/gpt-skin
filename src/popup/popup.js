@@ -15,7 +15,7 @@
   const ui = {
     dot: $('#dot'),
     build: $('#build'),
-    rowTerm: $('#row-terminal'), swTerm: $('#sw-terminal'), helpTerm: $('#terminal-help'),
+    rowTerm: $('#row-terminal'), swTerm: $('#sw-terminal'), helpTerm: $('#terminal-help'), palette: $('#palette'),
     rowDef: $('#row-default'), swDef: $('#sw-default')
   };
 
@@ -40,6 +40,7 @@
   });
 
   function paintTerminal() {
+    if (ui.palette) ui.palette.disabled = !termUsable;
     setSwitch(ui.swTerm, termOn);
     ui.rowTerm.disabled = !termUsable;
     ui.dot.dataset.on = termOn ? '1' : '0';
@@ -147,6 +148,13 @@
   });
 
   $('#options').addEventListener('click', () => { chrome.runtime.openOptionsPage(); window.close(); });
+  // 명령 열기 — 탭의 팔레트를 연다. ChatGPT 가 아닌 탭 · 붙지 않은 탭에서는 잠근다.
+  $('#palette').textContent = GT_T('popup.palette', GT_MOD() + 'K');
+  $('#palette').addEventListener('click', async () => {
+    if (!termUsable) return;
+    const res = await ask({ kind: 'palette' });
+    if (res && res.ok) window.close();
+  });
   // 크롬이 확장 단축키를 바꾸는 화면. 확장 페이지에서는 chrome:// 주소로 탭을 열 수 있다.
   $('#shortcuts').textContent = GT_T('popup.shortcuts');
   $('#shortcuts').title = GT_T('popup.shortcuts.help');

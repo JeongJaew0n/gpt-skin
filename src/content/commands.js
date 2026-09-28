@@ -30,6 +30,27 @@ GT.commands = (function () {
   // args: 인자 후보를 돌려주는 함수(선택). 이미 입력된 앞 인자들을 받는다.
   const def = (name, desc, run, hint, args) => { REG.push({ name, desc, run, hint, args }); };
 
+  // 팔레트에서 명령 옆에 보여 줄 단축키. 쓰다 보면 키를 배운다 (Linear · VS Code 식).
+  // 명령 정의에 키를 붙이지 않고 여기 작은 표로 둔다 — 키 처리는 prompt.js 에 있다.
+  const KEYS = () => ({
+    ':sidebar': 'Ctrl+B · ' + GT_MOD() + '\u21e7S',
+    ':font': '\u2325+ \u2325\u2212 \u23250'
+  });
+
+  function paletteItems() {
+    const keys = KEYS();
+    const cmds = usable().map((c) => ({ kind: 'command', name: c.name, desc: c.desc, hint: c.hint, keys: keys[c.name] || '' }));
+    let chats = [];
+    try {
+      const g = GT.chats.state || {};
+      const list = [].concat(g.pinned || [], g.chats || [], ...((g.projects || []).map((p) => p.items || [])));
+      const seen = new Set();
+      chats = list.filter((c) => c && c.id && c.href && !seen.has(c.id) && seen.add(c.id))
+        .map((c) => ({ kind: 'chat', name: c.title || c.id, desc: GT_T('palette.chat'), href: c.href }));
+    } catch (_) { chats = []; }
+    return chats.concat(cmds);          // 아무것도 안 쳤을 때 대화가 위
+  }
+
   // 지금 스킨에서 쓸 수 있는 명령. 스킨이 hiddenCommands 로 뺀 것은 목록·팔레트·완성에서 숨긴다.
   const hidden = () => {
     try { return GT.skin.current.hiddenCommands || []; } catch (_) { return []; }
@@ -596,10 +617,15 @@ export async function ${pick(VERBS).replace(/ing$/, '')}${n[0].toUpperCase() + n
     complete,
     applyCompletion,
     commonPrefix,
+    // ⌘K — 대화 검색 + 명령. 원본 ChatGPT 에서 ⌘K 는 대화 검색이라 그 손버릇을 살린다 (UX 조사 B2).
+    // 대화는 이미 읽어 둔 목록(GT.chats.state)만 쓴다 — 팔레트를 연다고 새 요청을 보내지 않는다.
+    // 팔레트는 ':' 로 시작하면 명령만 보여 준다 (palette.js).
     openPalette() {
-      GT.palette.open(usable().map((c) => ({ name: c.name, desc: c.desc, hint: c.hint })), (item) => {
+      GT.palette.open(paletteItems(), (item) => {
+        if (item.kind === 'chat') { GT.navigate.to(item.href); return; }
         GT.prompt.fill(item.name + ' ');
       });
-    }
+    },
+    paletteItems
   };
 })();

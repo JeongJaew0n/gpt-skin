@@ -326,6 +326,14 @@
   chrome.runtime.onMessage.addListener((msg, _s, reply) => {
     if (!msg) return;
     if (msg.kind === 'toggle') { GT.skin.toggle(); reply({ visible: GT.skin.visible() }); }
+    // 팝업의 '명령 열기' — 스킨이 꺼져 있으면 켜고 팔레트를 연다 (UX 조사 B2: 입구가 단축키뿐이면 발견성이 없다)
+    else if (msg.kind === 'palette') {
+      // 켜기는 사용자 토글과 같은 경로로 — 복귀 상태면 거절하고, 켜면 배지(서비스 워커)에 알린다
+      if (!GT.skin.visible()) GT.skin.toggle();
+      if (!GT.skin.visible()) { reply({ ok: false }); return; }
+      GT.commands.openPalette();
+      reply({ ok: true, visible: GT.skin.visible() });
+    }
     else if (msg.kind === 'state') reply({ visible: GT.skin.visible(), degraded: GT.health.degraded,
       warned: GT.health.warned, reasons: GT.health.reasons });
   });

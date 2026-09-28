@@ -217,6 +217,7 @@ GT.theme = (function () {
 .gt-code-text { margin: 0; font: inherit; white-space: pre; color: var(--gt-fg); }
 .gt-key { color: var(--gt-fg-dim); }
 .gt-key-hint { color: var(--gt-fg-faint); }
+.gt-palette-keys { flex: 0 0 auto; font-size: 11px; margin-right: 8px; }
 
 /* ---- 상태줄의 로그 표시 ---- */
 .gt-log-state[data-on="0"] { color: var(--gt-fg-faint); }

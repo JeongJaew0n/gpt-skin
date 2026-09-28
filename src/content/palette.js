@@ -4,7 +4,7 @@ GT.palette = (function () {
 
   const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x !== undefined) n.textContent = x; return n; };
 
-  let box = null, scrim = null, input = null, list = null, foot = null;
+  let box = null, scrim = null, input = null, list = null, foot = null, mark = null;
   let items = [], filtered = [], sel = 0, onPick = null;
 
   // 부분 문자열이 순서대로 등장하면 매치. 매치 위치를 함께 돌려준다.
@@ -52,6 +52,7 @@ GT.palette = (function () {
       name.appendChild(highlight(f.item.name, f.hits));
       row.appendChild(name);
       row.appendChild(el('span', 'gt-palette-desc', f.item.desc || ''));
+      if (f.item.keys) row.appendChild(el('span', 'gt-key gt-palette-keys', f.item.keys));
       if (f.item.hint) {
         const h = el('span', null, f.item.hint);
         h.style.color = 'var(--gt-fg-faint)'; h.style.fontSize = '11px';
@@ -73,7 +74,11 @@ GT.palette = (function () {
 
   function apply() {
     const q = input.value.trim();
+    // ':' 로 시작하면 명령만 (GitHub 팔레트의 '>' 와 같은 접두어). 그 밖에는 대화 + 명령.
+    const cmdOnly = q.startsWith(':');
+    if (mark) mark.textContent = cmdOnly ? ':' : '\u203a';
     filtered = items
+      .filter((item) => !cmdOnly || item.kind !== 'chat')
       .map((item) => {
         const whole = fuzzy(q, item.name + ' ' + (item.desc || ''));
         if (!whole) return null;
@@ -110,11 +115,11 @@ GT.palette = (function () {
     box = el('div', 'gt-palette');
 
     const head = el('div', 'gt-palette-input');
-    const colon = el('span', null, ':'); colon.style.color = 'var(--gt-magenta)';
+    mark = el('span', null, '\u203a'); mark.style.color = 'var(--gt-magenta)';
     input = el('input');
     input.spellcheck = false;
-    input.placeholder = '명령 검색';
-    head.appendChild(colon); head.appendChild(input);
+    input.placeholder = GT_T('palette.placeholder');
+    head.appendChild(mark); head.appendChild(input);
     box.appendChild(head);
 
     list = el('div', 'gt-palette-list'); box.appendChild(list);
