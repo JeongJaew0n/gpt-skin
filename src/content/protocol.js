@@ -26,7 +26,9 @@ var GT = (function () {
     try { fn(payload); } catch (err) { console.error('[gpt-skin]', err); }
   };
 
-  window.addEventListener('message', (e) => {
+  // 이름을 붙여 둔다. 확장이 다시 로드돼 새 인스턴스가 들어오면 이 리스너를 떼야 한다 —
+  // 안 떼면 옛 인스턴스가 tap 메시지를 계속 받아 죽은 화면을 다시 그리려 든다.
+  const onMessage = (e) => {
     if (e.source !== window) return;
     const d = e.data;
     if (!d || d[CH] !== true || d.dir !== 'm2i') return;
@@ -36,10 +38,17 @@ var GT = (function () {
     q.push(d.payload || {});
     while (q.length > MAX_PENDING) q.shift();
     pending.set(d.kind, q);
-  });
+  };
+  window.addEventListener('message', onMessage);
 
   return {
     CH,
+    // 더 이상 메시지를 받지 않는다. 물러날 때 부른다.
+    stop() {
+      window.removeEventListener('message', onMessage);
+      handlers.clear();
+      pending.clear();
+    },
     on(kind, fn) {
       if (!handlers.has(kind)) handlers.set(kind, []);
       handlers.get(kind).push(fn);

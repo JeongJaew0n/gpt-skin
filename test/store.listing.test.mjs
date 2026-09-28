@@ -34,7 +34,10 @@ const ALL = SRC.map(src).join('\n');
 
 // --- 권한을 늘리지 않았는지 ---
 {
-  t('권한은 storage 하나', JSON.stringify(mf.permissions) === JSON.stringify(['storage']));
+  // scripting 은 업데이트 뒤 열린 탭에 새 코드를 다시 넣으려고 넣었다 (2026-09-28).
+  // 권한을 늘릴 때마다 심사 메모에 근거가 있어야 한다.
+  t('권한은 storage · scripting 둘', JSON.stringify(mf.permissions) === JSON.stringify(['storage', 'scripting']));
+  t('scripting 근거가 심사 메모에 있다', /scripting/.test(fs.readFileSync('docs/store/review-notes.md', 'utf8')));
   t('호스트 권한은 chatgpt.com 하나',
     JSON.stringify(mf.host_permissions) === JSON.stringify(['https://chatgpt.com/*']));
   t('web_accessible_resources 없음', !mf.web_accessible_resources);

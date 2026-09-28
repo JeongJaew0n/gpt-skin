@@ -8,6 +8,21 @@
   'use strict';
 
   const CH = '__gpt_skin__';
+
+  // 세대 번호. 확장을 다시 로드하면 서비스워커가 이 파일을 열린 탭에 다시 넣는다.
+  // MAIN world 는 확장과 무관하게 살아 있어서 옛 tap 도 그대로 돈다 — 그냥 두면
+  // fetch 를 이중으로 감싸 같은 스트림을 두 번 보고, harvest·verify 에 두 번 답한다.
+  // 새 tap 이 번호를 올리면 옛 tap 은 새 요청을 그냥 통과시키고 메시지에 답하지 않는다.
+  // (이미 읽고 있던 스트림은 끝까지 읽어 보낸다 — 새 isolated 쪽이 받아 쓴다.)
+  // docs/issue/2026-09-28-reinject-after-update.md
+  const SLOT = '__gptSkinTap';
+  const prevGen = (window[SLOT] && Number(window[SLOT].gen)) || 0;
+  const GEN = prevGen + 1;
+  try {
+    Object.defineProperty(window, SLOT, { value: { gen: GEN }, configurable: true, writable: true, enumerable: false });
+  } catch (_) { window[SLOT] = { gen: GEN }; }
+  const current = () => !!window[SLOT] && window[SLOT].gen === GEN;
+
   const STREAM_PATH = '/backend-api/f/conversation';
   const SUPPORTED_ENCODING = 'v1';
 
@@ -304,7 +319,10 @@
     return;
   }
 
+  // 지금 window.fetch 를 감싼다(원본이든, 다른 누가 감싼 것이든, 옛 tap 이든).
+  // 옛 tap 은 세대가 지나면 그냥 통과시키므로 사슬이 이어져도 스트림은 한 번만 읽힌다.
   window.fetch = function gptSkinFetch(...args) {
+    if (!current()) return nativeFetch.apply(this, args);
     let url = '';
     try { url = String(typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || ''); } catch (_) {}
     const isStream = url.split('?')[0].endsWith(STREAM_PATH);
@@ -432,6 +450,7 @@
     if (e.source !== window) return;
     const d = e.data;
     if (!d || d[CH] !== true || d.dir !== 'i2m') return;
+    if (!current()) return;          // 새 tap 이 들어왔다. 답은 그쪽이 한다
     if (d.kind === 'harvest') harvest();
     else if (d.kind === 'verify') verify(d.payload && d.payload.id);
     else if (d.kind === 'ping') post('pong', { ready: true });

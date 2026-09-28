@@ -65,9 +65,12 @@ tools/test.sh        # 전체 테스트 (종료 코드로 판정한다)
 tools/package.sh     # 웹스토어용 zip + 사전 점검
 ```
 
-- 브라우저 확인은 `chrome://extensions` 의 ↻ 를 눌러야 반영된다.
-  **그 버튼은 내가 누를 수 없다.** 필요하면 사용자에게 부탁한다.
-  ([도입 검토 중인 `reload_extension`](docs/plan/2026-09-11-modern-web-guidance.md) 이 이걸 푼다)
+- 브라우저 확인은 `chrome://extensions` 의 ↻(또는 입력줄의 `:reload`)로 반영된다.
+  **0.10.0 부터 탭은 새로고침하지 않아도 된다** — 서비스워커가 열린 탭에 새 코드를 다시 넣는다
+  ([재주입](docs/issue/2026-09-28-reinject-after-update.md)). ↻ 버튼은 내가 누를 수 없으니
+  필요하면 사용자에게 부탁한다.
+- 헤드리스 크롬 + CDP `Extensions.loadUnpacked` 로 확장을 올려 직접 확인할 수 있다
+  (크롬을 `--enable-unsafe-extension-debugging` 으로 띄운다. `--load-extension` 은 137 부터 막혔다).
 
 ---
 

@@ -71,6 +71,31 @@
   const disposers = [];
   let gone = false;
 
+  // ---------------------------------------------------------------- 교대
+  //
+  // 확장을 다시 로드하면 서비스워커가 이 스크립트들을 열린 탭에 다시 넣는다(재주입).
+  // 그러면 한 페이지에 옛 인스턴스(고아)와 새 인스턴스가 함께 있게 된다.
+  // DOM 은 두 쪽이 공유한다 — 옛 것이 늦게 물러나며 호스트·페이지 스타일을 id 로 지우면
+  // 새로 붙은 화면이 날아간다. 그래서 새 것이 뜨자마자 옛 것에게 '비켜라' 를 보내고,
+  // 옛 것은 새 것이 아무것도 그리기 전에 동기로 물러난다. DOM 이벤트는 월드를 가리지 않는다.
+  //
+  // 옛 것이 켜 둔 상태(Ctrl+\` 로 탭에서 켠 것)는 이어받는다. 안 그러면 확장을 다시
+  // 로드할 때마다 화면이 원본으로 돌아가 먹통처럼 보인다.
+  // docs/issue/2026-09-28-reinject-after-update.md
+  const GEN = String(Date.now()) + Math.random().toString(36).slice(2, 8);
+  const pageRoot = document.documentElement;
+  const MY = GT;                               // 같은 월드에 재주입되면 전역 GT 가 새 것으로 바뀐다
+  // 옛 것이 아직 켜 둔 채면 클래스로 알 수 있다. 그런데 재주입보다 옛 것의 고아 감지(4초)가
+  // 먼저 돌면 이미 화면을 치운 뒤다 — 그래서 물러날 때 켜져 있었다는 사실을 따로 남긴다.
+  // 실측(헤드리스 크롬, 2026-09-28): 이 표식 없이는 업데이트 뒤 켜 둔 화면이 원본으로 돌아갔다.
+  const inherited = !!(GT.cover && GT.cover.isOn()) || pageRoot.dataset.gptSkinWasOn === '1';
+  delete pageRoot.dataset.gptSkinWasOn;
+  pageRoot.dataset.gptSkinGen = GEN;
+  pageRoot.dispatchEvent(new CustomEvent('gpt-skin:takeover'));
+  // 예전 판이 남긴 '새로고침해주세요' 안내가 떠 있으면 걷는다
+  const staleNotice = document.getElementById('gpt-skin-gone');
+  if (staleNotice) staleNotice.remove();
+
   const every = (ms, fn) => { const t = setInterval(fn, ms); disposers.push(() => clearInterval(t)); return t; };
   const listen = (target, ev, fn, opts) => {
     target.addEventListener(ev, fn, opts);
@@ -78,38 +103,31 @@
   };
   const observe = (obs, node, cfg) => { obs.observe(node, cfg); disposers.push(() => obs.disconnect()); };
 
+  // 물러난다. 안내를 띄우지 않는다 — 확장을 다시 로드하면 서비스워커가 새 코드를
+  // 곧바로 다시 넣으므로 사용자가 할 일이 없다. 예전에는 '새로고침해주세요' 를 띄웠다.
   function shutdown(why) {
     if (gone) return;
     gone = true;
     disposers.forEach((d) => { try { d(); } catch (_) {} });
     disposers.length = 0;
-    try { GT.skin.destroy(); } catch (_) {}
-    GT.log('물러남:', why, '— 페이지를 새로고침하면 새 코드로 다시 붙는다');
-    notifyGone();
+    // 교대 신호로 물러날 때는 새 것이 아직 아무것도 안 그렸으므로 화면을 치워도 된다.
+    // 그런데 고아 감지로 늦게 물러나는 순간 이미 새 것이 붙어 있으면, 호스트와 페이지 스타일은
+    // 그쪽 것이다 — id 로 지우는 destroy 를 부르면 새 화면이 날아간다. 그때는 손대지 않는다.
+    const replaced = pageRoot.dataset.gptSkinGen !== GEN;
+    if (!replaced || why === 'takeover') {
+      // 곧 들어올 새 인스턴스가 이어받을 수 있게, 켜져 있었으면 남겨 둔다.
+      // 교대 신호로 물러날 때는 새 것이 이미 읽은 뒤라 남기면 찌꺼기가 된다 — 고아 감지로 먼저 물러날 때만.
+      if (why !== 'takeover') { try { if (MY.cover.isOn()) pageRoot.dataset.gptSkinWasOn = '1'; } catch (_) {} }
+      try { MY.skin.destroy(); } catch (_) {}
+    }
+    try { MY.stop(); } catch (_) {}
+    try { MY.log('물러남:', why); } catch (_) {}
   }
 
-  // 조용히 사라지면 원본 UI 가 그대로 보이는데, 그게 터미널인 줄 알고
-  // "왜 안 되지?" 를 헤매게 된다. 실제로 그렇게 헷갈린 적이 있다.
-  // 작게, 그러나 눈에 보이게 알린다.
-  function notifyGone() {
-    if (document.getElementById('gpt-skin-gone')) return;
-    const box = document.createElement('div');
-    box.id = 'gpt-skin-gone';
-    box.setAttribute('style', [
-      'position:fixed', 'right:16px', 'bottom:16px', 'z-index:2147483647',
-      'background:#161b22', 'color:#c9d1d9', 'border:1px solid #d29922',
-      'padding:10px 14px', 'font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace',
-      'display:flex', 'gap:12px', 'align-items:center', 'max-width:420px'
-    ].join(';'));
-    const txt = document.createElement('div');
-    txt.textContent = 'gpt-skin 확장이 다시 로드 됐습니다. 기능 사용을 위해서는 페이지를 새로고침해주세요';
-    const close = document.createElement('button');
-    close.textContent = '닫기';
-    close.setAttribute('style', 'background:none;border:1px solid #30363d;color:#8b949e;font:inherit;padding:2px 8px;cursor:pointer;flex:0 0 auto');
-    close.addEventListener('click', () => box.remove());
-    box.appendChild(txt); box.appendChild(close);
-    (document.body || document.documentElement).appendChild(box);
-  }
+  // 새 인스턴스가 들어왔다. 그쪽이 아무것도 그리기 전에 비켜 준다.
+  listen(pageRoot, 'gpt-skin:takeover', () => {
+    if (pageRoot.dataset.gptSkinGen !== GEN) shutdown('takeover');
+  });
 
   const contextAlive = () => {
     try { return !!(chrome.runtime && chrome.runtime.id); } catch (_) { return false; }
@@ -436,7 +454,7 @@
     if (root) observe(obs, root, { childList: true, subtree: true });
   })();
 
-  if (cfg.enabled) GT.skin.show();
+  if (cfg.enabled || inherited) GT.skin.show();
   // 배지·팝업이 실제 상태를 알아야 한다. 이걸 안 보내면 서비스 워커가
   // '점검이 멀쩡하니 켜져 있겠지' 로 추측한다 — 기본이 꺼짐이 되면서 그 추측이 틀리게 됐다.
   GT.sendToSW({ kind: 'visible', visible: GT.skin.visible() });
@@ -444,3 +462,10 @@
   GT.skin.current.system('info', `gpt-skin ${GT_VERSION} · build ${GT_BUILD} — :help 로 명령, ^\` 로 원본 토글`,
     null, { quiet: true });
 })();
+
+// 이 파일의 마지막 값이 Promise 면 안 된다. 서비스워커의 재주입(chrome.scripting.executeScript)은
+// 주입한 파일의 마지막 식이 Promise 면 그것이 끝날 때까지 기다린다. 부팅은 컴포저·스레드를
+// 최대 수십 초 기다리므로, 그동안 다음 주입(MAIN 의 tap)이 줄 서서 멈췄다.
+// 실측(헤드리스 크롬, 2026-09-28): 재주입 한 번에 30,276ms 가 걸렸다.
+// docs/issue/2026-09-28-reinject-after-update.md
+void 0;

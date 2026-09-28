@@ -33,6 +33,19 @@ Chrome 웹스토어 개발자 대시보드에 붙여 넣을 내용이다.
 > (ids, titles, timestamps, project names) in `chrome.storage.local` so the list appears
 > immediately and survives a failed network call. Conversation bodies are never stored.
 
+### `scripting`
+
+> Used only right after the extension is installed or updated, to inject the extension's
+> **own packaged content scripts** (the same files listed under `content_scripts` in the
+> manifest) into ChatGPT tabs that were already open. Chrome does not do this by itself, so
+> without it every open ChatGPT tab would stop working after an update until the user
+> reloaded the page. It only targets `https://chatgpt.com/*` tabs, injects no code other
+> than the packaged files, and is never used to run strings or remote code.
+
+설치·업데이트 직후, 이미 열려 있던 ChatGPT 탭에 **패키지에 든 콘텐츠 스크립트를 다시 넣는 데만** 쓴다
+(매니페스트의 `content_scripts` 와 같은 파일). 크롬은 이걸 해 주지 않아서, 없으면 업데이트할 때마다
+열린 탭이 멈추고 새로고침해야 했다. `chatgpt.com` 탭만 대상이고 패키지 파일 말고는 넣지 않는다.
+
 ### Host permission — `https://chatgpt.com/*`
 
 > The extension only functions on ChatGPT. It needs to run content scripts on that origin

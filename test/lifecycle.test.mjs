@@ -18,7 +18,8 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('컨텍스트 생존 확인', /chrome\.runtime && chrome\.runtime\.id/.test(src));
   t('주기적 감시', /every\(4000/.test(src));
   t('shutdown 이 disposer 를 모두 실행', /disposers\.forEach/.test(src));
-  t('shutdown 이 스킨을 해체', /GT\.skin\.destroy\(\)/.test(src));
+  // 같은 월드에 재주입되면 전역 GT 가 새 것으로 바뀐다 — 자기 모듈(MY)로 해체한다
+  t('shutdown 이 스킨을 해체', /MY\.skin\.destroy\(\)/.test(src));
   t('pagehide 로는 해체하지 않는다', !/listen\(window, 'pagehide'/.test(src));
   t('pagehide 를 쓰지 않는 이유가 적혀 있다', /bfcache/.test(src));
   t('중복 shutdown 방지', /if \(gone\) return;/.test(src));
@@ -77,14 +78,16 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('소스에 버전을 박아 두지 않았다', hardcoded.length === 0);
 }
 
-// 6. 물러날 때 조용히 사라지지 않는다
+// 6. 물러날 때 '새로고침해주세요' 를 띄우지 않는다 (2026-09-28)
+// 예전에는 조용히 사라지면 헷갈린다며 안내를 띄웠다. 이제는 서비스워커가 새 코드를
+// 곧바로 다시 넣으므로(재주입) 사용자가 할 일이 없다 — 안내가 오히려 먹통처럼 보이게 했다.
+// 자세한 교대 검사는 test/reinject.test.mjs.
 {
-  t('물러남을 알린다', /notifyGone/.test(src));
-  t('무슨 일이 있었는지 밝힌다', /확장이 다시 로드 됐습니다/.test(src));
-  t('무엇을 해야 하는지 안내', /새로고침해주세요/.test(src));
-  t('알림은 한 번만', /getElementById\('gpt-skin-gone'\)\) return/.test(src));
-  // 사유는 화면 문구에서 뺐지만 진단용으로는 남겨 둔다
-  t('사유는 콘솔에 남긴다', /GT\.log\('물러남:', why/.test(src));
+  const code = src.replace(/\/\/.*$/gm, '');          // 주석에서 옛 문구를 언급하는 건 봐준다
+  t('새로고침 안내를 띄우지 않는다', !/notifyGone/.test(code) && !/새로고침해주세요/.test(code));
+  t('예전 판이 남긴 안내는 걷는다', /getElementById\('gpt-skin-gone'\)/.test(src));
+  // 사유는 화면에 안 띄우지만 진단용으로는 남겨 둔다
+  t('사유는 로그에 남긴다', /MY\.log\('물러남:', why\)/.test(src));
 }
 
 let bad = 0;

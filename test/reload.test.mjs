@@ -1,4 +1,5 @@
-// :reload — 확장을 디스크에서 다시 읽고 요청한 탭을 새로고침한다.
+// :reload — 확장을 디스크에서 다시 읽는다. 새 코드는 재주입으로 붙고,
+// 재주입이 그 탭에 실패했을 때만 새로고침한다 (2026-09-28).
 import fs from 'node:fs'; import vm from 'node:vm';
 
 const results = []; const t = (n, ok) => results.push([n, ok]);
@@ -9,20 +10,24 @@ function boot(session = {}) {
   const calls = { reload: 0, tabReload: [], set: [], removed: [] };
   const store = { ...session };
   let onMessage = null;
+  let onInstalled = null;
   const chrome = {
-    runtime: { reload: () => { calls.reload++; }, openOptionsPage() {}, onMessage: { addListener: (fn) => { onMessage = fn; } } },
+    runtime: { reload: () => { calls.reload++; }, openOptionsPage() {}, onMessage: { addListener: (fn) => { onMessage = fn; } },
+      onInstalled: { addListener: (fn) => { onInstalled = fn; } }, getManifest: () => JSON.parse(read('manifest.json')) },
+    scripting: { executeScript: async () => {} },
     storage: { session: {
       get: async (k) => (k in store ? { [k]: store[k] } : {}),
       set: async (o) => { calls.set.push(o); Object.assign(store, o); },
       remove: async (k) => { calls.removed.push(k); delete store[k]; }
     } },
-    tabs: { reload: async (id) => { calls.tabReload.push(id); }, onRemoved: { addListener() {} }, onUpdated: { addListener() {} } },
+    tabs: { reload: async (id) => { calls.tabReload.push(id); }, query: async () => [], onRemoved: { addListener() {} }, onUpdated: { addListener() {} } },
     action: { setBadgeText: async () => {}, setBadgeBackgroundColor: async () => {}, setTitle: async () => {} }
   };
-  const sb = { console, Map, Object, Promise, chrome };
+  const sb = { console, Map, Set, Object, Array, Promise, JSON, String, Error, setTimeout, chrome };
   vm.createContext(sb);
   vm.runInContext(read('src/background/service-worker.js'), sb, { filename: 'service-worker.js' });
-  return { calls, send: (msg, sender) => onMessage(msg, sender || { tab: { id: 7 } }), store };
+  return { calls, send: (msg, sender) => onMessage(msg, sender || { tab: { id: 7 } }), store,
+    installed: (d) => onInstalled && onInstalled(d) };
 }
 
 {
@@ -39,9 +44,11 @@ function boot(session = {}) {
 }
 {
   // 다시 읽은 뒤 새 워커가 시작된다
+  // 이 탭은 재주입 대상에 없었다(query 가 빈 목록) → 붙지 못했으니 새로고침으로 붙인다
   const w = boot({ gptSkinReloadTab: 42 });
-  await tick(); await tick();
-  t('새 워커가 적어 둔 탭을 새로고침한다', w.calls.tabReload.join() === '42');
+  w.installed({ reason: 'update' });
+  await tick(); await tick(); await tick();
+  t('재주입이 못 붙은 탭은 새 워커가 새로고침한다', w.calls.tabReload.join() === '42');
   t('적어 둔 것을 지운다 (다음 시작에 또 새로고침하지 않게)', w.calls.removed.includes('gptSkinReloadTab'));
 }
 {

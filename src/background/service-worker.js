@@ -28,10 +28,11 @@ function paint(tabId) {
   quiet(chrome.action.setTitle({ tabId, title: b.title }));
 }
 
-// :reload — 확장을 디스크에서 다시 읽고, 요청한 탭을 새로고침한다.
-// chrome://extensions 의 ↻ + 탭 새로고침과 같다. 콘텐츠 스크립트는 runtime.reload 를 부를 수 없어서
-// 여기서 한다. 다시 읽으면 이 워커도 죽으므로, 새로고침할 탭을 storage.session 에 적어 두고
-// 새 워커가 시작할 때 꺼내 새로고침한다. 입력줄에서 친 명령으로만 온다 (페이지 스크립트는 못 보낸다).
+// :reload — 확장을 디스크에서 다시 읽는다. chrome://extensions 의 ↻ 와 같다.
+// 콘텐츠 스크립트는 runtime.reload 를 부를 수 없어서 여기서 한다. 다시 읽으면 이 워커도 죽으므로,
+// 요청한 탭을 storage.session 에 적어 두고 새 워커가 꺼낸다. 새 코드는 재주입(아래)으로 붙으므로
+// 탭을 새로고침하지 않는다 — 재주입이 그 탭에 실패했을 때만 새로고침으로 붙인다.
+// 입력줄에서 친 명령으로만 온다 (페이지 스크립트는 못 보낸다).
 const RELOAD_KEY = 'gptSkinReloadTab';
 function reloadExtension(tabId) {
   const go = () => chrome.runtime.reload();
@@ -43,14 +44,74 @@ function reloadExtension(tabId) {
 try {
   const p = chrome.storage.session.get(RELOAD_KEY);
   if (p && typeof p.then === 'function') {
-    p.then((got) => {
+    p.then(async (got) => {
       const tabId = got && got[RELOAD_KEY];
       if (!tabId) return;
       quiet(chrome.storage.session.remove(RELOAD_KEY));
+      // 재주입이 그 탭에 붙었으면 새로고침할 필요가 없다 — 보던 화면이 그대로 이어진다.
+      // 재주입이 실패했거나 결과가 안 오면(3초) 예전처럼 새로고침으로 붙인다.
+      const r = await Promise.race([reinjected, new Promise((res) => setTimeout(() => res(null), 3000))]);
+      if (r && r.done && r.done.includes(tabId)) return;
       quiet(chrome.tabs.reload(tabId));
     }, () => {});
   }
 } catch (_) { /* storage.session 이 없으면 탭 새로고침만 빠진다 */ }
+
+// ---------------------------------------------------------------- 재주입
+//
+// 크롬은 확장을 다시 로드(업데이트)하면 이미 열려 있는 탭의 콘텐츠 스크립트를 확장에서
+// 끊는다. 그리고 새 코드를 넣어 주지 않는다 — 새로 여는 페이지에만 들어간다.
+// 그래서 예전에는 업데이트할 때마다 열린 ChatGPT 탭이 전부 멈추고 '새로고침해주세요' 가 떴다.
+//
+// 설치·업데이트 직후 열린 탭을 찾아 매니페스트의 콘텐츠 스크립트를 같은 순서로 다시 넣는다.
+// 넣을 파일 목록은 매니페스트에서 읽는다 — 두 곳에 적으면 갈린다.
+// 옛 인스턴스와의 교대는 스크립트 쪽이 한다(tap 은 세대 번호, isolated 는 takeover 이벤트).
+// docs/issue/2026-09-28-reinject-after-update.md
+async function reinject(reason) {
+  if (!chrome.scripting || !chrome.tabs) return { tabs: 0, done: [], failed: [] };
+  const groups = (chrome.runtime.getManifest().content_scripts || [])
+    .map((c) => ({ world: c.world === 'MAIN' ? 'MAIN' : 'ISOLATED', js: c.js || [], matches: c.matches || [] }))
+    .filter((g) => g.js.length);
+  // isolated 를 먼저 넣는다. 그쪽이 먼저 옛 인스턴스를 비키게 하고 메시지를 받을 준비를 한 뒤에
+  // 새 tap 이 ready 를 쏘게 하려는 것이다. (늦게 와도 ping/pong 으로 다시 맞춘다)
+  groups.sort((a, b) => (a.world === 'ISOLATED' ? 0 : 1) - (b.world === 'ISOLATED' ? 0 : 1));
+
+  const urls = [...new Set(groups.flatMap((g) => g.matches))];
+  let tabs = [];
+  try { tabs = await chrome.tabs.query({ url: urls }); } catch (_) { tabs = []; }
+
+  const failed = [];
+  const done = [];
+  // 한 탭이 실패해도 나머지는 계속한다. 버려진(discarded) 탭·로딩 중인 탭은 실패할 수 있다 —
+  // 그런 탭은 다음에 열거나 새로고침할 때 매니페스트 주입으로 붙는다.
+  for (const tab of tabs) {
+    if (!tab || tab.id == null || tab.discarded) continue;
+    try {
+      for (const g of groups) {
+        await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: g.js, world: g.world });
+      }
+      done.push(tab.id);
+    } catch (e) {
+      failed.push({ tabId: tab.id, error: String((e && e.message) || e) });
+    }
+  }
+  if (failed.length) console.warn('[gpt-skin] 재주입 실패', reason, failed);
+  return { tabs: tabs.length, done, failed };
+}
+
+// :reload 가 결과를 기다린다. onInstalled 가 안 오는 시작(브라우저 재시작 등)이면 빈 결과로 끝난다.
+let settleReinject;
+const reinjected = new Promise((res) => { settleReinject = res; });
+
+if (chrome.runtime.onInstalled) chrome.runtime.onInstalled.addListener((d) => {
+  // install: 설치 전부터 열려 있던 탭도 바로 쓸 수 있게 한다
+  // update : 확장 업데이트 · chrome://extensions 의 ↻ · :reload 모두 이 이유로 온다
+  if (d && (d.reason === 'install' || d.reason === 'update')) {
+    reinject(d.reason).then(settleReinject, () => settleReinject(null));
+  } else {
+    settleReinject(null);
+  }
+});
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
   if (!msg) return;
