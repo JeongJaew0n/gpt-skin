@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>gpt-skin</title>
+  <link rel="stylesheet" href="../shared/ds.css">
+  <link rel="stylesheet" href="welcome.css">
+</head>
+<body>
+  <header class="top">
+    <span class="ds-dot" data-on="1"></span>
+    <span class="brand">gpt-skin</span>
+  </header>
+
+  <main class="page">
+    <h1 id="title">설치했습니다</h1>
+    <p class="lead" id="lead"></p>
+
+    <section class="step">
+      <p class="step-text" id="step"></p>
+      <a class="go" id="open" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT</a>
+    </section>
+
+    <section>
+      <h2 id="skins-title"></h2>
+      <ul class="skins" id="skins"></ul>
+    </section>
+
+    <section>
+      <h2 id="keys-title"></h2>
+      <table class="keys" id="keys"></table>
+    </section>
+
+    <p class="note" id="pin"></p>
+    <p class="note" id="privacy"></p>
+  </main>
+
+  <script src="../shared/i18n.js"></script>
+  <script src="../shared/defaults.js"></script>
+  <script src="welcome.js"></script>
+</body>
+</html>

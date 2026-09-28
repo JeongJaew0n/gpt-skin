@@ -445,7 +445,7 @@ tools/test.sh
 | [시트 스킨 — 스프레드시트로 보이는 대화](docs/plan/2026-09-21-sheet-skin.md) | 설계만 — 목업 있음 · 구현 대기 |
 | [스킨 구조 — terminal · sheet · none 을 갈아끼운다](docs/plan/2026-09-24-skin-architecture.md) | 1~8단계 구현 (0.4.2~0.8.3) — terminal · sheet · none, 실시간 전환 · sheet 는 하네스 검증, 실제 ChatGPT 확인은 재로드 대기 |
 | [UX 조사 — 세 번 되풀이](docs/plan/2026-09-28-ux-research.md) | 조사만 (0.12.0 재확인) — esc 버그 확정(재현) · 우선 5 · 설계 6 · 보류·기각 8 · 결정 필요 3 |
-| [UX 후속 작업 — 진행 계획](docs/plan/2026-09-29-ux-followup.md) | 다섯 묶음 — 진행 중 |
+| [UX 후속 작업 — 진행 계획](docs/plan/2026-09-29-ux-followup.md) | 다섯 묶음 완료 (0.12.1~0.17.0) — esc 버그 · 경고 사유 · 단축키 · ⌘K 대화 검색 · 새 내용 알림 · 시트 메시지 복사 · 진단 복사 · 환영 페이지 |
 
 조사·수정 기록은 [`docs/issue/`](docs/issue/README.md) 에 있다. **열일곱 건 중 열넷이 해결**됐고 한 건은 반쯤 해결됐다.
 매니페스트 캐시 건은 크롬 동작이라 감지만 하고, 선택 유실 건은 스크롤백 쪽만 고쳐졌다.

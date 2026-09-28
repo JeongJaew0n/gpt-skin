@@ -108,6 +108,9 @@ if (chrome.runtime.onInstalled) chrome.runtime.onInstalled.addListener((d) => {
   // update : 확장 업데이트 · chrome://extensions 의 ↻ · :reload 모두 이 이유로 온다
   if (d && (d.reason === 'install' || d.reason === 'update')) {
     reinject(d.reason).then(settleReinject, () => settleReinject(null));
+    // 설치 때만 환영 페이지를 한 장 연다. 업데이트 · ↻ · :reload 로는 열지 않는다 (UX 조사 B3).
+    // 경로는 확장 뿌리부터의 절대 경로 — 서비스 워커 기준 상대 경로가 되지 않게.
+    if (d.reason === 'install' && chrome.tabs && chrome.tabs.create) quiet(chrome.tabs.create({ url: '/src/welcome/welcome.html' }));
   } else {
     settleReinject(null);
   }
