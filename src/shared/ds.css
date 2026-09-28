@@ -1,0 +1,262 @@
+/* gpt-skin 디자인 시스템 — 확장 UI(팝업 · 설정 화면) 공용.
+ *
+ * 채팅 화면 위에 그리는 스킨(terminal · sheet · none)과는 별개다. 스킨은 각자 모양이 있고,
+ * 이 파일은 "확장 자체" 의 화면이 어느 스킨을 쓰든 어울리게 하는 공용 바탕이다.
+ * 설계와 이유는 docs/design/design-system.md.
+ *
+ * 팔레트: Figma 색상 조합 57 "놀라운 깔끔함 (Quite clear)"
+ *   원본 #CBCBCB · #F2F2F2 · #174D38 · #4D1717
+ *   글자색 · 다크 테마 색 · 밝힌 색은 팔레트에 없어 맞춰 만들었다(파생). 아래 주석에 원본/파생을 적는다.
+ *
+ * 대비(계산값, 바탕 기준) — 글자 4.5:1, 입력칸 테두리 같은 UI 3:1 이상으로 잡았다.
+ *   라이트 bg #F2F2F2  text 14.1 · text-2 6.7 · text-3 5.3 · accent 8.7 · danger 7.7 · line-strong 3.5
+ *   다크   bg #131715  text 16.2 · text-2 11.2 · text-3 6.9 · accent 7.2 · danger 7.0 · line-strong 3.9
+ *
+ * 이름 규칙: 토큰은 --ds-*, 부품 클래스는 .ds-*. 화면 전용 CSS 는 토큰만 쓰고 색을 직접 적지 않는다.
+ */
+
+/* ------------------------------------------------------------------ 토큰: 라이트 */
+:root {
+  /* 면 */
+  --ds-bg: #F2F2F2;             /* 원본 — 화면 바탕 */
+  --ds-surface: #FFFFFF;        /* 파생 — 카드 · 상단바 · 입력칸 */
+  --ds-sunken: #E8E8E8;         /* 파생 — 세그먼트 바닥 · 눌린 자리 */
+  --ds-hover: rgba(23, 77, 56, 0.06);   /* 강조색을 옅게 — 줄 위에 올렸을 때 */
+
+  /* 선 */
+  --ds-line: #CBCBCB;           /* 원본 — 구분선 (장식용, 대비 요구 없음) */
+  --ds-line-strong: #7C827E;    /* 파생 — 입력칸 · 스위치 테두리 (UI 3:1) */
+
+  /* 글자 */
+  --ds-text: #1F2421;           /* 파생 — 본문 · 라벨 */
+  --ds-text-2: #4F5652;         /* 파생 — 도움말 */
+  --ds-text-3: #5E6561;         /* 파생 — 가장 흐린 글자 (그래도 4.5:1) */
+
+  /* 강조 = 켜짐 · 선택 · 초점 */
+  --ds-accent: #174D38;         /* 원본 */
+  --ds-accent-hover: #0F3B2A;   /* 파생 */
+  --ds-accent-soft: #E2EDE7;    /* 파생 — 선택된 항목 바탕 */
+  --ds-on-accent: #FFFFFF;      /* 강조색 위 글자 (9.7:1) */
+
+  /* 위험 = 고장 · 초기화 */
+  --ds-danger: #8F2424;         /* 파생 — 원본 #4D1717 은 작은 점·글자에서 검정과 구분이 안 돼 밝혔다 */
+  --ds-danger-deep: #4D1717;    /* 원본 — 누른 상태 · 진한 테두리 */
+  --ds-danger-soft: #F6E7E7;    /* 파생 — 경고 줄 바탕 */
+
+  /* 글꼴 — 외부 폰트는 불러오지 않는다(웹스토어 점검: 원격 리소스 금지) */
+  --ds-font: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Apple SD Gothic Neo', 'Segoe UI',
+             'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  --ds-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  /* 글자 크기 — 이 다섯 개만 쓴다 */
+  --ds-fs-xs: 11px;    /* 단축키 · 키 이름 · 캡션 */
+  --ds-fs-sm: 12px;    /* 도움말 */
+  --ds-fs-md: 13px;    /* 본문 · 라벨 */
+  --ds-fs-lg: 15px;    /* 구역 제목 */
+  --ds-fs-xl: 18px;    /* 화면 제목 */
+  --ds-lh: 1.5;
+  --ds-lh-tight: 1.35;
+  --ds-fw-regular: 400;
+  --ds-fw-medium: 500;
+  --ds-fw-bold: 600;
+
+  /* 간격 — 4px 단위 */
+  --ds-sp-1: 4px;
+  --ds-sp-2: 8px;
+  --ds-sp-3: 12px;
+  --ds-sp-4: 16px;
+  --ds-sp-5: 20px;
+  --ds-sp-6: 24px;
+  --ds-sp-8: 32px;
+
+  /* 모서리 */
+  --ds-r-sm: 4px;      /* 단축키 · 배지 */
+  --ds-r-md: 6px;      /* 입력칸 · 세그먼트 */
+  --ds-r-lg: 10px;     /* 카드 */
+  --ds-r-pill: 999px;  /* 스위치 · 점 */
+
+  /* 그림자 · 움직임 */
+  --ds-shadow-1: 0 1px 2px rgba(20, 24, 22, 0.08);
+  --ds-shadow-2: 0 1px 3px rgba(20, 24, 22, 0.10), 0 4px 12px rgba(20, 24, 22, 0.06);
+  --ds-knob-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --ds-dur: 120ms;
+  --ds-ease: cubic-bezier(0.2, 0, 0, 1);
+  --ds-focus: 0 0 0 2px var(--ds-bg), 0 0 0 4px var(--ds-accent);
+
+  color-scheme: light;
+}
+
+/* ------------------------------------------------------------------ 토큰: 다크 (시스템 설정을 따른다) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ds-bg: #131715;             /* 파생 — 강조색 쪽으로 살짝 기운 검정 */
+    --ds-surface: #1B201D;        /* 파생 */
+    --ds-sunken: #242A26;         /* 파생 */
+    --ds-hover: rgba(95, 179, 141, 0.08);
+
+    --ds-line: #2E3531;           /* 파생 */
+    --ds-line-strong: #6E7671;    /* 파생 (UI 3:1) */
+
+    --ds-text: #F2F2F2;           /* 원본 */
+    --ds-text-2: #CBCBCB;         /* 원본 */
+    --ds-text-3: #9AA19D;         /* 파생 */
+
+    --ds-accent: #5FB38D;         /* 파생 — 원본 #174D38 을 다크 바탕에서 읽히게 밝혔다 */
+    --ds-accent-hover: #74C59F;   /* 파생 */
+    --ds-accent-soft: #1D3A2D;    /* 파생 */
+    --ds-on-accent: #0E1A14;      /* 파생 (7.1:1) */
+
+    --ds-danger: #E08A8A;         /* 파생 */
+    --ds-danger-deep: #B85C5C;    /* 파생 */
+    --ds-danger-soft: #3A2020;    /* 파생 */
+
+    --ds-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --ds-shadow-2: 0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --ds-knob-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+
+    color-scheme: dark;
+  }
+}
+
+/* ------------------------------------------------------------------ 바탕 */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ds-bg);
+  color: var(--ds-text);
+  font-family: var(--ds-font);
+  font-size: var(--ds-fs-md);
+  line-height: var(--ds-lh);
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; color: inherit; }
+[hidden] { display: none !important; }   /* 부품의 display 가 hidden 을 덮지 않게 */
+:focus-visible { outline: none; box-shadow: var(--ds-focus); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0ms !important; }
+}
+
+/* ------------------------------------------------------------------ 부품 */
+
+/* 상태 점 — data-on="1" 켜짐, data-broken="1" 고장 (고장이 이긴다) */
+.ds-dot {
+  width: 8px; height: 8px; flex: 0 0 auto;
+  border-radius: var(--ds-r-pill);
+  background: var(--ds-line-strong);
+}
+.ds-dot[data-on="1"] { background: var(--ds-accent); }
+.ds-dot[data-broken="1"] { background: var(--ds-danger); }
+
+/* 단축키 · 설정 키 이름 */
+.ds-kbd {
+  flex: 0 0 auto;
+  font-family: var(--ds-mono); font-size: var(--ds-fs-xs); line-height: 1.6;
+  color: var(--ds-text-2);
+  background: var(--ds-sunken);
+  border-radius: var(--ds-r-sm);
+  padding: 0 var(--ds-sp-1);
+}
+
+/* 스위치 — <span class="ds-switch" data-on="0|1"><span class="ds-switch__knob"></span></span>
+   누르는 대상은 스위치를 담은 줄(버튼)이다. 스위치 자체는 상태를 보여 주기만 한다. */
+.ds-switch {
+  position: relative; flex: 0 0 auto;
+  width: 32px; height: 18px;
+  border-radius: var(--ds-r-pill);
+  background: var(--ds-line-strong);
+  transition: background var(--ds-dur) linear;
+}
+.ds-switch__knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  border-radius: var(--ds-r-pill);
+  background: var(--ds-surface);
+  box-shadow: var(--ds-knob-shadow);
+  transition: transform var(--ds-dur) var(--ds-ease);
+}
+.ds-switch[data-on="1"] { background: var(--ds-accent); }
+.ds-switch[data-on="1"] .ds-switch__knob { transform: translateX(14px); }
+
+/* 체크 스위치 — 설정 화면처럼 진짜 checkbox 가 필요한 곳.
+   <label class="ds-check"><input type="checkbox"><span class="ds-switch"><span class="ds-switch__knob"></span></span><span class="ds-check__text">…</span></label> */
+.ds-check { display: inline-flex; align-items: center; gap: var(--ds-sp-2); cursor: pointer; user-select: none; }
+.ds-check input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.ds-check input:checked + .ds-switch { background: var(--ds-accent); }
+.ds-check input:checked + .ds-switch .ds-switch__knob { transform: translateX(14px); }
+.ds-check input:focus-visible + .ds-switch { box-shadow: var(--ds-focus); }
+.ds-check__text { color: var(--ds-text-2); font-size: var(--ds-fs-sm); }
+
+/* 세그먼트 — 하나만 고르는 짧은 선택지. 항목에 data-on="1" */
+.ds-seg {
+  display: flex; gap: 2px;
+  padding: 2px;
+  background: var(--ds-sunken);
+  border-radius: var(--ds-r-md);
+}
+.ds-seg__item {
+  flex: 1;
+  padding: 3px var(--ds-sp-2);
+  border: 0; border-radius: var(--ds-r-sm);
+  background: transparent;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  cursor: pointer;
+  transition: background var(--ds-dur) linear, color var(--ds-dur) linear;
+}
+.ds-seg__item:hover { color: var(--ds-text); }
+.ds-seg__item[data-on="1"] {
+  background: var(--ds-surface);
+  color: var(--ds-accent);
+  font-weight: var(--ds-fw-medium);
+  box-shadow: var(--ds-shadow-1);
+}
+
+/* 입력칸 · 선택 상자 */
+.ds-input {
+  width: 100%;
+  padding: 5px var(--ds-sp-2);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  border: 1px solid var(--ds-line-strong);
+  border-radius: var(--ds-r-md);
+  font-size: var(--ds-fs-md);
+  transition: border-color var(--ds-dur) linear;
+}
+.ds-input:hover { border-color: var(--ds-text-3); }
+.ds-input:focus { outline: none; border-color: var(--ds-accent); box-shadow: 0 0 0 3px var(--ds-accent-soft); }
+select.ds-input { appearance: none; cursor: pointer; padding-right: 28px; }
+/* 화살표는 감싸는 .ds-select 의 테두리로 그린다 — 배경 이미지로 그리면 색이 토큰을 따르지 않는다 */
+.ds-select { position: relative; display: block; }
+.ds-select::after {
+  content: ''; position: absolute; right: 11px; top: 50%;
+  width: 6px; height: 6px; margin-top: -5px;
+  border-right: 1.5px solid var(--ds-text-2); border-bottom: 1.5px solid var(--ds-text-2);
+  transform: rotate(45deg); pointer-events: none;
+}
+
+/* 글자 버튼 — 링크처럼 보이는 동작 */
+.ds-link {
+  border: 0; background: transparent; padding: 0; cursor: pointer;
+  color: var(--ds-text-2); font-size: inherit;
+  border-radius: var(--ds-r-sm);
+}
+.ds-link:hover { color: var(--ds-accent); text-decoration: underline; text-underline-offset: 2px; }
+.ds-link--danger:hover { color: var(--ds-danger); }
+
+/* 배지 — 짧은 상태 글자 */
+.ds-badge {
+  display: inline-flex; align-items: center; gap: var(--ds-sp-1);
+  padding: 0 var(--ds-sp-2);
+  border-radius: var(--ds-r-pill);
+  font-size: var(--ds-fs-xs); line-height: 1.7;
+  background: var(--ds-sunken); color: var(--ds-text-2);
+}
+.ds-badge--accent { background: var(--ds-accent-soft); color: var(--ds-accent); }
+.ds-badge--danger { background: var(--ds-danger-soft); color: var(--ds-danger); }
+
+/* 글자 색 도우미 */
+.ds-text-2 { color: var(--ds-text-2); }
+.ds-text-3 { color: var(--ds-text-3); }
+.ds-danger { color: var(--ds-danger); }
+.ds-mono { font-family: var(--ds-mono); }

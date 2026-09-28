@@ -3,28 +3,29 @@
 <head>
   <meta charset="utf-8">
   <title>gpt-skin 설정</title>
+  <link rel="stylesheet" href="../shared/ds.css">
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <div class="topbar">
-    <span class="dot"></span>
+  <header class="topbar">
+    <span class="ds-dot" data-on="1"></span>
     <span class="brand">gpt-skin</span>
-    <span class="title">:config — chrome.storage.sync</span>
-    <span class="saved" id="saved"></span>
-  </div>
+    <span class="title" id="title"></span>
+    <span class="spacer"></span>
+    <span class="ds-badge ds-badge--accent" id="saved" hidden></span>
+  </header>
 
   <div class="wrap">
     <nav id="nav"></nav>
     <main id="fields"></main>
   </div>
 
-  <div class="statusline">
-    <span class="mode">CONFIG</span>
-    <span class="seg" id="count"></span>
+  <footer class="statusline">
+    <span class="count" id="count"></span>
     <span class="spacer"></span>
-    <button id="reset" class="linkbtn"></button>
-    <span class="seg dim" id="syncNote"></span>
-  </div>
+    <span class="ds-text-3" id="syncNote"></span>
+    <button id="reset" class="ds-link ds-link--danger" type="button"></button>
+  </footer>
 
   <script src="../shared/i18n.js"></script>
   <script src="../shared/defaults.js"></script>

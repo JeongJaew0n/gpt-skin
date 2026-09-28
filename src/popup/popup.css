@@ -1,98 +1,55 @@
-:root {
-  --bg-0: #010409; --bg-1: #0d1117; --bg-2: #161b22; --bg-3: #21262d;
-  --border: #30363d;
+/* 툴바 팝업. 색 · 글꼴 · 부품은 src/shared/ds.css (디자인 시스템) 에서 온다.
+   여기는 배치만 적는다 — 색을 직접 적지 않는다.
 
-  /* 터미널 팔레트를 그대로 쓰다가 도움말이 2.3:1 까지 떨어져 안 읽혔다.
-     이 화면은 10~11px 짜리 작은 글씨가 대부분이라 본문 기준(4.5:1)을 넘겨 잡는다.
-     본문 배경 #0d1117 기준 — fg 16.0:1 · fg-dim 7.8:1 · fg-faint 5.1:1 */
-  --fg: #e6edf3; --fg-dim: #9da7b3; --fg-faint: #7d8590;
+   예전 터미널 팔레트를 그대로 쓰다가 도움말이 2.3:1 까지 떨어져 안 읽혔다.
+   이 화면은 11~12px 짜리 작은 글씨가 대부분이라, 쓰는 글자 토큰은 모두 본문 기준(4.5:1)을 넘는다.
+   값과 대비는 ds.css 머리말에 있다. */
 
-  --green: #3fb950; --red: #f85149; --yellow: #d29922;
-}
-* { box-sizing: border-box; }
-body {
-  width: 300px; margin: 0;
-  background: var(--bg-1); color: var(--fg);
-  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-  font-size: 13px; line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
+body { width: 300px; }
 .spacer { flex: 1; }
 
 .top {
-  display: flex; align-items: center; gap: 8px;
-  height: 32px; padding: 0 12px;
-  background: var(--bg-2); border-bottom: 1px solid var(--bg-3);
-  font-size: 11.5px; color: var(--fg-faint);
+  display: flex; align-items: center; gap: var(--ds-sp-2);
+  height: 36px; padding: 0 var(--ds-sp-3);
+  background: var(--ds-surface); border-bottom: 1px solid var(--ds-line);
+  font-size: var(--ds-fs-xs); color: var(--ds-text-3);
 }
-.dot { width: 8px; height: 8px; background: var(--fg-faint); flex: 0 0 auto; }
-.dot[data-on="1"] { background: var(--green); }
-.dot[data-broken="1"] { background: var(--red); }
-.brand { color: var(--fg); }
+.brand { color: var(--ds-text); font-size: var(--ds-fs-md); font-weight: var(--ds-fw-bold); }
 
 .skins {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px 6px; font-size: 11.5px;
+  display: flex; align-items: center; gap: var(--ds-sp-3);
+  padding: var(--ds-sp-3) var(--ds-sp-3) var(--ds-sp-1);
+  font-size: var(--ds-fs-sm);
 }
-.skins-label { color: var(--fg-dim); flex: 0 0 auto; }
-.skin-list { display: flex; flex: 1; }
-.skin {
-  flex: 1; padding: 3px 0; border: 1px solid var(--border); margin-left: -1px;
-  background: var(--bg-0); color: var(--fg-dim); font: inherit; font-size: 11.5px; cursor: pointer;
-}
-.skin:hover { color: var(--fg); }
-.skin[data-on="1"] { position: relative; border-color: var(--green); background: #0d2b16; color: var(--fg); }
-.skin:focus-visible { outline: 1px solid var(--green); outline-offset: -2px; }
-.rows { padding: 4px 0; }
+.skins-label { color: var(--ds-text-2); flex: 0 0 auto; }
+.skin-list { flex: 1; }
+
+.rows { padding: var(--ds-sp-1) 0; }
 .row {
-  display: flex; align-items: center; gap: 12px; width: 100%;
-  padding: 11px 12px; border: 0; background: transparent;
-  font: inherit; color: inherit; text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: var(--ds-sp-3); width: 100%;
+  padding: var(--ds-sp-3); border: 0; background: transparent;
+  text-align: left; cursor: pointer;
+  transition: background var(--ds-dur) linear;
 }
-.row + .row { border-top: 1px solid var(--bg-3); }
-.row:hover:not(:disabled) { background: var(--bg-2); }
+.row + .row { border-top: 1px solid var(--ds-line); }
+.row:hover:not(:disabled) { background: var(--ds-hover); }
 .row:disabled { cursor: default; }
 /* 잠긴 줄도 '왜 잠겼는지' 는 읽혀야 한다. 흐리게만 하고 지우지 않는다. */
-.row:disabled .label { color: var(--fg-dim); }
-.row:disabled .help { color: var(--fg-faint); }
-.row:focus-visible { outline: 1px solid var(--green); outline-offset: -2px; }
+.row:disabled .label { color: var(--ds-text-2); }
+.row:disabled .help { color: var(--ds-text-3); }
+.row:disabled .ds-switch { opacity: 0.45; }
+.row:disabled .ds-kbd { color: var(--ds-text-3); }
+.row[data-broken="1"] .help { color: var(--ds-danger); }
 
 .labels { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 /* 라벨과 단축키를 한 줄에 둔다. 단축키는 그 토글이 하는 일과 같은 것이므로
    푸터에 떨어뜨려 두는 것보다 여기 붙는 게 맞다. */
-.line { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.label { color: var(--fg); }
-.help { color: var(--fg-dim); font-size: 11.5px; line-height: 1.45; }
-
-/* 토글. 터미널이니 네모로 만든다 — 둥근 스위치는 이 화면에서 겉돈다. */
-.sw {
-  position: relative; flex: 0 0 auto;
-  width: 34px; height: 18px;
-  border: 1px solid var(--border); background: var(--bg-0);
-  transition: border-color 120ms linear, background 120ms linear;
-}
-.sw .knob {
-  position: absolute; top: 2px; left: 2px;
-  width: 13px; height: 12px; background: var(--fg-dim);
-  transition: transform 120ms ease, background 120ms linear;
-}
-.sw[data-on="1"] { border-color: var(--green); background: #0d2b16; }
-.sw[data-on="1"] .knob { background: var(--green); transform: translateX(15px); }
-.row:disabled .sw { opacity: 0.45; }
+.line { display: flex; align-items: center; gap: var(--ds-sp-2); min-width: 0; }
+.label { color: var(--ds-text); font-weight: var(--ds-fw-medium); }
+.help { color: var(--ds-text-2); font-size: var(--ds-fs-sm); line-height: var(--ds-lh-tight); }
 
 .foot {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 12px; border-top: 1px solid var(--bg-3);
-  background: var(--bg-0); font-size: 11px; color: var(--fg-faint);
+  display: flex; align-items: center; gap: var(--ds-sp-2);
+  padding: var(--ds-sp-2) var(--ds-sp-3); border-top: 1px solid var(--ds-line);
+  background: var(--ds-surface); font-size: var(--ds-fs-sm);
 }
-.hint {
-  flex: 0 0 auto; font-size: 10.5px; line-height: 1.5;
-  color: var(--fg-dim); border: 1px solid var(--border); padding: 0 5px;
-}
-.row:disabled .hint { color: var(--fg-faint); border-color: var(--bg-3); }
-.link {
-  border: 0; background: transparent; padding: 0; cursor: pointer;
-  font: inherit; color: var(--fg-dim); text-decoration: none;
-}
-.link { color: var(--fg-dim); }
-.link:hover { color: var(--fg); text-decoration: underline; }

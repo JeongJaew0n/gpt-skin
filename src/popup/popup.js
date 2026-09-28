@@ -66,6 +66,7 @@
     if (state.degraded) {
       termUsable = false; termOn = false;
       ui.dot.dataset.broken = '1';
+      ui.rowTerm.dataset.broken = '1';   // 도움말을 위험색으로 (popup.css)
       ui.helpTerm.textContent = '전제가 깨져 복귀했습니다. :health 로 사유를 확인하세요.';
       paintTerminal();
       return;
@@ -104,7 +105,7 @@
   const skinButtons = skinField.choices.map((id) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'skin';
+    b.className = 'ds-seg__item';
     b.textContent = shortName(id);
     b.title = GT_T('opt.skin.choice.' + id);
     b.dataset.skin = id;

@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1513](https://img.shields.io/badge/테스트-1547_케이스-22C55E)
+![테스트 1578](https://img.shields.io/badge/테스트-1578_케이스-22C55E)
 
 </div>
 
@@ -264,6 +264,7 @@ src/content/                          ← 매니페스트 주입 순서
 src/background/service-worker.js      배지
 src/shared/i18n.js                    화면 문구 사전 (ko · en)
 src/shared/defaults.js                설정 스키마 (콘텐츠 · 옵션 공용)
+src/shared/ds.css                     디자인 시스템 — 팝업 · 설정 화면 공용 토큰과 부품 (docs/plan/2026-09-28-design-system.md)
 src/popup/                            툴바 패널 (토글 둘)
 src/options/                          설정 화면 (스키마에서 생성)
 
@@ -374,7 +375,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>43개 파일 · 1547 케이스</b></summary>
+<summary><b>43개 파일 · 1578 케이스</b></summary>
 
 <br>
 
@@ -409,7 +410,7 @@ tools/test.sh
 | `history` | 35 | ↑↓ 프롬프트 기록 — 여러 줄에서 커서를 언제 뺏는가 |
 | `verify` | 24 | 원본 대조 — 조각 fiber 로 본문을 덮어쓰지 않는가 |
 | `image` | 98 | 생성된 이미지 — tool 메시지에서 뽑는가 · 문자 블록 종횡비 · 그리는 중 표시 |
-| `popup` | 49 | 툴바 패널 — 토글 둘이 서로 독립인가, 못 쓰는 탭을 잠그는가, 글자 대비가 4.5:1 이상인가 |
+| `popup` | 77 | 툴바 패널 — 토글 둘이 서로 독립인가, 못 쓰는 탭을 잠그는가, 디자인 시스템 토큰이 라이트·다크 모두 글자 4.5:1 · 테두리 3:1 이상인가 |
 | `route` | 29 | 대화를 옮기면 이전 제목·본문이 남지 않는가 · 수확이 제목을 덮지 않는가 · esc 우선순위 |
 | `ime` | 15 | 한글 조합 중 Enter 를 전송으로 받지 않는가 |
 | `prompt` | 24 | 입력 컨트롤러 — 입력 로직이 한 벌인가 · detach 로 핸들러가 떨어지는가 · 원본을 안 가리는 스킨에서 타이핑을 뺏지 않는가 |
@@ -468,7 +469,7 @@ tools/test.sh
 | 생각 중 표시 · 회전자 | 실제 테마 CSS 로 세 상태(추론 중 · 스트리밍 · 완료)를 렌더해 확인 |
 | 툴바 패널 글자 대비 | 계산 — 전부 4.5:1 이상 (도움말은 2.3 → 7.8) |
 | 인용 마커 | 실측 — API·SSE·fiber 세 경로의 표기를 각각 확인하고, 실제 응답 데이터로 렌더 |
-| 순수 로직 | 1547 케이스 통과 (위 표) |
+| 순수 로직 | 1578 케이스 통과 (위 표) |
 | 녹화 스트림 재생 | 실제 SSE 1건을 `tap.js` 에 재생 (`test/replay.test.mjs`) |
 | ProseMirror 주입 · 전송 버튼 활성화 | 실제 페이지에서 확인 |
 | SSE 가로채기 (`res.body.tee()`) | 실제 페이지에서 확인 |

@@ -10,6 +10,7 @@
   const current = { ...GT_DEFAULTS, ...stored };
   GT_SET_LOCALE(current.locale);
   // HTML 에 박아 둔 문구도 사전에서 채운다. 두 벌로 관리하지 않는다.
+  $('#title').textContent = GT_T('opt.ui.title');
   $('#reset').textContent = GT_T('opt.ui.resetAll');
   $('#syncNote').textContent = GT_T('opt.ui.syncNote');
   const rows = new Map();
@@ -17,8 +18,9 @@
   function markSaved() {
     const t = new Date().toLocaleTimeString('ko-KR', { hour12: false });
     $('#saved').textContent = GT_T('opt.ui.saved', t);
+    $('#saved').hidden = false;
     clearTimeout(markSaved._t);
-    markSaved._t = setTimeout(() => { $('#saved').textContent = ''; }, 2400);
+    markSaved._t = setTimeout(() => { $('#saved').textContent = ''; $('#saved').hidden = true; }, 2400);
   }
 
   function refreshCount() {
@@ -41,21 +43,20 @@
 
   function control(f) {
     if (f.type === 'bool') {
-      const label = el('label', 'check');
+      // 디자인 시스템의 체크 스위치 (ds.css .ds-check). 켜짐은 스위치 위치와 색으로 보인다.
+      const label = el('label', 'ds-check');
       const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!current[f.key];
-      const box = el('span', 'box', cb.checked ? '[×]' : '[ ]');
-      const txt = el('span', 'txt', cb.checked ? 'on' : 'off');
-      cb.addEventListener('change', async () => {
-        await save(f.key, cb.checked);
-        box.textContent = cb.checked ? '[×]' : '[ ]';
-        txt.textContent = cb.checked ? 'on' : 'off';
-      });
-      label.appendChild(cb); label.appendChild(box); label.appendChild(txt);
-      return { node: label, set: (v) => { cb.checked = !!v; box.textContent = v ? '[×]' : '[ ]'; txt.textContent = v ? 'on' : 'off'; } };
+      const sw = el('span', 'ds-switch'); sw.appendChild(el('span', 'ds-switch__knob'));
+      const txt = el('span', 'ds-check__text');
+      const paint = () => { txt.textContent = GT_T(cb.checked ? 'opt.ui.on' : 'opt.ui.off'); };
+      cb.addEventListener('change', async () => { await save(f.key, cb.checked); paint(); });
+      label.appendChild(cb); label.appendChild(sw); label.appendChild(txt);
+      paint();
+      return { node: label, set: (v) => { cb.checked = !!v; paint(); } };
     }
 
     if (f.type === 'enum') {
-      const sel = el('select');
+      const sel = el('select', 'ds-input');
       f.choices.forEach((v) => {
         const label = GT_CHOICE(f, v);
         const o = el('option', null, label); o.value = v;
@@ -63,10 +64,11 @@
         sel.appendChild(o);
       });
       sel.addEventListener('change', () => save(f.key, sel.value));
-      return { node: sel, set: (v) => { sel.value = v; } };
+      const wrap = el('span', 'ds-select'); wrap.appendChild(sel);
+      return { node: wrap, set: (v) => { sel.value = v; } };
     }
 
-    const inp = el('input');
+    const inp = el('input', 'ds-input');
     inp.type = f.type === 'text' ? 'text' : 'number';
     if (f.min !== undefined) inp.min = f.min;
     if (f.max !== undefined) inp.max = f.max;
@@ -110,14 +112,14 @@
       const row = el('div', 'row');
       const k = el('div', 'k');
       k.appendChild(el('span', 'label', GT_LABEL(f)));
-      k.appendChild(el('span', 'keyname', f.key));
+      k.appendChild(el('span', 'keyname ds-mono', f.key));
       const v = el('div', 'v');
       const c = control(f);
       v.appendChild(c.node);
       const help = el('div', 'help');
       const hint = GT_HELP(f);
       if (hint) help.appendChild(el('div', null, hint));
-      const d = el('button', 'dflt', GT_T('opt.ui.default', String(f.def) === '' ? GT_T('opt.ui.empty') : f.def));
+      const d = el('button', 'dflt ds-link', GT_T('opt.ui.default', String(f.def) === '' ? GT_T('opt.ui.empty') : f.def));
       d.addEventListener('click', async () => { await save(f.key, f.def); c.set(f.def); });
       help.appendChild(d);
       row.appendChild(k); row.appendChild(v); row.appendChild(help);

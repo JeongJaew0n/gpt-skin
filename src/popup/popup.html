@@ -3,19 +3,20 @@
 <head>
   <meta charset="utf-8">
   <title>gpt-skin</title>
+  <link rel="stylesheet" href="../shared/ds.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <header class="top">
-    <span class="dot" id="dot"></span>
+    <span class="ds-dot" id="dot"></span>
     <span class="brand">gpt-skin</span>
     <span class="spacer"></span>
-    <span class="build" id="build"></span>
+    <span class="build ds-mono" id="build"></span>
   </header>
 
   <section class="skins">
     <span class="skins-label" id="skins-label">스킨</span>
-    <span class="skin-list" id="skin-list" role="radiogroup"></span>
+    <span class="skin-list ds-seg" id="skin-list" role="radiogroup"></span>
   </section>
 
   <main class="rows">
@@ -23,11 +24,11 @@
       <span class="labels">
         <span class="line">
           <span class="label" id="tab-label">이 탭에 스킨 켜기</span>
-          <span class="hint">Ctrl+&#96;</span>
+          <span class="ds-kbd">Ctrl+&#96;</span>
         </span>
         <span class="help" id="terminal-help">확인 중…</span>
       </span>
-      <span class="sw" id="sw-terminal" data-on="0"><span class="knob"></span></span>
+      <span class="ds-switch" id="sw-terminal" data-on="0"><span class="ds-switch__knob"></span></span>
     </button>
 
     <button class="row" id="row-default" type="button">
@@ -35,13 +36,13 @@
         <span class="label" id="default-label">ChatGPT 를 열면 바로 스킨으로</span>
         <span class="help" id="default-help">꺼 두면 원본 UI 로 시작합니다.</span>
       </span>
-      <span class="sw" id="sw-default" data-on="0"><span class="knob"></span></span>
+      <span class="ds-switch" id="sw-default" data-on="0"><span class="ds-switch__knob"></span></span>
     </button>
   </main>
 
   <footer class="foot">
     <span class="spacer"></span>
-    <button class="link" id="options" type="button">설정 전체</button>
+    <button class="ds-link" id="options" type="button">설정 전체</button>
   </footer>
 
   <script src="../shared/i18n.js"></script>

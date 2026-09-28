@@ -161,7 +161,10 @@ var GT_I18N = {
     'opt.ui.empty': '(빈 값)',
     'opt.ui.resetAll': '전체 기본값으로',
     'opt.ui.syncNote': '모든 기기에 동기화됩니다',
-    'opt.ui.sections': 'SECTIONS'
+    'opt.ui.sections': '구역',
+    'opt.ui.title': '설정',
+    'opt.ui.on': '켜짐',
+    'opt.ui.off': '꺼짐'
   },
 
   en: {
@@ -313,7 +316,10 @@ var GT_I18N = {
     'opt.ui.empty': '(empty)',
     'opt.ui.resetAll': 'Reset all to defaults',
     'opt.ui.syncNote': 'Synced across your devices',
-    'opt.ui.sections': 'SECTIONS'
+    'opt.ui.sections': 'Sections',
+    'opt.ui.title': 'Settings',
+    'opt.ui.on': 'On',
+    'opt.ui.off': 'Off'
   }
 };
 

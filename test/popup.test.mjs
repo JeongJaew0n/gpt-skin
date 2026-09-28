@@ -180,9 +180,13 @@ const CHAT = { id: 7, url: 'https://chatgpt.com/c/abc' };
 // --- 가독성: 작은 글씨가 대부분이라 대비를 지킨다 ---
 {
   // 터미널 팔레트를 그대로 쓰다가 도움말이 2.3:1 까지 떨어져 안 읽혔다.
-  // 다시 어두워지지 않게 값 자체를 검사한다.
+  // 다시 어두워지지 않게 값 자체를 검사한다. 0.12.0 부터 색은 디자인 시스템(src/shared/ds.css)에 있고,
+  // 라이트 · 다크 두 벌이다. 둘 다 검사한다.
+  const ds = fs.readFileSync('src/shared/ds.css', 'utf8');
   const css = fs.readFileSync('src/popup/popup.css', 'utf8');
-  const token = (name) => (new RegExp('--' + name + ': (#[0-9a-f]{6})').exec(css) || [])[1];
+  const iDark = ds.indexOf('@media (prefers-color-scheme: dark)');
+  const lightPart = ds.slice(0, iDark), darkPart = ds.slice(iDark);
+  const token = (part, name) => (new RegExp('--ds-' + name + ': (#[0-9A-Fa-f]{6})').exec(part) || [])[1];
 
   const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
   const lum = (h) => {
@@ -194,21 +198,34 @@ const CHAT = { id: 7, url: 'https://chatgpt.com/c/abc' };
     return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
   };
 
-  const bg1 = token('bg-1'), bg2 = token('bg-2'), bg0 = token('bg-0');
-  const fg = token('fg'), dim = token('fg-dim'), faint = token('fg-faint');
-  t('팔레트를 다 읽었다', [bg0, bg1, bg2, fg, dim, faint].every(Boolean));
-
   const FLOOR = 4.5;   // WCAG 본문 기준
-  t(`라벨이 본문 배경에서 ${FLOOR}:1 이상`, ratio(fg, bg1) >= FLOOR);
-  t(`도움말이 본문 배경에서 ${FLOOR}:1 이상`, ratio(dim, bg1) >= FLOOR);
-  t(`흐린 글자도 상단바에서 ${FLOOR}:1 이상`, ratio(faint, bg2) >= FLOOR);
-  t(`흐린 글자도 푸터에서 ${FLOOR}:1 이상`, ratio(faint, bg0) >= FLOOR);
-  t('라벨이 도움말보다 밝다', lum(fg) > lum(dim));
-  t('도움말이 흐린 글자보다 밝다', lum(dim) > lum(faint));
+  const UI = 3;        // WCAG 1.4.11 — 입력칸 테두리 · 스위치
+  t('다크 토큰 구역이 있다', iDark > 0);
+  for (const [name, part] of [['라이트', lightPart], ['다크', darkPart]]) {
+    const T = {};
+    for (const k of ['bg', 'surface', 'sunken', 'text', 'text-2', 'text-3', 'line-strong', 'accent', 'on-accent', 'danger']) T[k] = token(part, k);
+    t(`${name} 팔레트를 다 읽었다`, Object.values(T).every(Boolean));
+    if (!Object.values(T).every(Boolean)) continue;
+    for (const bg of ['bg', 'surface']) {
+      t(`${name} 라벨이 ${bg} 에서 ${FLOOR}:1 이상`, ratio(T.text, T[bg]) >= FLOOR);
+      t(`${name} 도움말이 ${bg} 에서 ${FLOOR}:1 이상`, ratio(T['text-2'], T[bg]) >= FLOOR);
+      t(`${name} 흐린 글자도 ${bg} 에서 ${FLOOR}:1 이상`, ratio(T['text-3'], T[bg]) >= FLOOR);
+      t(`${name} 강조색이 ${bg} 에서 ${FLOOR}:1 이상`, ratio(T.accent, T[bg]) >= FLOOR);
+      t(`${name} 위험색이 ${bg} 에서 ${FLOOR}:1 이상`, ratio(T.danger, T[bg]) >= FLOOR);
+      t(`${name} 입력칸 테두리가 ${bg} 에서 ${UI}:1 이상`, ratio(T['line-strong'], T[bg]) >= UI);
+    }
+    t(`${name} 세그먼트 바닥에서도 흐린 글자 ${FLOOR}:1 이상`, ratio(T['text-3'], T.sunken) >= FLOOR);
+    t(`${name} 강조색 위 글자 ${FLOOR}:1 이상`, ratio(T['on-accent'], T.accent) >= FLOOR);
+    t(`${name} 라벨 > 도움말 > 흐린 글자 순으로 또렷하다`,
+      ratio(T.text, T.bg) > ratio(T['text-2'], T.bg) && ratio(T['text-2'], T.bg) > ratio(T['text-3'], T.bg));
+  }
 
-  t('도움말을 가장 흐린 색으로 두지 않는다', /\.help \{ color: var\(--fg-dim\)/.test(css));
-  t('잠긴 줄도 읽히게 둔다', /\.row:disabled \.label \{ color: var\(--fg-dim\)/.test(css));
+  t('도움말을 가장 흐린 색으로 두지 않는다', /\.help \{ color: var\(--ds-text-2\)/.test(css));
+  t('잠긴 줄도 읽히게 둔다', /\.row:disabled \.label \{ color: var\(--ds-text-2\)/.test(css));
   t('왜 팔레트를 바꿨는지 적어뒀다', /2\.3:1 까지 떨어져/.test(css));
+  t('팝업이 디자인 시스템을 먼저 불러온다',
+    html.indexOf('../shared/ds.css') > 0 && html.indexOf('../shared/ds.css') < html.indexOf('popup.css'));
+  t('팝업 CSS 에 색을 직접 적지 않는다 (토큰만)', !/#[0-9a-fA-F]{3,8}\b|rgba?\(/.test(css.replace(/\/\*[\s\S]*?\*\//g, '')));
 }
 
 let bad = 0;
