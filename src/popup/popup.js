@@ -147,6 +147,10 @@
   });
 
   $('#options').addEventListener('click', () => { chrome.runtime.openOptionsPage(); window.close(); });
+  // 크롬이 확장 단축키를 바꾸는 화면. 확장 페이지에서는 chrome:// 주소로 탭을 열 수 있다.
+  $('#shortcuts').textContent = GT_T('popup.shortcuts');
+  $('#shortcuts').title = GT_T('popup.shortcuts.help');
+  $('#shortcuts').addEventListener('click', () => { chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }); window.close(); });
 
   await readTab();
 })();

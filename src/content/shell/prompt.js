@@ -203,7 +203,8 @@ GT.prompt = (function () {
     // 전역 키
     window.addEventListener('keydown', (e) => {
       if (composing(e)) return;
-      if (e.key === '`' && e.ctrlKey) { e.preventDefault(); opts.toggle(); return; }
+      // 토글 키는 물리 키로 본다. 맥 한글 입력 모드에서 이 키는 ₩(U+20A9) 를 내서 e.key 로는 놓친다 (UX 조사 B1).
+      if (e.code === 'Backquote' && e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); opts.toggle(); return; }
       // 스킨의 여닫기 키 (none 의 Ctrl+;). 숨어 있으면 열고 열려 있으면 닫는다. 물리 키(e.code)로 본다.
       // 실측 2026-09-24: 원본은 컴포저 포커스 상태에서 Ctrl+; 를 막지도 쓰지도 않는다.
       if (opts.openCode && e.ctrlKey && !e.metaKey && !e.altKey && e.code === opts.openCode) {
@@ -215,6 +216,9 @@ GT.prompt = (function () {
       if (!GT.skin.visible()) return;
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); GT.commands.openPalette(); return; }
       if (e.key === 'b' && e.ctrlKey) { e.preventDefault(); GT.sidebar.toggle(); return; }
+      // 원본 ChatGPT 와 같은 사이드바 키 (⌘/Ctrl+⇧S) — 원본에서 익힌 손버릇이 그대로 먹게 한다 [가정: 웹 자료].
+      // 맥 입력칸에서 Ctrl+B 는 커서를 한 칸 뒤로 옮기는 키라, 그 키를 쓰기 싫은 사람의 대안도 된다.
+      if (e.code === 'KeyS' && e.shiftKey && (e.metaKey || e.ctrlKey) && !e.altKey) { e.preventDefault(); GT.sidebar.toggle(); return; }
 
       // 글씨 크기. ⌘/Ctrl +/- 는 브라우저 가속키라 콘텐츠 스크립트가 못 막는다.
       // 그래서 Alt(⌥) 조합을 쓴다 — 브라우저가 쓰지 않고, 입력 처리에서도 이미 제외된다.

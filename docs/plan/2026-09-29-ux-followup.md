@@ -96,3 +96,7 @@
   색은 기본 도움말 색 그대로다(빨강은 '복귀' 의 뜻이라 쓰지 않았다). A3 시트 커서 reduced-motion. A4 `GT_MOD()` —
   터미널 상태줄 안내가 윈도우에서 `Ctrl+K`. A5 `GT.skin.announce()` — 생성 시작 · 끝에만 role=status 에 쓴다.
   `test/uxsmall.test.mjs` 18건, 변형 다섯이 잡혔다.
+- **0.14.0 묶음 2** — 토글 키를 `e.code === 'Backquote'` 로(맥 한글 입력의 ₩ 도 토글된다). ⌘/Ctrl+⇧S 사이드바 —
+  ⇧ 없는 ⌘S(저장)는 건드리지 않는다. `Ctrl+B` 는 그대로. `chrome.commands` 의 `toggle-skin` 을 기본 키 없이 등록하고
+  서비스 워커가 지금 탭에 `toggle` 을 보낸다. 팝업 푸터에 '단축키' — `chrome://extensions/shortcuts` 를 연다.
+  `test/keys.test.mjs` 18건, 변형 넷이 잡혔다. 원본에서 ⌘⇧S 가 실제로 무엇을 하는지는 여전히 `[가정]`.

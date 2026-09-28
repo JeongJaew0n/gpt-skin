@@ -84,7 +84,7 @@ tools/package.sh      # dist/gpt-skin-<version>.zip
 
 | 키 | 동작 |
 |---|---|
-| <kbd>Ctrl</kbd> + <kbd>&#96;</kbd> | 터미널 ↔ 원본 UI 토글 |
+| <kbd>Ctrl</kbd> + <kbd>&#96;</kbd> | 스킨 ↔ 원본 UI 토글 <sub>(물리 키로 판별 — 한글 입력 중에도 된다 · 팝업의 **단축키** 에서 다른 키를 더 붙일 수 있다)</sub> |
 | 툴바 아이콘 | 패널을 연다 — 이 탭 토글 · 기본 동작 토글 |
 | <kbd>⌘K</kbd> / <kbd>Ctrl</kbd>+<kbd>K</kbd> | 명령 팔레트 |
 | **화면 아무 데나 클릭 · 타이핑** | 입력창으로 들어간다 (입력창을 직접 클릭할 필요 없음) |
@@ -100,7 +100,7 @@ tools/package.sh      # dist/gpt-skin-<version>.zip
 
 | 조작 | 동작 |
 |---|---|
-| 좌측 상단 손잡이 **≡** · <kbd>Ctrl</kbd>+<kbd>B</kbd> | 대화 목록 접기/펼치기 |
+| 좌측 상단 손잡이 **≡** · <kbd>Ctrl</kbd>+<kbd>B</kbd> · <kbd>⌘/Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>S</kbd> | 대화 목록 접기/펼치기 <sub>(⌘⇧S 는 원본 ChatGPT 와 같은 키)</sub> |
 | 본문 아무 데나 클릭 · <kbd>Esc</kbd> | 목록이 비켜난다 (오버레이 바깥 클릭) |
 | 목록에서 대화 선택 | 목록이 비켜난다 (설정으로 끌 수 있음) |
 | 오른쪽 가장자리 드래그 | 폭 조절 · 더블클릭이면 기본값 |

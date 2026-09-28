@@ -105,10 +105,10 @@ function boot({ capturesTyping = true } = {}) {
 
 {
   const { P, win, calls, key } = boot();
-  key(win, { key: '`', ctrlKey: true });
+  key(win, { key: '`', code: 'Backquote', ctrlKey: true });
   t('Ctrl+` 가 넘겨받은 toggle 을 부른다', calls.toggle === 1);
   P.detach();
-  key(win, { key: '`', ctrlKey: true });
+  key(win, { key: '`', code: 'Backquote', ctrlKey: true });
   t('detach 뒤 전역 키는 반응하지 않는다', calls.toggle === 1);
 }
 
@@ -129,7 +129,7 @@ function boot({ capturesTyping = true } = {}) {
   // 입력줄을 거치지 않는 전역 키(Ctrl+`)로 센다.
   const { P, input, win, calls, key } = boot();
   P.attach({ el: input, autosize() {} }, { toggle: () => { calls.toggle++; } });
-  key(win, { key: '`', ctrlKey: true });
+  key(win, { key: '`', code: 'Backquote', ctrlKey: true });
   t('두 번 attach 해도 핸들러는 한 벌', calls.toggle === 1);
 }
 

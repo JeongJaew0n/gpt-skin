@@ -36,7 +36,7 @@ if (line) {
 
   const iWin = idx.indexOf("window.addEventListener('keydown'");
   const iWinGuard = idx.indexOf('if (composing(e)) return;', iWin);
-  const iToggle = idx.indexOf("e.key === '`' && e.ctrlKey", iWin);
+  const iToggle = idx.indexOf("e.code === 'Backquote' && e.ctrlKey", iWin);   // 2026-09-29 물리 키로
   t('전역 핸들러도 맨 앞에서 막는다', iWinGuard > iWin && iWinGuard < iToggle);
 
   t('판별식이 두 핸들러보다 먼저 정의된다', idx.indexOf('const composing =') < iInput);

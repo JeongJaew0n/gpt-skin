@@ -113,6 +113,17 @@ if (chrome.runtime.onInstalled) chrome.runtime.onInstalled.addListener((d) => {
   }
 });
 
+// 사용자가 chrome://extensions/shortcuts 에서 정한 키. 기본 키는 없다 — 허용되는 키(영문 · 숫자 · 일부)는
+// 원본 · 브라우저 · 운영체제와 겹칠 수 있고 실측하지 못했다. Ctrl+\` 는 이 API 가 받지 않는 키다(백틱 불가).
+// 팝업 토글과 같은 경로로 지금 탭에 toggle 을 보낸다. UX 조사 B1.
+if (chrome.commands && chrome.commands.onCommand) chrome.commands.onCommand.addListener((command, tab) => {
+  if (command !== 'toggle-skin') return;
+  const send = (t) => { if (t && t.id) chrome.tabs.sendMessage(t.id, { kind: 'toggle' }, () => void chrome.runtime.lastError); };
+  if (tab && tab.id) return send(tab);
+  const p = chrome.tabs.query({ active: true, currentWindow: true });
+  if (p && typeof p.then === 'function') p.then((ts) => send(ts && ts[0]), () => {});
+});
+
 chrome.runtime.onMessage.addListener((msg, sender) => {
   if (!msg) return;
   if (msg.kind === 'openOptions') { chrome.runtime.openOptionsPage(); return; }
