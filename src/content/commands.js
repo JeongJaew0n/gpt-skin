@@ -372,6 +372,16 @@ GT.commands = (function () {
 
   // 새로 넣는 명령의 문구는 사전에서 꺼낸다. 이 파일의 나머지 문구는
   // 아직 옮기지 않았다 — docs/plan/2026-09-08-i18n.md 의 순서를 따른다.
+  // 화면에 찍힌 명령 결과·진단 줄을 모두 지운다(:ls 목록 같은 것). 대화는 건드리지 않는다.
+  // 지운 뒤 '지웠습니다' 를 찍지 않는다 — 찍으면 방금 비운 자리에 한 줄이 다시 남는다.
+  // 진단 버퍼(:log dump 로 보는 것)도 같이 비운다. 버퍼만 비우려면 :log clear.
+  def(':clear', GT_T('cmd.clear.desc'), () => {
+    const s = GT.skin.current;
+    try { s.clearSystem(); } catch (_) {}
+    try { if (s.clearLocal) s.clearLocal(); } catch (_) {}
+    try { GT.logClear(); } catch (_) {}
+  });
+
   def(':log', GT_T('cmd.log.desc'), async (args) => {
     const a = (args[0] || '').toLowerCase();
     const cur = GT.config.get('log') !== false;

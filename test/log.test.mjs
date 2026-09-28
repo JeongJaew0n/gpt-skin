@@ -147,6 +147,8 @@ function loadCommands(initial) {
       // 화면에 쌓인 진단 줄. :log clear 가 이것도 걷어내야 한다.
       screen: 3,
       clearSystem() { const n = this.screen; this.screen = 0; return n; },
+      locals: 2,
+      clearLocal() { const n = this.locals; this.locals = 0; return n; },
       applyConfig() {}, render() {} } },
     sidebar: { chats: () => [], isOpen: () => false }, convops: {},
     conversation: { idFromPath: () => null }, picker: {}, navigate: {},
@@ -300,6 +302,23 @@ function loadCommands(initial) {
   t('중단을 알아본다', /e\.name === 'AbortError'/.test(tap) && /\/abort\/i\.test\(msg\)/.test(tap));
   t('중단이면 fail 하지 않는다', /if \(!aborted\) fail\('stream-read', msg\)/.test(tap));
   t('왜 그런지 적어뒀다', /사용자가 중단하면/.test(tap));
+}
+
+// --- :clear — 화면의 명령 결과·로그를 싹 지운다 (2026-09-28 사용자 요청) ---
+// none 스킨에서 :ls 뒤 목록을 지울 길이 없었다.
+{
+  const a = loadCommands(true);
+  a.said.length = 0;
+  await a.C.run(':clear');
+  const cur = a.GT.skin.current;
+  t(':clear 가 화면의 진단·결과 줄을 지운다', cur.screen === 0);
+  t(':clear 가 화면에 끼운 블록도 지운다', cur.locals === 0);
+  t(':clear 가 진단 버퍼도 비운다', a.ring.length === 0);
+  // 지운 뒤 '지웠습니다' 를 찍으면 방금 비운 자리에 한 줄이 다시 남는다
+  t(':clear 는 아무것도 새로 찍지 않는다', a.said.length === 0);
+  t(':clear 는 명령 목록에 있다', a.C.complete(':cle').candidates.includes(':clear'));
+  t(':clear 설명이 두 언어에 있다',
+    (fs.readFileSync('src/shared/i18n.js', 'utf8').match(/'cmd\.clear\.desc'/g) || []).length === 2);
 }
 
 let bad = 0;
