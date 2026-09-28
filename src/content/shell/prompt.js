@@ -193,6 +193,13 @@ GT.prompt = (function () {
     // 조합이 끝난 값으로 후보를 다시 계산한다.
     input.addEventListener('compositionend', () => { autosize(); refreshSuggest(); }, sig());
 
+    // esc 로 닫을 수 있는 층이 열려 있는가. 순서: 후보 → 기록 초안 → 팔레트 → (사이드바는 전역에서 먼저) → none 명령줄.
+    // 각 층은 자기 처리기(입력줄 · 팔레트)가 닫는다. 여기서는 '열려 있다' 만 답한다.
+    const openLayer = () => suggestOpen
+      || histIdx !== null
+      || !!(GT.palette && GT.palette.isOpen && GT.palette.isOpen())
+      || (opts.escapeHides && GT.skin.visible() && input.value === '');
+
     // 전역 키
     window.addEventListener('keydown', (e) => {
       if (composing(e)) return;
@@ -221,12 +228,17 @@ GT.prompt = (function () {
         }[e.code];
         if (zoom) { e.preventDefault(); GT.commands.run(':font ' + zoom); return; }
       }
-      // 입력줄에서 이미 처리한 esc(후보 닫기)를 두 번 쓰지 않는다.
+      // 이 처리기는 캡처 단계라 입력줄 · 팔레트의 처리기보다 먼저 돈다. 그래서 그쪽이 막았는지
+      // (defaultPrevented)는 여기서 알 수 없다 — 다른 확장·페이지가 먼저 막은 경우만 거른다.
       if (e.defaultPrevented) return;
       if (e.key === 'Escape' && GT.sidebar.selecting) { e.preventDefault(); GT.sidebar.exitSelect(); return; }
       if (e.key === 'Escape' && GT.sidebar.isOpen() && !GT.palette.isOpen()) {
         e.preventDefault(); GT.sidebar.dismiss(); return;
       }
+      // 닫을 층이 열려 있으면 그 층에 맡긴다. 생성 중단은 되돌릴 수 없으니 맨 마지막이다.
+      // 예전에는 여기서 곧바로 생성을 멈춰, 후보 목록이나 팔레트를 닫으려던 esc 가 답까지 끊었다.
+      // docs/issue/2026-09-29-esc-stops-generation.md
+      if (e.key === 'Escape' && openLayer()) return;
       // 그 다음이 생성 중단. '중단 버튼이 있는가' 가 생성 중인지의 정본이다 —
       // 우리 쪽이 스트림 시작을 놓쳤더라도 멈출 수 있어야 한다.
       if (e.key === 'Escape' && GT.compose.stopButton()) {
