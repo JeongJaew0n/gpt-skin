@@ -28,6 +28,7 @@ function run(streamed, fiber, tries) {
   const timers = [];
   let rendered = 0;
   let reconciled = null;
+  const bugs = [];
 
   const sb = {
     console, Object, Array, String, Number, Boolean, JSON, Math, RegExp, Error,
@@ -43,12 +44,13 @@ function run(streamed, fiber, tries) {
     // 마커가 없는 평범한 글이면 그대로 — 여기서는 길이 비교만 본다
     markdown: { stripMarks: (x) => String(x == null ? '' : x) },
     toMain: () => {},
-    log: (...a) => log.push(a.join(' '))
+    log: (...a) => log.push(a.join(' ')),
+    bugs: { record: (code, msg, x) => bugs.push([code, msg, x]) }
   };
   vm.createContext(sb);
   vm.runInContext(`${retriesSrc}\n${handlerSrc}`, sb, { filename: 'verify.js' });
   handler({ id: 'm1', text: fiber });
-  return { text: rec.text, rendered, reconciled, log, timers, tries: rec.verifyTries };
+  return { text: rec.text, rendered, reconciled, log, timers, tries: rec.verifyTries, bugs };
 }
 
 if (handlerSrc && retriesSrc) {
@@ -79,6 +81,8 @@ if (handlerSrc && retriesSrc) {
     const streamed = '가'.repeat(100);
     const r = run(streamed, '나'.repeat(50), 3);   // 이미 3번 봤다
     t('재시도를 다 쓰면 스트림을 지킨다', r.text === streamed);
+    t('그때 원본이 짧았던 것을 보고서(:bug)에 글자 수만 남긴다 (0.20.0)', r.bugs.length === 1 && r.bugs[0][0] === 'original-partial' && r.bugs[0][2].stream > r.bugs[0][2].fiber);
+    t('다시 보는 중에는 기록하지 않는다', run(streamed, streamed.slice(0, 10)).bugs.length === 0);
     t('더 이상 다시 보지 않는다', r.timers.length === 0);
     t('왜 그랬는지 남긴다', r.log.some((x) => /스트림보다 짧다 \(50\/100\)/.test(x)));
   }

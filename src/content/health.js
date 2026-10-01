@@ -95,6 +95,20 @@ GT.health = (function () {
     // 스트림으로 누적한 본문과 fiber 원문을 대조한다.
     // 화면은 호출한 쪽에서 fiber 원문으로 덮어쓰므로 이미 교정돼 있다 — 그래서 경고에 그친다.
     // 파서가 스키마 변화를 못 따라가고 있다는 신호로서만 의미가 있다.
+    // 화면의 본문이 대화 원본(API)보다 짧은가 — 글자 끊김 감지.
+    // 인용 마커와 공백을 걷어내고 길이만 잰다. 원본이 DRIFT_MIN_CHARS 이상 길 때만 끊김으로 본다
+    // (마커 표기 차이는 실측 1~3자라 여기 걸리지 않는다). 끊김이 아니면 null.
+    // docs/issue/2026-10-01-truncation-detect.md
+    truncation(shown, original) {
+      if (typeof original !== 'string' || !original) return null;
+      const strip = (GT.markdown && GT.markdown.stripMarks) || ((x) => x);
+      const norm = (t) => strip(String(t || '')).replace(/\s+/g, '');
+      const a = norm(shown), b = norm(original);
+      const diff = b.length - a.length;
+      if (diff < DRIFT_MIN_CHARS) return null;
+      return { shown: a.length, original: b.length, diff };
+    },
+
     reconcile(streamText, fiberText) {
       if (typeof fiberText !== 'string' || !fiberText) return;
       if (typeof streamText !== 'string') return;
@@ -122,6 +136,8 @@ GT.health = (function () {
       const limit = Number(GT.config.get('drift.threshold')) || 8;
       if (pct < limit) return;
       CHECKS.schema.ok = false;
+      // 보고서(:bug)에도 남긴다 — 글자 수만. 본문은 넣지 않는다.
+      try { GT.bugs.record('drift', `스트림 ${a.length}자 / 원본 ${b.length}자 (${pct}%)`, { stream: a.length, original: b.length, pct }); } catch (_) {}
 
       // 관측만 적는다. 원인을 단정하지 않는다 — 실측에서 스트림이 아니라 비교 대상
       // (fiber) 쪽이 조각이었던 경우가 나왔다. 같은 문구로 두 가지 다른 일이 보고된다.

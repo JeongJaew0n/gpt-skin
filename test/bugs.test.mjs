@@ -190,6 +190,78 @@ async function runBug(copyOk) {
   });
 }
 
+// ---------------------------------------------------------------- 글자 끊김 감지 (0.20.0)
+// docs/issue/2026-10-01-truncation-detect.md
+function loadHealth() {
+  const sb = { console, Object, Array, String, Number, JSON, Math, RegExp, Date };
+  sb.GT = { log() {}, sendToSW() {}, config: { get: () => 8 }, bugs: { record: (...a) => (sb.__rec = (sb.__rec || []).concat([a])) }, skin: { current: { system() {} } } };
+  vm.createContext(sb);
+  vm.runInContext(read('src/content/markdown.js'), sb, { filename: 'markdown.js' });
+  vm.runInContext(read('src/content/health.js'), sb, { filename: 'health.js' });
+  return sb;
+}
+{
+  const sb = loadHealth();
+  const H = sb.GT.health;
+  const long = '가'.repeat(200);
+  t('같으면 끊김이 아니다', H.truncation(long, long) === null);
+  t('원본이 조금(20자 미만) 길면 끊김이 아니다 (마커 표기 차이)', H.truncation(long, long + '나'.repeat(19)) === null);
+  const tr = H.truncation(long, long + '나'.repeat(40));
+  t('원본이 20자 이상 길면 끊김', tr && tr.shown === 200 && tr.original === 240 && tr.diff === 40);
+  t('공백 · 줄바꿈 차이는 세지 않는다', H.truncation('가 나\n\n다' + long, '가나다' + long) === null);
+  t('화면이 더 길면 끊김이 아니다', H.truncation(long + long, long) === null);
+  t('원본이 비었으면 판단하지 않는다', H.truncation(long, '') === null && H.truncation(long, null) === null);
+  t('인용 마커는 걷어내고 잰다', H.truncation(long, long + 'citeturn0search1'.repeat(3)) === null);
+
+  H.reconcile('가'.repeat(100), '가'.repeat(300));
+  t('드리프트도 보고서에 남긴다 (글자 수만)', (sb.__rec || []).some(([c, , x]) => c === 'drift' && x.stream === 100 && x.original === 300));
+}
+
+// checkTruncation 을 index.js 에서 꺼내 돌린다 (테스트용으로 다시 쓰지 않는다)
+{
+  const idx = read('src/content/index.js');
+  const m = /  const TRUNC_CHECK_MS = \d+;\n  const truncChecked = new Set\(\);\n  async function checkTruncation\(msgId, info\) \{[\s\S]*?\n  \}\n/.exec(idx);
+  t('끊김 검사 함수가 있다', !!m);
+  if (m) {
+    const run = async ({ shown, orig, cid = 'c1', load }) => {
+      const sb = loadHealth();
+      const byId = new Map(shown ? [['m1', { id: 'm1', text: shown, verifyTries: 2 }]] : []);
+      let loads = 0;
+      sb.GT.store = { state: { byId } };
+      sb.GT.conversation = { idFromPath: () => cid, load: load || (async () => { loads++; return { messages: orig == null ? [] : [{ id: 'm1', text: orig }] }; }) };
+      vm.runInContext(m[0] + '\nglobalThis.__check = checkTruncation;', sb);
+      await sb.__check('m1', { droppedOps: 3 });
+      await sb.__check('m1', { droppedOps: 3 });
+      return { rec: (sb.__rec || []).filter(([c]) => c === 'truncated'), loads: () => loads };
+    };
+    const base = '본문'.repeat(100);
+    let r = await run({ shown: base, orig: base + '끝까지 왔어야 할 마지막 문장입니다. 여기까지.' });
+    t('원본보다 짧으면 truncated 로 기록한다', r.rec.length === 1 && /화면 200자 \/ 원본 \d+자/.test(r.rec[0][1]));
+    t('기록에 길이 · 버린 델타 · verify 횟수', r.rec[0][2].diff >= 20 && r.rec[0][2].droppedOps === 3 && r.rec[0][2].verifyTries === 2);
+    t('답마다 한 번만 읽는다', r.loads() === 1);
+    r = await run({ shown: base, orig: base });
+    t('같으면 기록하지 않는다', r.rec.length === 0);
+    r = await run({ shown: null, orig: base });
+    t('대화를 옮겼으면(답이 없으면) 읽지 않는다', r.rec.length === 0 && r.loads() === 0);
+    r = await run({ shown: base, orig: base, cid: null });
+    t('대화 id 가 없으면(비로그인 등) 읽지 않는다', r.loads() === 0);
+    r = await run({ shown: base, orig: null });
+    t('원본에서 못 찾으면 기록하지 않는다', r.rec.length === 0);
+    r = await run({ shown: base, load: async () => { throw new Error('401'); } });
+    t('원본 API 가 실패해도 터지지 않는다', r.rec.length === 0);
+  }
+  const ms = Number((/const TRUNC_CHECK_MS = (\d+);/.exec(idx) || [])[1]);
+  const retries = Number((/const VERIFY_RETRIES = (\d+);/.exec(idx) || [])[1]);
+  // verify 는 400ms 뒤 시작해 900·1800·2700ms 간격으로 다시 본다 — 그 뒤에 재야 교정 전 길이로 헛경보를 내지 않는다
+  const verifyWindow = 400 + 900 * (retries * (retries + 1) / 2);
+  t('끊김 검사는 verify 재시도가 끝난 뒤', ms > verifyWindow);
+  t('답이 끝날 때 예약하고, 교대 때 취소한다',
+    /setTimeout\(\(\) => checkTruncation\(p\.id, \{ droppedOps: p\.droppedOps \|\| 0 \}\), TRUNC_CHECK_MS\);\n      disposers\.push\(\(\) => clearTimeout\(t\)\);/.test(idx));
+  t('본문을 못 받은 턴은 건너뛴다 (이미 원본을 다시 읽는다)', /if \(p\.id && p\.began !== false\) \{/.test(idx));
+  t('버린 델타를 기록한다', /GT\.bugs\.record\('deltas-dropped'/.test(idx));
+  t('원본 화면이 짧았던 것을 기록한다', /GT\.bugs\.record\('original-partial'/.test(idx));
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

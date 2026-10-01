@@ -204,6 +204,8 @@
     // 드리프트 경고가 뜬 뒤 원인을 되짚을 수 있어야 한다.
     if (p.droppedOps) {
       GT.log(`본문 델타 ${p.droppedOps}개(${p.droppedChars}자)를 버렸다 — 대상 메시지를 건너뛰기로 한 상태였다`);
+      // 글자가 화면에서 빠지는 직접적인 신호다. 보고서(:bug)에 남긴다 — 개수 · 글자 수만.
+      GT.bugs.record('deltas-dropped', `본문 델타 ${p.droppedOps}개(${p.droppedChars}자)를 버렸다`, { ops: p.droppedOps, chars: p.droppedChars });
     }
     if (p.markers && p.markers.length) GT.log('마커 전환:', p.markers.join(' → '));
     // 그림은 스트림으로 오지 않는다(실측: 부분 이미지가 없다).
@@ -231,6 +233,11 @@
 
     // 스트림 결과를 fiber 원문과 대조한다
     setTimeout(() => GT.toMain('verify', { id: p.id }), 400);
+    // 끊김 검사 — 위 대조가 끝난 뒤 대화 원본(API)과 길이를 잰다. 본문을 못 받은 턴은 이미 원본을 다시 읽는다.
+    if (p.id && p.began !== false) {
+      const t = setTimeout(() => checkTruncation(p.id, { droppedOps: p.droppedOps || 0 }), TRUNC_CHECK_MS);
+      disposers.push(() => clearTimeout(t));
+    }
     if (GT.config.get('bell') === 'visual') GT.skin.current.bell();
   });
   // fiber 가 아직 다 안 그려졌으면 몇 번 더 본다.
@@ -238,6 +245,32 @@
   // 애초에 접두사가 아닌 조각도 온다(실측: 본문 2488자에 fiber 312자).
   // docs/issue/2026-09-08-drift-warning-false-positive.md
   const VERIFY_RETRIES = 3;
+
+  // ---------------------------------------------------------------- 끊김 검사
+  //
+  // 아무 신호 없이 글자가 끊기는 경우가 있다 — 우리 화면엔 짧게 그려졌는데 어느 경로도 이상을 모른다
+  // (docs/issue/2026-09-09-url-marker-dropped.md 의 '스트림이 멈추는 쪽' 은 원인 미확정).
+  // 기준은 대화 원본(API)이다. 답이 끝나고 verify 재시도(최대 약 6초)가 지난 뒤 한 번 읽어 같은 id 의 길이를 잰다.
+  // 기록만 한다 — 화면을 고치지 않는다. 먼저 얼마나 자주 생기는지 본다 (사용자 결정 2026-10-01).
+  // 비용: 답마다 GET 한 번.
+  // docs/issue/2026-10-01-truncation-detect.md
+  const TRUNC_CHECK_MS = 8000;
+  const truncChecked = new Set();
+  async function checkTruncation(msgId, info) {
+    if (!msgId || truncChecked.has(msgId)) return;
+    truncChecked.add(msgId);
+    const cid = GT.conversation.idFromPath();
+    if (!cid || !GT.store.state.byId.get(msgId)) return;          // 대화를 옮겼다 · 비로그인 화면
+    let conv;
+    try { conv = await GT.conversation.load(cid); } catch (e) { GT.log('끊김 검사: 대화 원본을 읽지 못했다 —', e.message); return; }
+    const orig = conv && conv.messages.find((m) => m.id === msgId);
+    const shown = GT.store.state.byId.get(msgId);
+    if (!orig || !shown) { GT.log('끊김 검사: 원본에서 이 답을 찾지 못했다'); return; }
+    const t = GT.health.truncation(shown.text, orig.text);
+    if (!t) return;
+    GT.bugs.record('truncated', `화면 ${t.shown}자 / 원본 ${t.original}자 (${t.diff}자 짧음)`,
+      { ...t, droppedOps: (info && info.droppedOps) || 0, verifyTries: shown.verifyTries || 0 });
+  }
 
   // 그림이 원본에 붙기까지 걸리는 시간은 그때그때 다르다. 간격을 늘려 가며 몇 번 본다.
   const IMAGE_PULL_WAIT_MS = 700;
@@ -275,6 +308,8 @@
       }
       // 여러 번 봐도 짧으면 그걸 정답이라 부르지 않는다. 스트림을 지킨다.
       GT.log(`fiber 가 스트림보다 짧다 (${fLen}/${sLen}) — 스트림 본문을 지킨다`);
+      // 우리 화면은 지켰지만, 원본 화면이 그리다 만 상태라는 기록은 끊김을 되짚을 때 쓸모가 있다
+      GT.bugs.record('original-partial', `원본 화면이 받은 본문보다 짧다 (${fLen}/${sLen}자) — 받은 본문을 지켰다`, { fiber: fLen, stream: sLen });
       return;
     }
 
