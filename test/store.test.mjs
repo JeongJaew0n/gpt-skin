@@ -180,7 +180,7 @@ const shape = (st) => st.state.messages.map((m) => `${m.role}:${m.text}`);
 {
   const idx = fs.readFileSync('src/content/shell/prompt.js', 'utf8');   // 전송 경로는 2026-09-24 에 shell/prompt.js 로 옮겼다
   t('성공했을 때만 올린다',
-    /if \(!r\.ok\) \{[\s\S]{0,200}?\} else \{[\s\S]{0,400}?GT\.store\.userSent\(text\);/.test(idx));
+    /if \(!r\.ok\) \{[\s\S]{0,900}?\} else \{[\s\S]{0,400}?GT\.store\.userSent\(text\);/.test(idx));
   t('왜 올리는지 문서를 가리킨다', /user-message-appears-late\.md/.test(idx));
 }
 

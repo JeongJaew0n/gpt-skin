@@ -10,7 +10,7 @@ GT.health = (function () {
 
   const CHECKS = {
     tap: { ok: false, label: 'MAIN world tap', fatal: true },
-    composer: { ok: false, label: '컴포저 (#prompt-textarea · form[data-chatgpt-composer] · textarea[name=prompt])', fatal: true },
+    composer: { ok: false, label: '컴포저 (#prompt-textarea · form[data-chatgpt-composer] · .ProseMirror · textarea[name=prompt])', fatal: true },
     thread: { ok: false, label: '스레드 컨테이너 #thread', fatal: true },
     schema: { ok: true, label: '델타 인코딩 v1', fatal: false },
     fiber: { ok: true, label: 'React fiber 마크다운 원문', fatal: false }

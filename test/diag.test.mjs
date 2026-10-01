@@ -5,17 +5,16 @@ import fs from 'node:fs'; import vm from 'node:vm';
 const results = []; const t = (n, ok) => results.push([n, ok]);
 const read = (f) => fs.readFileSync(f, 'utf8');
 
-// ---------------------------------------------------------------- 진단 글 (index.js 의 함수를 꺼내 돌린다)
+// ---------------------------------------------------------------- 진단 글
+// 0.19.0 부터 진단 글은 버그 보고서(src/content/bugs.js)와 같다 — 팝업 '진단 복사' 와 :bug 가 함께 쓴다.
 const idx = read('src/content/index.js');
-const m = /  function diagText\(\) \{[\s\S]*?\n  \}\n/.exec(idx);
-t('진단 함수가 있다', !!m);
-if (m) {
-  const src = m[0];
-  t('대화 제목 · 본문 · 주소를 읽지 않는다', !/conversationTitle|messages|location|path|\.text\b/.test(src));
+{
   const sb = {
     navigator: { userAgent: 'Mozilla/5.0 (Macintosh) Chrome/140.0.1 Safari/537.36', platform: 'MacIntel' },
-    GT_VERSION: '9.9.9', GT_BUILD: '2026-09-29 12:00', GT_LOCALE: 'ko', Object,
+    location: { pathname: '/c/6aba1bc9-ccc4-83ea-ac72-06e31b58fd14' },
+    GT_VERSION: '9.9.9', GT_BUILD: '2026-09-29 12:00', GT_LOCALE: 'ko', Object, JSON, Date, String, Array,
     GT: {
+      log() {},
       health: { CHECKS: { tap: { ok: true }, composer: { ok: false } }, reasons: ['드리프트 12%'], degraded: false },
       skin: { current: { id: 'sheet' }, visible: () => true },
       config: { get: () => 'warn' },
@@ -23,15 +22,18 @@ if (m) {
     }
   };
   vm.createContext(sb);
-  vm.runInContext(src + '\nglobalThis.__d = diagText();', sb);
-  const d = sb.__d;
+  vm.runInContext(read('src/content/bugs.js'), sb, { filename: 'bugs.js' });
+  const d = sb.GT.bugs.report();
   t('버전 · 빌드', /gpt-skin 9\.9\.9 · build 2026-09-29 12:00/.test(d));
   t('크롬 버전만 (전체 UA 가 아니다)', /Chrome\/140\.0\.1/.test(d) && !/Macintosh\)/.test(d));
   t('스킨 · 보임 · 정책', /skin sheet · visible yes · onBreak warn · degraded no/.test(d));
   t('점검 결과', /tap:ok composer:FAIL/.test(d));
   t('경고 목록', /warnings 1\n  - 드리프트 12%/.test(d));
   t('대화 내용이 새지 않는다', !/비밀/.test(d));
+  t('대화 id 가 새지 않는다 (경로 모양만)', /page \/c\/…/.test(d) && !/6aba1bc9/.test(d));
+  t('보고서가 대화 제목 · 본문을 읽지 않는다', !/conversationTitle|messages|\.text\b/.test(read('src/content/bugs.js')));
 }
+t('진단은 버그 보고서와 같다', /const diagText = \(\) => GT\.bugs\.report\(\);/.test(idx));
 t('팝업 메시지 diag 에 답한다', /msg\.kind === 'diag'\) reply\(\{ text: diagText\(\) \}\)/.test(idx));
 
 // ---------------------------------------------------------------- 팝업 버튼

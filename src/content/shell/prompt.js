@@ -172,7 +172,12 @@ GT.prompt = (function () {
         if (handled) return;
         const r = await GT.compose.send(text);
         if (!r.ok) {
-          GT.health.soft(`전송 실패(${r.reason}) — 원본 컴포저를 찾지 못했습니다`);
+          // 자세한 사유는 화면에 늘어놓지 않고 버그 기록에 남긴다 (:bug 로 복사해 개발자에게 보낸다).
+          // 사용자에게는 '안 보내졌다' 는 사실과 할 일만 알린다. 쓴 글은 입력줄에 되돌려 둔다 —
+          // 예전에는 보내기 전에 입력줄을 비워서 실패하면 쓴 글이 사라졌다.
+          try { GT.bugs.record('send-failed', r.reason, GT.compose.probe ? GT.compose.probe() : null); } catch (_) {}
+          if (!input.value) { input.value = text; autosize(); input.setSelectionRange(text.length, text.length); }
+          GT.skin.current.system('warn', GT_T('compose.failed'));
         } else {
           // 보낸 즉시 우리도 올린다. 원본이 하는 것과 같은 낙관적 렌더다.
           //

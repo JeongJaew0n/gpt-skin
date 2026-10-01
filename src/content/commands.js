@@ -433,6 +433,22 @@ GT.commands = (function () {
     info(GT_T(next ? 'cmd.log.turnedOn' : 'cmd.log.turnedOff'));
   }, null, (prev) => (prev.length ? [] : ['on', 'off', 'toggle', 'dump', 'clear']));
 
+  // 버그 보고서. 오류는 화면에 늘어놓지 않고 GT.bugs 에 쌓아 두었다가 여기서 한 번에 복사한다.
+  // 테스터가 '에러가 났다' 고만 알려 줘도 원인을 가릴 수 있게 하려는 것이다 (src/content/bugs.js).
+  def(':bug', GT_T('cmd.bug.desc'), async (args) => {
+    const a = (args[0] || '').toLowerCase();
+    if (a === 'clear') return info(GT_T('cmd.bug.cleared', GT.bugs.clear()));
+    const text = GT.bugs.report();
+    let ok = false;
+    try { ok = await GT.clipboard.copy(text); } catch (_) { ok = false; }
+    if (ok) return info(GT_T('cmd.bug.copied', GT.bugs.count()));
+    // 복사가 막힌 환경 — 보고서를 화면에 보여 주고 직접 고르게 한다
+    warn(GT_T('cmd.bug.copyFailed'));
+    const pre = document.createElement('pre');
+    pre.textContent = text;
+    GT.skin.current.system('info', null, pre);
+  }, null, (prev) => (prev.length ? [] : ['clear']));
+
   def(':options', '확장 설정 화면 열기', () => {
     GT.sendToSW({ kind: 'openOptions' });
     info('설정 탭을 엽니다');

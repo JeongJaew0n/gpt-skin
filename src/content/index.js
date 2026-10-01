@@ -323,19 +323,9 @@
   // 동기로 응답하므로 true 를 돌려주면 안 된다.
   // true 는 "나중에 응답하겠다"는 뜻이라, 처리하지 않는 메시지의 포트가 열린 채 남아
   // "message port closed before a response was received" 가 뜬다.
-  function diagText() {
-    const ua = (navigator.userAgent.match(/Chrome\/[\d.]+/) || ['Chrome/?'])[0];
-    const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '?';
-    const checks = Object.entries(GT.health.CHECKS).map(([k, v]) => `${k}:${v.ok ? 'ok' : 'FAIL'}`).join(' ');
-    const reasons = GT.health.reasons;
-    return [
-      `gpt-skin ${GT_VERSION} · build ${GT_BUILD}`,
-      `${ua} · ${plat} · locale ${GT_LOCALE}`,
-      `skin ${GT.skin.current.id} · visible ${GT.skin.visible() ? 'yes' : 'no'} · onBreak ${GT.config.get('onBreak')} · degraded ${GT.health.degraded ? 'yes' : 'no'}`,
-      `checks ${checks}`,
-      `warnings ${reasons.length}` + (reasons.length ? '\n' + reasons.map((r) => '  - ' + r).join('\n') : '')
-    ].join('\n');
-  }
+  // 팝업의 '진단 복사' 와 :bug 는 같은 보고서를 쓴다 (src/content/bugs.js). 두 벌로 두면 갈린다.
+  const diagText = () => GT.bugs.report();
+  disposers.push(() => GT.bugs.stop());
 
   chrome.runtime.onMessage.addListener((msg, _s, reply) => {
     if (!msg) return;
