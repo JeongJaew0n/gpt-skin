@@ -389,6 +389,22 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   t(':messup 만 숨긴다 (:font 은 확대/축소로 쓴다)', S.hiddenCommands.join() === ':messup');
 }
 
+// 이 파일의 CSS 는 스타일 문자열이라 CSS.escape 가 없다 — 고른 행이 사라질 때 TypeError (0.17.1)
+{
+  const { S, state } = load();
+  S.mount({ 'font.size': 13 });
+  state.messages = [{ id: 'a1', role: 'assistant', text: '답' }];
+  S.system('info', '명령 결과');
+  S.render();
+  const sysRow = S.ui.body.children.at(-1);
+  sysRow.children[2].dispatch('mousedown');
+  let threw = null;
+  try { S.clearSystem(); } catch (e) { threw = e; }
+  t('고른 행을 지워도 터지지 않는다', threw === null);
+  const sheet = read('src/content/skins/sheet.js');
+  t('CSS.escape 는 window 에서 꺼낸다', !/[^.\w]CSS\.escape\(/.test(sheet) && /window\.CSS\.escape\(/.test(sheet));
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

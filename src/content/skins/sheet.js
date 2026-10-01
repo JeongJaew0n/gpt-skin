@@ -510,7 +510,9 @@
       Array.from(ui.body.children).forEach((tr) => { if (msgKeyOf(tr) === sel.msg) tr.dataset.msgsel = '1'; });
       return;
     }
-    const tr = sel.tr && sel.tr.isConnected ? sel.tr : ui.body.querySelector(`tr[data-key="${CSS.escape(sel.key || '')}"]`);
+    // 이 파일의 CSS 는 스타일 문자열이다 — 브라우저의 CSS.escape 는 window 에서 꺼낸다.
+    // 예전에는 CSS.escape 를 불러 '고른 행이 사라지면' (명령 결과를 지울 때 등) TypeError 가 났다.
+    const tr = sel.tr && sel.tr.isConnected ? sel.tr : ui.body.querySelector(`tr[data-key="${window.CSS.escape(sel.key || '')}"]`);
     if (!tr) { sel = null; return; }
     sel.tr = tr;
     tr.dataset.sel = '1';
