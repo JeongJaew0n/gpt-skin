@@ -726,6 +726,7 @@
     // 정본은 스키마의 skin: 'terminal' 표시다. 여기에 또 적으면 갈린다.
     get configKeys() { return GT_SCHEMA.filter((f) => f.skin && GT_SKIN_HAS(f, 'terminal')).map((f) => f.key); },
     hiddenCommands: [],
+    messup: 'terminal',
 
     get ui() { return ui; },      // 계약 밖. 다른 모듈이 의존하면 안 된다 (test/skin.test.mjs 가 막는다)
     // 입력 위젯을 GT.prompt 에 넘긴다. 키 처리는 거기 있고, 여기는 위젯과 높이 규칙만 안다.

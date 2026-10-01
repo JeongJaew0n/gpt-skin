@@ -97,6 +97,42 @@
 .gs-grid td.gs-b[data-kind="sys"] { color: var(--gt-fg-dim); }
 .gs-grid td.gs-b[data-quote] { border-left: 3px solid var(--gt-border); color: var(--gt-fg-dim); }
 .gs-grid td.gs-b[data-kind="thinking"] { color: var(--gt-fg-dim); font-style: italic; }
+/* 표는 칸으로 나눈다. 한 표의 행들은 같은 칸 너비(rowsOf 가 잰 ch)를 써서 세로줄이 맞는다.
+   minmax(0, …) 라 좁은 창에서는 같은 비율로 줄어 여전히 맞는다. */
+.gs-grid td.gs-b[data-kind="table"] { display: grid; padding: 0; white-space: normal; }
+.gs-grid td.gs-b[data-kind="table"] > .gs-tc { padding: 1px 8px; min-width: 0; border-right: 1px dotted var(--gt-border);
+  white-space: pre-wrap; overflow-wrap: anywhere; }
+.gs-grid td.gs-b[data-kind="table"] > .gs-tc:last-child { border-right: 0; }
+.gs-grid td.gs-b[data-kind="table"] > .gs-tc.gs-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gs-grid td.gs-b[data-kind="table"][data-header="1"] > .gs-tc { background: var(--gs-hdr); }
+/* 수식 행의 fx 칩. .gs-fx 는 수식 입력줄이 쓰는 이름이라 겹치지 않게 따로 둔다 (겹쳐서 칩이 한 줄을 차지했다 — 하네스 실측) */
+.gs-fxchip { font-family: Georgia, "Times New Roman", serif; font-style: italic; color: var(--gs-accent); margin-right: 8px; user-select: none; }
+/* :messup — 화면에만 있는 블록. 라벨 행 + 복사한 범위처럼 움직이는 점선 (심사 노트의 '점선 표시') */
+.gs-grid td.gs-a[data-who="local"] { color: var(--gt-yellow); font-weight: 600; }
+.gs-grid td.gs-b[data-kind="label"] { color: var(--gt-fg-dim); font-style: italic; }
+.gs-grid > table > tbody > tr[data-local] > td.gs-b {
+  --ants: linear-gradient(90deg, var(--gs-accent) 50%, transparent 0);
+  --ants-v: linear-gradient(0deg, var(--gs-accent) 50%, transparent 0);
+  background-repeat: repeat-y, repeat-y; background-size: 1.5px 8px, 1.5px 8px;
+  background-image: var(--ants-v), var(--ants-v); background-position: 0 0, 100% 0;
+  animation: gs-ants-2 .6s linear infinite; }
+.gs-grid > table > tbody > tr[data-local="first"] > td.gs-b {
+  background-repeat: repeat-x, repeat-y, repeat-y; background-size: 8px 1.5px, 1.5px 8px, 1.5px 8px;
+  background-image: var(--ants), var(--ants-v), var(--ants-v); background-position: 0 0, 0 0, 100% 0;
+  animation-name: gs-ants-top; }
+.gs-grid > table > tbody > tr[data-local="last"] > td.gs-b {
+  background-repeat: repeat-x, repeat-y, repeat-y; background-size: 8px 1.5px, 1.5px 8px, 1.5px 8px;
+  background-image: var(--ants), var(--ants-v), var(--ants-v); background-position: 0 100%, 0 0, 100% 0;
+  animation-name: gs-ants-bottom; }
+.gs-grid > table > tbody > tr[data-local="only"] > td.gs-b {
+  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y; background-size: 8px 1.5px, 8px 1.5px, 1.5px 8px, 1.5px 8px;
+  background-image: var(--ants), var(--ants), var(--ants-v), var(--ants-v); background-position: 0 0, 0 100%, 0 0, 100% 0;
+  animation-name: gs-ants-4; }
+@keyframes gs-ants-2 { to { background-position: 0 -8px, 100% 8px; } }
+@keyframes gs-ants-top { to { background-position: 8px 0, 0 -8px, 100% 8px; } }
+@keyframes gs-ants-bottom { to { background-position: -8px 100%, 0 -8px, 100% 8px; } }
+@keyframes gs-ants-4 { to { background-position: 8px 0, -8px 100%, 0 -8px, 100% 8px; } }
+@media (prefers-reduced-motion: reduce) { .gs-grid > table > tbody > tr[data-local] > td.gs-b { animation: none; } }
 .gs-grid > table > * > tr.gs-mirror > td.gs-b { color: var(--gt-fg-dim); }
 /* 빈 행은 칸 내용만 숨긴다. 행 번호까지 숨기면 격자가 12행에서 끊겨 보인다 (하네스 실측) */
 .gs-grid > table > * > tr.gs-blank > td:not(.gs-rn) { color: transparent; }
@@ -144,6 +180,10 @@
   let chatsPath = '';
   const systemLog = [];
   let sysSeq = 0;
+  // :messup 블록 — 화면에만 있다. 서버로 가지 않고 대화 기록에도 안 남는다. terminal 의 localLog 와 같은 모양.
+  const localLog = [];
+  let localSeq = 0;
+  const localMemo = new Map();     // 블록 id → 펼친 행 (블록 글은 바뀌지 않으므로 한 번만 편다)
   // 메시지 키 → 펼친 행과 행 서명. 바뀌지 않은 메시지를 매번 다시 펴지 않는다.
   // 하네스 실측(1351행 대화에서 긴 답 스트리밍): 캐시 전 한 델타 21.9ms(중앙값) — 매 델타마다
   // 150개 메시지 전부를 markdown.lines 로 다시 펴고 모든 행 서명을 다시 만들었다.
@@ -298,6 +338,7 @@
       if (nonText.length) rows.push({ kind: 'placeholder', text: T('sheet.nonText', nonText.join(', ')) });
     }
     if (!rows.length) rows.push({ kind: 'text', text: '', raw: m.role === 'user' });
+    shapeTables(rows);
     const who = m.role === 'user' ? 'user' : 'assistant';
     return rows.map((r, i) => ({
       ...r,
@@ -308,6 +349,66 @@
       time: i === 0 ? stamp(m.at) : '',
       streaming: !!m.streaming && i === rows.length - 1
     }));
+  }
+
+  // ---------------------------------------------------------------- 표 칸
+  //
+  // 예전에는 표 행을 'a | b | c' 한 줄 글자로 그렸다. 칸 너비를 맞추지 않아 행마다 세로줄이 어긋났다.
+  // 이제 칸으로 나눈다. 한 표(머리 행부터 이어지는 표 행들)의 칸 너비를 글자 폭으로 재서 모든 행에 같이 준다.
+  // 행 단위 렌더를 지키려고 표 전체를 하나의 요소로 묶지 않는다.
+  const WIDE = /[\u1100-\u115f\u2e80-\u303e\u3041-\u33ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6]/;
+  // 화면에 보일 글자만 남긴다 (대충) — 마크다운 기호 · 링크 주소 · 인용 봉투는 폭에서 뺀다
+  const visible = (t) => String(t || '')
+    .replace(/\uE200[^\uE201]*\uE201/g, '[0]')
+    .replace(/:contentReference\[[^\]]*\]\{[^}]*\}/g, '[0]')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\*\*|__|`/g, '');
+  // 한글 · 한자는 두 칸. ₩ ▲ 같은 기호(U+2000 이상)도 고정폭 글꼴에 없어 더 넓은 글꼴로 그려지므로 두 칸으로 센다
+  // (하네스 실측: 한 칸으로 셌더니 '₩15,009,000' 이 칸 안에서 두 줄로 꺾였다).
+  const textWidth = (t) => { let w = 0; for (const ch of visible(t)) w += (WIDE.test(ch) || ch.codePointAt(0) >= 0x2000) ? 2 : 1; return w; };
+  // 숫자 칸: 통화 · 회계 괄호 · 증감 화살표 · 퍼센트 · 짧은 단위까지
+  const NUMERIC = /^[▲▼+\-−]?\s*\(?\s*[₩$€£¥]?\s*\d[\d,]*(\.\d+)?\s*\)?\s*(%|[A-Za-z가-힣]{1,3})?$/;
+  const isNum = (t) => NUMERIC.test(visible(t).trim());
+  const TABLE_MIN = 3, TABLE_MAX = 40;
+
+  function shapeTables(rows) {
+    let i = 0;
+    while (i < rows.length) {
+      if (rows[i].kind !== 'table') { i += 1; continue; }
+      let j = i + 1;
+      while (j < rows.length && rows[j].kind === 'table' && !rows[j].header) j += 1;
+      const group = rows.slice(i, j);
+      const n = Math.max(...group.map((r) => (r.cells || []).length));
+      const widths = [], nums = [];
+      for (let k = 0; k < n; k += 1) {
+        const all = group.map((r) => (r.cells || [])[k] || '');
+        widths.push(Math.min(TABLE_MAX, Math.max(TABLE_MIN, ...all.map(textWidth))) + 2);   // +2 = 양옆 여백
+        const body = group.filter((r) => !r.header).map((r) => ((r.cells || [])[k] || '').trim()).filter(Boolean);
+        nums.push(body.length > 0 && body.every(isNum));
+      }
+      group.forEach((r) => { r.widths = widths; r.nums = nums; });
+      i = j;
+    }
+    return rows;
+  }
+
+  // ---------------------------------------------------------------- :messup 블록 → 행
+  // 첫 행은 라벨 행이다 — 화면에만 있는 출력이라는 것을 행으로 밝힌다 (docs/store/review-notes.md (e)).
+  function localRows(rec) {
+    const hit = localMemo.get(rec.id);
+    if (hit) return hit;
+    const body = GT.markdown.lines(rec.text || '');
+    shapeTables(body);
+    const rows = [{ kind: 'label', text: T('sheet.local.label') }].concat(body).map((r, i, all) => ({
+      ...r,
+      who: 'local',
+      local: all.length === 1 ? 'only' : (i === 0 ? 'first' : (i === all.length - 1 ? 'last' : 'mid')),
+      label: i === 0 ? 'local' : '',
+      time: i === 0 ? stamp(rec.at) : ''
+    }));
+    const entry = { fp: '', rows, sigs: null, sigEpoch: -1 };
+    localMemo.set(rec.id, entry);
+    return entry;
   }
 
   // 행을 다시 펴야 하는지 가르는 지문. 행을 만드는 데 쓰는 값을 전부 넣는다 — 빠뜨리면 낡은 행이 남는다.
@@ -329,13 +430,31 @@
   function plan(state) {
     const out = [];
     const live = new Set();
-    state.messages.forEach((m, idx) => {
+    const byKey = new Map();
+    const keys = state.messages.map((m, idx) => {
       const mk = m.id ? 'm:' + m.id : 'i:' + idx;
+      byKey.set(mk, m);
+      return mk;
+    });
+    // :messup 블록은 넣을 때의 마지막 메시지 뒤에 끼운다. 순서 규칙은 renderplan 이 갖는다 (terminal 과 같다).
+    GT.renderplan.interleave(keys, localLog).forEach((slot) => {
+      if (slot.local) {
+        const r = slot.local;
+        const lk = 'l:' + r.id;
+        live.add(lk);
+        msgText.set(lk, r.text);
+        const entry = localRows(r);
+        entry.rows.forEach((row, i) => out.push({ key: lk + ':' + i, msgKey: lk, refs: [], row, memo: entry, at: i }));
+        return;
+      }
+      const mk = slot.key;
+      const m = byKey.get(mk);
       live.add(mk);
       msgText.set(mk, m.text || '');
       const entry = rowsCached(mk, m);
       entry.rows.forEach((r, i) => out.push({ key: mk + ':' + i, msgKey: mk, refs: m.refs || [], row: r, memo: entry, at: i }));
     });
+    [...localMemo.keys()].forEach((id) => { if (!localLog.some((r) => r.id === id)) localMemo.delete(id); });
     // 대화를 옮기면 이전 대화의 캐시를 버린다
     [...memo.keys()].forEach((k) => { if (!live.has(k)) memo.delete(k); });
     [...msgText.keys()].forEach((k) => { if (!live.has(k)) msgText.delete(k); });
@@ -377,7 +496,22 @@
       b.dataset.kind = r.kind;
       if (r.quote) b.dataset.quote = String(r.quote);
       if (r.kind === 'table' && r.header) b.dataset.header = '1';
-      if (r.kind === 'item') {
+      if (r.local) tr.dataset.local = r.local;
+      if (r.kind === 'table' && r.widths) {
+        // 칸마다 하나. 같은 표의 행들은 같은 너비라 세로줄이 맞는다. 칸 안의 링크 · 인용 번호도 그린다.
+        b.style.gridTemplateColumns = r.widths.map((w) => `minmax(0, ${w}ch)`).join(' ');
+        r.widths.forEach((_, k) => {
+          const span = el('span', 'gs-tc' + (r.nums[k] && !r.header ? ' gs-num' : ''));
+          GT.markdown.inline((r.cells || [])[k] || '', span, ctx);
+          b.appendChild(span);
+        });
+      } else if (r.kind === 'code' && r.lang === 'formula') {
+        // :messup 의 수식 행. fx 표시는 장식이라 복사에서 뺀다 (cellText)
+        b.appendChild(el('span', 'gs-fxchip', 'fx'));
+        b.appendChild(document.createTextNode(r.text));
+      } else if (r.kind === 'label') {
+        b.textContent = r.text;
+      } else if (r.kind === 'item') {
         b.style.paddingLeft = (6 + 14 * (r.depth || 0)) + 'px';
         b.appendChild(el('span', 'gs-bullet', (r.depth ? '▸' : '·') + ' '));
         GT.markdown.inline(r.text, b, ctx);
@@ -511,7 +645,7 @@
       return;
     }
     // 이 파일의 CSS 는 스타일 문자열이다 — 브라우저의 CSS.escape 는 window 에서 꺼낸다.
-    // 예전에는 CSS.escape 를 불러 '고른 행이 사라지면' (명령 결과를 지울 때 등) TypeError 가 났다.
+    // 예전에는 CSS.escape 를 불러 '고른 행이 사라지면' (명령 결과 · :messup 블록을 걷어낼 때) TypeError 가 났다.
     const tr = sel.tr && sel.tr.isConnected ? sel.tr : ui.body.querySelector(`tr[data-key="${window.CSS.escape(sel.key || '')}"]`);
     if (!tr) { sel = null; return; }
     sel.tr = tr;
@@ -530,7 +664,7 @@
   // 명령 결과 · 생각 중 행은 메시지가 아니라 고르지 않는다.
   const msgKeyOf = (tr) => {
     const k = (tr && tr.dataset && tr.dataset.key) || '';
-    if (!/^(m|i):/.test(k)) return null;
+    if (!/^(m|i|l):/.test(k)) return null;
     return k.slice(0, k.lastIndexOf(':'));
   };
   function selectMessage(tr) {
@@ -589,8 +723,12 @@
   // 셀의 글자. 목록 글머리(· ▸)는 보이기 위한 장식이라 복사에서 뺀다 (하네스 실측: '▸ 맥은…' 이 복사됐다).
   function cellText(td) {
     const nodes = td.childNodes || td.children || [];
-    return [...nodes].filter((n) => !(n.classList && n.classList.contains('gs-bullet') || n.className === 'gs-bullet'))
-      .map((n) => n.textContent).join('');
+    const deco = (n) => (n.classList && (n.classList.contains('gs-bullet') || n.classList.contains('gs-fxchip')))
+      || n.className === 'gs-bullet' || n.className === 'gs-fxchip';
+    const kept = [...nodes].filter((n) => !deco(n));
+    // 표 행은 칸을 탭으로 잇는다 — 스프레드시트에 붙여 넣으면 칸으로 들어간다
+    const isTable = td.dataset && td.dataset.kind === 'table';
+    return kept.map((n) => n.textContent).join(isTable ? '\t' : '');
   }
 
   // ---------------------------------------------------------------- 시트 탭 (대화 목록)
@@ -727,7 +865,8 @@
     defaultTheme: 'green',
     get configKeys() { return GT_SCHEMA.filter((f) => f.skin && GT_SKIN_HAS(f, 'sheet')).map((f) => f.key); },
     // :messup 은 스크롤백에 가짜 블록을 끼우는 진단이다. 시트에는 끼울 자리를 두지 않았다.
-    hiddenCommands: [':messup'],
+    hiddenCommands: [],
+    messup: 'sheet',              // :messup 이 스프레드시트 작업처럼 보이는 가짜 출력을 쓴다 (src/content/messup.js)
 
     get ui() { return ui; },      // 계약 밖
     rowsOf,                       // 계약 밖 — 테스트가 행 계획을 직접 본다
@@ -744,6 +883,7 @@
       memo.clear();
       msgText.clear();
       systemLog.length = 0;
+      localLog.length = 0; localMemo.clear();
       sel = null; chats = []; chatsAt = 0; chatsPath = '';
       shadow = null; root = null; varStyle = null;
       Object.keys(ui).forEach((k) => { delete ui[k]; });
@@ -756,8 +896,17 @@
     sidebarShown,
     system,
     clearSystem() { const n = systemLog.length; systemLog.length = 0; render(); return n; },
-    local() { return 0; },
-    clearLocal() { return 0; },
+    // 화면에만 끼워 넣는 블록. 지금 마지막 메시지를 앵커로 잡는다 (terminal 과 같다).
+    local(text) {
+      const s = GT.store.state;
+      const last = s.messages.length - 1;
+      const m = last >= 0 ? s.messages[last] : null;
+      const anchorKey = m ? (m.id ? 'm:' + m.id : 'i:' + last) : '';
+      localLog.push({ id: ++localSeq, anchorKey, at: Date.now(), text: String(text == null ? '' : text) });
+      render();
+      return localLog.length;
+    },
+    clearLocal() { const n = localLog.length; localLog.length = 0; localMemo.clear(); render(); return n; },
     setMode(m) { mode = m; if (root) renderChrome(); },
     setSuggest,
     syncFocus() {},

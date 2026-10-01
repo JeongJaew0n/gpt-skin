@@ -13,6 +13,8 @@ GT.skins = (function () {
   //   escapeHides 는 빈 입력줄에서 esc 가 스킨을 숨기는가. 키 처리 자체는 GT.prompt 가 한다.
   // persistSidebar: 이 스킨에서 대화 목록을 여닫은 것을 sidebar.visible 에 저장하는가.
   //   none 은 저장하지 않는다 — 원본에 목록이 있어 잠깐 여는 것일 뿐이고, 터미널의 설정을 건드리면 안 된다.
+  // 선택 필드(없어도 된다): messup — :messup 이 쓸 가짜 출력의 맛 ('terminal' | 'sheet'). 없으면 terminal.
+  //   생성기는 src/content/messup.js.
   const FIELDS = ['id', 'covers', 'capturesTyping', 'keys', 'persistSidebar', 'themes', 'defaultTheme', 'configKeys', 'hiddenCommands'];
   // 함수
   const METHODS = [

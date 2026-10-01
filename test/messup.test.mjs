@@ -54,6 +54,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   };
   vm.createContext(sb);
   vm.runInContext(fs.readFileSync('src/shared/i18n.js', 'utf8'), sb, { filename: 'i18n.js' });
+  vm.runInContext(fs.readFileSync('src/content/messup.js', 'utf8'), sb, { filename: 'messup.js' });
   vm.runInContext(fs.readFileSync('src/content/commands.js', 'utf8'), sb, { filename: 'commands.js' });
   const C = sb.GT.commands;
 
@@ -92,6 +93,69 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('화면에만 있는 것임을 메타줄에 적는다', /화면에만 있는 출력/.test(tty));
   t('시스템 줄이 아니라 별도 목록', /const localLog = \[\]/.test(tty));
   t('전송 경로를 타지 않는다', !/GT\.compose\.send/.test(cmds.slice(cmds.indexOf("def(':messup'"), cmds.indexOf("def(':messup'") + 900)));
+}
+
+// ---- 맛: sheet (0.18.0) ----
+// docs/plan/2026-10-01-sheet-messup.md
+{
+  const sb = { console, Object, Array, Set, Map, String, Number, Boolean, JSON, Math };
+  sb.window = sb; sb.globalThis = sb; sb.GT = {};
+  vm.createContext(sb);
+  vm.runInContext(fs.readFileSync('src/shared/i18n.js', 'utf8'), sb, { filename: 'i18n.js' });
+  vm.runInContext(fs.readFileSync('src/content/messup.js', 'utf8'), sb, { filename: 'messup.js' });
+  const M = sb.GT.messup;
+  const many = Array.from({ length: 40 }, () => M.make('sheet'));
+  const one = many[0];
+  t('sheet 맛: 수식 펜스', many.every((x) => /```formula\n=/.test(x)));
+  t('sheet 맛: 계산 상태 펜스', many.every((x) => /```calc\n/.test(x)));
+  t('sheet 맛: 절대참조 범위', many.every((x) => /![$][A-Z][$]\d+:[$][A-Z][$]\d+/.test(x)));
+  t('sheet 맛: 오류값', many.every((x) => /#N\/A|#DIV\/0!|#REF!/.test(x)));
+  t('sheet 맛: 회계 서식 표가 나올 때가 있다', many.some((x) => /\|--:\|--:\|/.test(x) && /₩[\d,]+/.test(x)));
+  t('sheet 맛: 매크로가 나올 때가 있다', many.some((x) => /```vba\nSub /.test(x)));
+  t('sheet 맛: 빌드 로그 모양이 아니다', !many.some((x) => /```log|```ts/.test(x)));
+  t('sheet 맛: 매번 다르다', new Set(many).size === many.length);
+  t('제품 이름을 쓰지 않는다', !many.some((x) => /excel|microsoft|google\s*sheets|numbers/i.test(x)));
+  const RUDE = /(했다|한다|없다|있다|된다|간다|온다|린다|본다|아니다|해라|봐라|와라|어라)(?![다가-힣])/;
+  t('반말 종결이 없다', !many.some((x) => RUDE.test(x)));
+  t('모르는 맛은 terminal', /```log/.test(M.make('없는맛')) && /```log/.test(M.make()));
+  t('맛 목록', M.flavors().join() === 'terminal,sheet');
+  vm.runInContext('GT_SET_LOCALE("en")', sb);
+  const en = M.make('sheet');
+  t('영어면 영어 어휘 · 달러', /Calculating|recalculated/.test(en) && !/[가-힣]/.test(en));
+  void one;
+}
+
+// ---- 명령이 스킨의 맛을 따른다 ----
+{
+  const local = [];
+  const sb = { console, Object, Array, Set, Map, String, Number, Boolean, JSON, Math, Promise, Error, RegExp, Date,
+    location: { pathname: '/c/x' }, document: { createElement: () => ({ style: {}, appendChild() {}, addEventListener() {} }) } };
+  sb.window = sb; sb.globalThis = sb;
+  sb.GT = {
+    theme: { names: () => ['modern-dark'] }, config: { keys: () => [], get: () => 13, DEFAULTS: {} }, chats: { projects: () => [] },
+    store: { state: { messages: [], superseded: 0, orphanDeltas: 0, conversationTitle: '' } },
+    skin: { hide() {}, current: { messup: 'sheet', hiddenCommands: [], system() {}, applyConfig() {}, render() {},
+      local: (x) => local.push(x), clearLocal() { return 0; } } },
+    sidebar: { chats: () => [], isOpen: () => false }, convops: {}, conversation: { idFromPath: () => 'x' }, picker: {}, navigate: {},
+    health: { CHECKS: {}, reasons: [] }, palette: {}, oai: {}, compose: {}
+  };
+  vm.createContext(sb);
+  vm.runInContext(fs.readFileSync('src/shared/i18n.js', 'utf8'), sb, { filename: 'i18n.js' });
+  vm.runInContext(fs.readFileSync('src/content/messup.js', 'utf8'), sb, { filename: 'messup.js' });
+  vm.runInContext(fs.readFileSync('src/content/commands.js', 'utf8'), sb, { filename: 'commands.js' });
+  await sb.GT.commands.run(':messup 2');
+  t('스킨이 sheet 맛이면 시트 출력을 끼운다', local.length === 2 && local.every((x) => /```formula/.test(x)));
+}
+
+// ---- 싣는 순서 ----
+{
+  const mf = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+  const js = mf.content_scripts.find((c) => c.world !== 'MAIN').js;
+  t('매니페스트가 생성기를 명령보다 먼저 싣는다',
+    js.indexOf('src/content/messup.js') > 0 && js.indexOf('src/content/messup.js') < js.indexOf('src/content/commands.js'));
+  const html = fs.readFileSync('tools/harness/index.html', 'utf8');
+  t('하네스도 싣는다', html.indexOf('src/content/messup.js') > 0 && html.indexOf('src/content/messup.js') < html.indexOf('src/content/commands.js'));
+  t('명령에 생성기가 남아 있지 않다 (한 곳에만)', !/const VERBS =|function terminal\(/.test(fs.readFileSync('src/content/commands.js', 'utf8')));
 }
 
 let bad = 0;

@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1578](https://img.shields.io/badge/테스트-1578_케이스-22C55E)
+![테스트 1734](https://img.shields.io/badge/테스트-1734_케이스-22C55E)
 
 </div>
 
@@ -257,6 +257,7 @@ src/content/                          ← 매니페스트 주입 순서
   compose.js                          원본 컴포저 주입 · 전송 · 중단
   picker.js                           모델 · 추론 수준 선택
   navigate.js                         라우팅
+  messup.js                           :messup 가짜 출력 생성기 (terminal · sheet 맛)
   commands.js                         명령 레지스트리 + 자동완성
   health.js                           깨짐 감지 · 정책 적용
   shell/prompt.js                     입력 컨트롤러 (IME 가드 · ↑↓ 기록 · Tab 완성 · 전송 · 전역 키)
@@ -376,7 +377,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>43개 파일 · 1578 케이스</b></summary>
+<summary><b>49개 파일 · 1734 케이스</b></summary>
 
 <br>
 
@@ -398,7 +399,7 @@ tools/test.sh
 | `focus` | 17 | 클릭·타이핑이 입력창으로 가는가 |
 | `convops` | 33 | 대화 조작 — 되돌릴 수 없는 것은 확인 후에만 |
 | `renderplan` | 38 | 스크롤백 재구성 서명·재사용 |
-| `messup` | 28 | `:messup` — 서버로 안 가는가, 새 대화가 와도 제자리인가 |
+| `messup` | 45 | `:messup` — 서버로 안 가는가, 새 대화가 와도 제자리인가, 스킨의 맛(terminal · sheet)을 따르는가, 제품 이름을 안 쓰는가 |
 | `thinking` | 63 | 생각 중 표시 — 켜지는 자리, 끄는 문을 다 막았는가, 커서가 세 곳에서 같은가 |
 | `log` | 84 | 로그 on/off · 껐을 때 화면·콘솔이 조용한가 · 명령 결과는 남는가 · 상태줄 · `:clear` |
 | `i18n` | 40 | 사전 — 로케일 간 키·자리표시자 일치, 스키마 키 존재, 매니페스트 _locales |
@@ -424,7 +425,7 @@ tools/test.sh
 | `reinject` | 39 | 업데이트 뒤 재주입 — 옛 tap 이 비키는가 · 교대 · 켜 둔 상태 이어받기 |
 | `shortcuts` | 21 | 새로고침 직후 단축키 — 연결이 부팅 점검 대기보다 앞에 있는가 · 원본 복귀 시 거절 · 켜 둔 화면을 점검 전에 켜는가 (revert 는 뒤) |
 | `compose` | 25 | 원본 입력창 — 로그인(ProseMirror) · 비로그인(textarea) 둘 다 찾아 넣는가 · 보낸 뒤 글이 남으면 알리는가 |
-| `sheet` | 73 | 시트 스킨 — 한 행에 한 줄 · 스트리밍 중 두 행만 다시 · 인용 번호가 행을 건너 이어지는가 · 셀 선택·방향키·복사 · 입력 미러 · 시트 탭 |
+| `sheet` | 117 | 시트 스킨 — 한 행에 한 줄 · 스트리밍 중 두 행만 다시 · 인용 번호가 행을 건너 이어지는가 · 셀 선택·방향키·복사 · 입력 미러 · 시트 탭 · 표를 칸으로 나누고 세로줄이 맞는가 · :messup 블록 라벨·점선 |
 
 </details>
 
@@ -472,7 +473,7 @@ tools/test.sh
 | 생각 중 표시 · 회전자 | 실제 테마 CSS 로 세 상태(추론 중 · 스트리밍 · 완료)를 렌더해 확인 |
 | 툴바 패널 글자 대비 | 계산 — 전부 4.5:1 이상 (도움말은 2.3 → 7.8) |
 | 인용 마커 | 실측 — API·SSE·fiber 세 경로의 표기를 각각 확인하고, 실제 응답 데이터로 렌더 |
-| 순수 로직 | 1578 케이스 통과 (위 표) |
+| 순수 로직 | 1734 케이스 통과 (위 표) |
 | 녹화 스트림 재생 | 실제 SSE 1건을 `tap.js` 에 재생 (`test/replay.test.mjs`) |
 | ProseMirror 주입 · 전송 버튼 활성화 | 실제 페이지에서 확인 |
 | SSE 가로채기 (`res.body.tee()`) | 실제 페이지에서 확인 |

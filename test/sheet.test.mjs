@@ -83,6 +83,7 @@ function load(opts = {}) {
     log() {}
   };
   vm.runInContext(read('src/content/markdown.js'), sb, { filename: 'markdown.js' });
+  vm.runInContext(read('src/content/renderplan.js'), sb, { filename: 'renderplan.js' });
   vm.runInContext(read('src/content/shell/skin.js'), sb, { filename: 'skin.js' });
   vm.runInContext(read('src/content/skins/sheet.js'), sb, { filename: 'sheet.js' });
   const S = sb.GT.skins.get('sheet');
@@ -386,7 +387,87 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   const o = load({ sidebarState: { forcedOpen: true } }).S;
   t('직접 열면 보인다', o.sidebarShown() === true);
   t('테마 두 벌이 스키마 선택지와 같다', Object.keys(S.themes).join() === 'green,blue');
-  t(':messup 만 숨긴다 (:font 은 확대/축소로 쓴다)', S.hiddenCommands.join() === ':messup');
+  t('숨기는 명령이 없다 (:messup 도 시트 맛으로 쓴다)', S.hiddenCommands.length === 0 && S.messup === 'sheet');
+}
+
+// ---------------------------------------------------------------- 표는 칸으로 나눈다 (0.18.0)
+// 예전에는 'a | b | c' 한 줄 글자로 그려 칸 너비가 행마다 달라 세로줄이 어긋났다.
+// docs/plan/2026-10-01-sheet-messup.md
+{
+  const { S, state, calls } = load();
+  const md = '표입니다\n\n| 지역 | 합계 | 비고 |\n|---|--:|---|\n| 수도권 | ₩12,480,000 | 많음 |\n| 영남 | (1,240,000) | 줄어듦 |\n| 합계 | ▲ 4.2% | - |\n\n끝';
+  const rows = JSON.parse(JSON.stringify(S.rowsOf({ role: 'assistant', text: md })));
+  const tbl = rows.filter((r) => r.kind === 'table');
+  t('표 행이 넷 (머리 + 셋)', tbl.length === 4 && tbl[0].header);
+  t('한 표의 행은 같은 칸 너비를 갖는다', tbl.every((r) => JSON.stringify(r.widths) === JSON.stringify(tbl[0].widths)));
+  t('칸 너비는 가장 긴 칸 + 여백 (한글 · ₩ 같은 기호는 두 칸)', tbl[0].widths[0] === 6 + 2 && tbl[0].widths[1] === 12 + 2);
+  t('숫자 열을 안다 (통화 · 회계 괄호 · 증감)', JSON.stringify(tbl[0].nums) === '[false,true,false]');
+
+  const two = JSON.parse(JSON.stringify(S.rowsOf({ role: 'assistant', text: '| a |\n|---|\n| 1 |\n\n문단\n\n| 아주긴머리 |\n|---|\n| x |' })));
+  const t2 = two.filter((r) => r.kind === 'table');
+  t('표가 둘이면 너비를 따로 잰다', t2[0].widths[0] !== t2[2].widths[0]);
+
+  S.mount({ 'font.size': 13 });
+  state.messages = [{ id: 'a1', role: 'assistant', text: md }];
+  S.render();
+  const trs = S.ui.body.children.filter((tr) => tr.children[2].dataset.kind === 'table');
+  const b0 = trs[0].children[2], b1 = trs[1].children[2];
+  t('표 행의 B 칸이 칸(span)으로 나뉜다', b1.children.length === 3 && b1.children.every((c) => c.className.split(' ').includes('gs-tc')));
+  t('칸 너비가 격자 열로 들어간다', /^minmax\(0, \d+ch\) minmax\(0, \d+ch\) minmax\(0, \d+ch\)$/.test(b1.style.gridTemplateColumns));
+  t('모든 표 행이 같은 격자 열', trs.every((tr) => tr.children[2].style.gridTemplateColumns === b1.style.gridTemplateColumns));
+  t('숫자 열은 오른쪽 정렬 칸', b1.children[1].className.includes('gs-num') && !b1.children[0].className.includes('gs-num'));
+  t('머리 행은 숫자 정렬을 하지 않는다', !b0.children[1].className.includes('gs-num'));
+  t('칸 글자가 그대로', b1.children[1].textContent === '₩12,480,000');
+  b1.dispatch('mousedown');
+  S.ui.grid.dispatch('keydown', { key: 'c', metaKey: true });
+  t('표 행을 복사하면 칸을 탭으로 잇는다', calls.copy.at(-1) === '수도권\t₩12,480,000\t많음');
+}
+
+// ---------------------------------------------------------------- :messup 블록 (0.18.0)
+{
+  const { S, state, calls } = load();
+  S.mount({ 'font.size': 13 });
+  state.messages = [{ id: 'u1', role: 'user', text: '질문' }, { id: 'a1', role: 'assistant', text: '답' }];
+  S.render();
+  const n = S.local('### 다시 계산 · 시트!$A$1:$B$9\n\n```formula\n=SUM(A:A)\n```\n\n| 구분 | 합계 |\n|---|--:|\n| 가 | ₩1,000 |');
+  t('local 이 블록 수를 돌려준다', n === 1);
+  let rows = rowsText(S);
+  t('블록이 마지막 메시지 뒤에 들어간다', rows[0][2] === '질문' && rows[1][2] === '답' && rows[2][1] === 'local');
+  t('첫 행은 라벨 행 — 화면에만 있는 출력', /화면에만 있는 출력/.test(rows[2][2]) && /서버로 가지 않습니다/.test(rows[2][2]));
+  t('라벨 행에 시각', /\d\d:\d\d/.test(rows[2][3]));
+  const lrows = S.ui.body.children.filter((tr) => tr.dataset.local);
+  t('블록 행마다 표시가 붙는다 (점선)', lrows.length === rows.length - 2);
+  t('점선의 처음과 끝', lrows[0].dataset.local === 'first' && lrows.at(-1).dataset.local === 'last'
+    && lrows.slice(1, -1).every((tr) => tr.dataset.local === 'mid'));
+  const fxRow = lrows.find((tr) => tr.children[2].children.some((c) => c.className === 'gs-fxchip'));
+  t('수식 행에 fx 표시', !!fxRow && fxRow.children[2].textContent === 'fx=SUM(A:A)');
+  fxRow.children[2].dispatch('mousedown');
+  S.ui.grid.dispatch('keydown', { key: 'c', metaKey: true });
+  t('fx 표시는 복사하지 않는다', calls.copy.at(-1) === '=SUM(A:A)');
+  t('블록의 표도 칸으로 나뉜다', lrows.some((tr) => tr.children[2].dataset.kind === 'table' && tr.children[2].children.length === 2));
+
+  state.messages = state.messages.concat([{ id: 'u2', role: 'user', text: '다음 질문' }]);
+  S.render();
+  rows = rowsText(S);
+  t('새 메시지가 와도 블록은 제자리 (새 글은 블록 아래)', rows.at(-1)[2] === '다음 질문' && rows[2][1] === 'local');
+
+  S.local('두번째');
+  t('두 번째 블록은 그때의 마지막 메시지 뒤', rowsText(S).at(-2)[1] === 'local' && rowsText(S).at(-1)[2] === '두번째');
+  const only = S.ui.body.children.at(-1);
+  t('한 행짜리 끝 행도 점선 끝', only.dataset.local === 'last');
+
+  const gone = S.clearLocal();
+  t('clearLocal 은 걷어낸 블록 수를 돌려준다', gone === 2);
+  t('걷어내면 블록 행이 없다', S.ui.body.children.every((tr) => !tr.dataset.local) && rowsText(S).length === 3);
+}
+{
+  const sheet = read('src/content/skins/sheet.js');
+  t('움직이는 점선 CSS 가 있다', /@keyframes gs-ants-2/.test(sheet) && /tr\[data-local="first"\] > td\.gs-b/.test(sheet));
+  t('움직임 줄이기면 멈춘다', /prefers-reduced-motion: reduce\) \{ \.gs-grid > table > tbody > tr\[data-local\] > td\.gs-b \{ animation: none;/.test(sheet));
+  t('fx 칩이 수식 입력줄의 클래스(.gs-fx)와 겹치지 않는다', !/el\('span', 'gs-fx',/.test(sheet) && /'gs-fxchip'/.test(sheet));
+  t('끼우는 순서는 renderplan 이 갖는다', /GT\.renderplan\.interleave\(keys, localLog\)/.test(sheet));
+  t('라벨 문구는 사전에서 (ko · en)', /'sheet\.local\.label'/.test(read('src/shared/i18n.js'))
+    && (read('src/shared/i18n.js').match(/'sheet\.local\.label'/g) || []).length === 2);
 }
 
 // 이 파일의 CSS 는 스타일 문자열이라 CSS.escape 가 없다 — 고른 행이 사라질 때 TypeError (0.17.1)

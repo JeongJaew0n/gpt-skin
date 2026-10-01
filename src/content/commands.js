@@ -459,64 +459,8 @@ GT.commands = (function () {
   // ------------------------------------------------------------------ messup
   //
   // 화면에만 끼워 넣는 가짜 출력. 서버로 가지 않고 대화 기록에도 안 남는다.
-  // 바쁜 척하는 용도다 — 그래서 '있어 보이는' 모양(빌드 로그·해시·코드블록)을 쓴다.
+  // 생성기는 src/content/messup.js — 스킨이 맛을 고른다(skin.messup, 없으면 terminal).
   // 지우려면 :messup clear.
-  const pick = (a) => a[Math.floor(Math.random() * a.length)];
-  const hex = (n) => Array.from({ length: n }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');
-  const num = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-  const ms = () => (Math.random() * 900 + 12).toFixed(1);
-
-  const NOUNS = ['kernel', 'shard', 'pipeline', 'lattice', 'vector', 'planner', 'reducer',
-    'quorum', 'ledger', 'tensor', 'segment', 'manifold', 'router', 'cache'];
-  const VERBS = ['reticulating', 'transposing', 'annealing', 'quantizing', 'rebalancing',
-    'compacting', 'gossiping', 'coalescing', 'vectorizing', 'defragmenting'];
-  const UNITS = ['MiB', 'ops/s', 'μs', 'shards', 'blocks', 'frames'];
-
-  const LOG = () => `\`\`\`log
-[${hex(8)}] ${pick(VERBS)} ${pick(NOUNS)}… ${num(3, 99)}% (${ms()}ms)
-[${hex(8)}] ${pick(NOUNS)} ${num(2, 64)} → ${num(65, 512)} ${pick(UNITS)}
-[${hex(8)}] warn  ${pick(NOUNS)} drift ${(Math.random() * 2).toFixed(3)}σ — within tolerance
-[${hex(8)}] ok    ${num(120, 9800)} ${pick(UNITS)} in ${ms()}ms
-\`\`\``;
-
-  const CODE = () => {
-    const n = pick(NOUNS);
-    return `\`\`\`ts
-export async function ${pick(VERBS).replace(/ing$/, '')}${n[0].toUpperCase() + n.slice(1)}(
-  input: ReadonlyArray<Uint8Array>,
-  opts: { window: number; epsilon?: number } = { window: ${num(8, 256)} }
-): Promise<${n[0].toUpperCase() + n.slice(1)}Result> {
-  const ε = opts.epsilon ?? ${(Math.random() * 0.1).toFixed(4)};
-  const acc = new Float64Array(opts.window);
-  for (const chunk of input) {
-    if (chunk.byteLength % ${num(2, 16)} !== 0) continue;   // ${hex(4)}
-    acc[chunk[0] % acc.length] += chunk.byteLength * (1 - ε);
-  }
-  return { checksum: 0x${hex(8)}, spread: acc.reduce((a, b) => a + b, 0) };
-}
-\`\`\``;
-  };
-
-  const TABLE = () => `| ${pick(NOUNS)} | ${pick(UNITS)} | drift |
-|---|--:|--:|
-| ${hex(6)} | ${num(10, 999)} | ${(Math.random()).toFixed(3)} |
-| ${hex(6)} | ${num(10, 999)} | ${(Math.random()).toFixed(3)} |
-| ${hex(6)} | ${num(10, 999)} | ${(Math.random()).toFixed(3)} |`;
-
-  const PROSE = () => [
-    `**${pick(NOUNS)}** ${num(2, 9)}단계까지 ${pick(VERBS)} 완료. 잔여 편차는 무시 가능한 수준이다.`,
-    `- ${pick(NOUNS)} 재정렬 → ${num(3, 40)}개 세그먼트 병합`,
-    `- ${pick(NOUNS)} 체크섬 \`${hex(12)}\` 검증됨`,
-    `- 다음 단계: ${pick(VERBS)} ${pick(NOUNS)} (예상 ${ms()}ms)`
-  ].join('\n');
-
-  function messup() {
-    const head = `### ${pick(VERBS)} ${pick(NOUNS)} · ${hex(6)}`;
-    const blocks = [head, PROSE(), LOG(), CODE()];
-    if (Math.random() < 0.5) blocks.push(TABLE());
-    return blocks.join('\n\n');
-  }
-
   def(':messup', '화면에만 가짜 출력을 끼워 넣습니다 — :messup [횟수|clear]', (args) => {
     const a = (args[0] || '').toLowerCase();
     if (a === 'clear' || a === 'off') {
@@ -527,7 +471,7 @@ export async function ${pick(VERBS).replace(/ing$/, '')}${n[0].toUpperCase() + n
     let n = parseInt(a, 10);
     if (!Number.isFinite(n) || n < 1) n = 1;
     n = Math.min(n, 10);
-    for (let i = 0; i < n; i += 1) GT.skin.current.local(messup());
+    for (let i = 0; i < n; i += 1) GT.skin.current.local(GT.messup.make(GT.skin.current.messup));
     info(`${n}개 끼워 넣었습니다 — 서버로 가지 않습니다. :messup clear 로 걷어냅니다`);
   }, null, (prev) => (prev.length ? [] : ['clear']));
 

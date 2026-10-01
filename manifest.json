@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "description": "__MSG_extDesc__",
   "minimum_chrome_version": "111",
   "icons": {
@@ -78,6 +78,7 @@
         "src/content/compose.js",
         "src/content/picker.js",
         "src/content/navigate.js",
+        "src/content/messup.js",
         "src/content/commands.js",
         "src/content/health.js",
         "src/content/shell/prompt.js",

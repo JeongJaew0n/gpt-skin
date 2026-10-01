@@ -151,15 +151,17 @@ expando 라 isolated world 에서 보이지 않는다. 반대로 `chrome.storage
 
 ### (e) `:messup` 이 deceptive 가 아닌 이유
 
-> One command, `:messup`, inserts placeholder text (fake build logs and code) into the
-> terminal view. It exists as a novelty. It is **not** deceptive:
+> One command, `:messup`, inserts placeholder text into the view — fake build logs and code
+> in the terminal skin, fake spreadsheet recalculation output (formulas, totals) in the sheet skin.
+> It exists as a novelty. It is **not** deceptive:
 > it runs only when the user types the command, the inserted block is labelled
-> `local · :messup — 화면에만 있는 출력` ("shown on screen only") with a dashed marker,
+> `local · :messup — 화면에만 있는 출력` ("shown on screen only") with a dashed marker
+> (in the sheet skin, a moving dashed border like a copied cell range, plus a label row),
 > it is never sent to ChatGPT and never becomes part of the conversation, and
 > `:messup clear` removes it. No content is attributed to ChatGPT or to any third party.
 
 한국어 — 사용자가 직접 실행할 때만 동작하고, 블록에 "화면에만 있는 출력" 라벨과 점선
-표시가 붙고, ChatGPT 로 전송되지 않으며 대화 기록에도 안 남는다. `:messup clear` 로 지운다.
+표시가 붙고(sheet 스킨은 라벨 행 + 복사한 범위처럼 움직이는 점선), 출력에 제품 이름(Excel 등)을 쓰지 않고, ChatGPT 로 전송되지 않으며 대화 기록에도 안 남는다. `:messup clear` 로 지운다.
 어떤 내용도 ChatGPT 나 제3자의 것으로 표시하지 않는다.
 
 ### (f) 원본 UI 를 숨기는 방식
