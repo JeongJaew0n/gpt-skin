@@ -531,8 +531,18 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   await C.run(':chats off'); t(':chats off', cfgStore['sheet.chatTabs'] === false);
   await C.run(':chats 아무거나'); t('모르는 인자는 사용법', said.at(-1)[0] === 'error' && /사용법/.test(said.at(-1)[1]));
   t('자동완성 on · off · toggle', ['on', 'off', 'toggle'].every((x) => C.complete(':chats ').candidates.includes(x)));
+  // 터미널에서는 사이드바를 켜고 끈다 (0.23.0)
+  sb.GT.skin.current.id = 'terminal';
+  const toggles = [];
+  sb.GT.sidebar.toggle = async (v) => { toggles.push(v); return v === undefined ? true : v; };
+  await C.run(':chats'); t('터미널 :chats 는 사이드바를 번갈아 켜고 끈다', toggles.at(-1) === undefined && /사이드바/.test(said.at(-1)[1]));
+  await C.run(':chats off'); t('터미널 :chats off', toggles.at(-1) === false && /숨깁니다/.test(said.at(-1)[1]));
+  await C.run(':chats on'); t('터미널 :chats on', toggles.at(-1) === true);
+  t('터미널에서는 시트 설정을 건드리지 않는다', cfgStore['sheet.chatTabs'] === false);
+  await C.run(':chats 뭐'); t('터미널에서도 모르는 인자는 사용법', said.at(-1)[0] === 'error' && toggles.length === 3);
   const tty = read('src/content/skins/terminal.js'), none = read('src/content/skins/none.js');
-  t('터미널 · none 에서는 숨긴다 (시트 전용)', /hiddenCommands: \[':chats'\]/.test(tty) && /hiddenCommands: \[[^\]]*':chats'/.test(none));
+  t('터미널에서는 숨기지 않는다', !/':chats'/.test((/hiddenCommands: \[[^\]]*\]/.exec(tty) || [''])[0]));
+  t('none 에서는 숨긴다 (원본에 목록이 있다)', /hiddenCommands: \[[^\]]*':chats'/.test(none));
   t('시트에서는 숨기지 않는다', !/':chats'/.test((/hiddenCommands: \[[^\]]*\]/.exec(read('src/content/skins/sheet.js')) || [''])[0]));
 }
 

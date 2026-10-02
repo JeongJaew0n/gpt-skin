@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1872](https://img.shields.io/badge/테스트-1872_케이스-22C55E)
+![테스트 1878](https://img.shields.io/badge/테스트-1878_케이스-22C55E)
 
 </div>
 
@@ -169,7 +169,7 @@ sheet 는 한 행에 한 줄로 그린다. A 열은 누가 말했는지, B 열�
 <tr><td><code>:log dump [n]</code> · <code>:log clear</code></td><td>쌓인 진단 줄 보기 / 비우기 <sub>(꺼져 있어도 쌓인다)</sub></td></tr>
 <tr><td><code>:version</code></td><td>지금 실행 중인 코드의 빌드 시각</td></tr>
 <tr><td><code>:reload</code></td><td>확장을 다시 읽고 이 탭을 새로고침 <sub>(<code>chrome://extensions</code> 의 ↻ + 새로고침과 같다)</sub></td></tr>
-<tr><td><code>:chats [on|off]</code></td><td>시트 아래쪽 탭에 대화 목록을 보이거나 숨긴다 <sub>(시트 전용 · 기본 숨김)</sub></td></tr>
+<tr><td><code>:chats [on|off]</code></td><td>대화 목록을 보이거나 숨긴다 — 시트는 아래쪽 탭 <sub>(기본 숨김)</sub>, 터미널은 사이드바</td></tr>
 <tr><td><code>:bug [clear]</code></td><td>버그 보고서를 복사한다 — 개발자에게 붙여 넣어 보낸다 <sub>(대화 내용은 안 들어간다)</sub></td></tr>
 <tr><td><code>:messup [횟수|clear]</code></td><td>화면에만 가짜 출력을 끼워 넣는다 <sub>(서버로 안 간다)</sub></td></tr>
 </table>
@@ -380,7 +380,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>51개 파일 · 1872 케이스</b></summary>
+<summary><b>51개 파일 · 1878 케이스</b></summary>
 
 <br>
 
@@ -478,7 +478,7 @@ tools/test.sh
 | 생각 중 표시 · 회전자 | 실제 테마 CSS 로 세 상태(추론 중 · 스트리밍 · 완료)를 렌더해 확인 |
 | 툴바 패널 글자 대비 | 계산 — 전부 4.5:1 이상 (도움말은 2.3 → 7.8) |
 | 인용 마커 | 실측 — API·SSE·fiber 세 경로의 표기를 각각 확인하고, 실제 응답 데이터로 렌더 |
-| 순수 로직 | 1872 케이스 통과 (위 표) |
+| 순수 로직 | 1878 케이스 통과 (위 표) |
 | 녹화 스트림 재생 | 실제 SSE 1건을 `tap.js` 에 재생 (`test/replay.test.mjs`) |
 | ProseMirror 주입 · 전송 버튼 활성화 | 실제 페이지에서 확인 |
 | SSE 가로채기 (`res.body.tee()`) | 실제 페이지에서 확인 |
