@@ -507,6 +507,35 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   t('CSS.escape 는 window 에서 꺼낸다', !/[^.\w]CSS\.escape\(/.test(sheet) && /window\.CSS\.escape\(/.test(sheet));
 }
 
+// ---------------------------------------------------------------- :chats — 시트 탭의 대화 목록 켜고 끄기 (0.21.2)
+{
+  const said = []; const cfgStore = { 'sheet.chatTabs': false };
+  const sb = { console, Object, Array, Set, Map, String, Number, Boolean, JSON, Math, Promise, Error, RegExp, Date,
+    location: { pathname: '/c/x' }, document: { createElement: () => ({ style: {}, appendChild() {}, addEventListener() {} }) } };
+  sb.window = sb; sb.globalThis = sb;
+  sb.GT = { theme: { names: () => [] }, config: { keys: () => [], get: (k) => cfgStore[k], set: async (k, v) => { cfgStore[k] = v; }, DEFAULTS: {} },
+    chats: { projects: () => [] }, store: { state: { messages: [] } },
+    skin: { hide() {}, current: { id: 'sheet', hiddenCommands: [], system: (l, x) => said.push([l, x]), applyConfig() {}, render() {} } },
+    sidebar: { chats: () => [], isOpen: () => false }, convops: {}, conversation: { idFromPath: () => 'x' }, picker: {}, navigate: {},
+    health: { CHECKS: {}, reasons: [] }, palette: {}, oai: {}, compose: {} };
+  vm.createContext(sb);
+  vm.runInContext(read('src/shared/i18n.js'), sb, { filename: 'i18n.js' });
+  vm.runInContext(read('src/content/commands.js'), sb, { filename: 'commands.js' });
+  const C = sb.GT.commands;
+  await C.run(':chats');
+  t(':chats 는 켜고 끄기를 번갈아 한다 (꺼짐 → 켜짐)', cfgStore['sheet.chatTabs'] === true && /보입니다/.test(said.at(-1)[1]));
+  await C.run(':chats');
+  t('한 번 더 치면 끈다', cfgStore['sheet.chatTabs'] === false && /숨깁니다/.test(said.at(-1)[1]));
+  await C.run(':chats on'); t(':chats on', cfgStore['sheet.chatTabs'] === true);
+  await C.run(':chats on'); t('on 은 켠 채로 둔다', cfgStore['sheet.chatTabs'] === true);
+  await C.run(':chats off'); t(':chats off', cfgStore['sheet.chatTabs'] === false);
+  await C.run(':chats 아무거나'); t('모르는 인자는 사용법', said.at(-1)[0] === 'error' && /사용법/.test(said.at(-1)[1]));
+  t('자동완성 on · off · toggle', ['on', 'off', 'toggle'].every((x) => C.complete(':chats ').candidates.includes(x)));
+  const tty = read('src/content/skins/terminal.js'), none = read('src/content/skins/none.js');
+  t('터미널 · none 에서는 숨긴다 (시트 전용)', /hiddenCommands: \[':chats'\]/.test(tty) && /hiddenCommands: \[[^\]]*':chats'/.test(none));
+  t('시트에서는 숨기지 않는다', !/':chats'/.test((/hiddenCommands: \[[^\]]*\]/.exec(read('src/content/skins/sheet.js')) || [''])[0]));
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

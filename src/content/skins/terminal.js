@@ -725,7 +725,7 @@
     defaultTheme: 'modern-dark',
     // 정본은 스키마의 skin: 'terminal' 표시다. 여기에 또 적으면 갈린다.
     get configKeys() { return GT_SCHEMA.filter((f) => f.skin && GT_SKIN_HAS(f, 'terminal')).map((f) => f.key); },
-    hiddenCommands: [],
+    hiddenCommands: [':chats'],          // 시트 탭 줄 전용
     messup: 'terminal',
 
     get ui() { return ui; },      // 계약 밖. 다른 모듈이 의존하면 안 된다 (test/skin.test.mjs 가 막는다)
