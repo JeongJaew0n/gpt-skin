@@ -1,6 +1,6 @@
 # 탭별 스킨 — '탭별로 분할 적용' 옵션
 
-작성: 2026-10-02 · 목표 버전 0.27.0 (새 설정 항목 · 사용자가 보는 동작 변경 → MINOR) · **아직 구현하지 않았다**
+작성 · 구현: 2026-10-02 · 0.26.8 ~ 0.28.1
 
 ## 1. 무엇을 하나
 
@@ -94,3 +94,48 @@
 3. `:skin` · `:skin default` + 검사
 4. 팝업 · 옵션 화면 + 검사
 5. 보고서 표시 · README 명령 표
+
+## 9. 결과 (2026-10-02)
+
+| 단계 | 버전 | 커밋 |
+|---|---|---|
+| 1 서비스 워커 저장소 | 0.26.8 | `ee3acb2` |
+| 2 설정 항목 · 부팅 · 따라가기 | 0.27.0 | `6744007` |
+| 3 `:skin` · `:skin default` | 0.27.1 | `530dadc` — 새 명령인데 PATCH 로 올렸다(규칙 위반). 0.28.0 에서 MINOR 로 맞췄다 |
+| 4 팝업 · 설정 화면 | 0.28.0 | `36db0af` |
+| 5 보고서 표시 · README | 0.28.1 | `119123b` |
+
+`tools/test.sh` 2059 케이스 · 56개 파일 통과. 새 검사는 모두 고친 코드를 깨뜨려 실패하는 것을 확인했다.
+
+### 헤드리스 크롬 실측 (크롬 154, 확장을 `Extensions.loadUnpacked` 로 올림, 비로그인 chatgpt.com 탭 둘) `[확정]`
+
+```
+set perTab: ok
+A skin terminal · B skin terminal
+A :skin sheet → sheet
+after: A sheet tabSkin=sheet · B terminal tabSkin=null
+session store: {"tabSkin.1496605707":"sheet"}
+global skin: {"skin":"terminal"}
+:skin default none (on B) → done
+after default: A sheet · B none            ← 따로 고른 A 는 그대로, B 는 기본을 따름
+cold askSW ms: 13 / 4 / 5                    ← ServiceWorker.stopAllWorkers 뒤
+warm askSW ms: 1 / 1 / 1
+after close A, session store: {}             ← 탭을 닫으면 지움
+store before off: {"tabSkin.1496605708":"sheet"}
+after off: B none tabSkin=null · store {}    ← 옵션을 끄면 기본으로 · 저장소 비움
+```
+
+새로고침 직후 화면(호스트 · shadow 안 루트) 시간순 — 깜빡임 없음:
+
+```
+warm reload timeline:    [[2,"-"],[11,"sheet"]]
+cold SW reload timeline: [[2,"-"],[15,"sheet"]]
+```
+
+- §6 의 부팅 기다림: 잠든 서비스 워커도 수 ms 안에 답해 300ms 상한에 닿지 않았다. 잠정안(300ms 까지 기다림)을 그대로 둔다
+- 처음 잰 'A after reload: terminal' 은 측정 오류였다 — 부팅이 `use()` 에 닿기 전에 `GT.skin.current`(기본값 getter)를 읽었다. 화면 시간순으로 다시 재서 확인
+
+### 남은 것 `[미정]`
+- 로그인한 실제 ChatGPT 에서 탭 둘 — 확인 방법: 설정에서 켜고 한 탭에서 `:skin sheet`, 다른 탭이 그대로인지 · 새로고침해도 시트인지
+- 재주입(확장 업데이트) 때 이어받는지 — 같은 tabId 로 다시 묻는 구조라 이어질 것으로 본다 `[가정]`
+- 이 탭을 '기본 따르기' 로 되돌리는 명령은 없다. 옵션을 껐다 켜면 모두 되돌아간다 (필요하면 `:skin follow` 같은 것을 따로 정한다)
