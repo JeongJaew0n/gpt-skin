@@ -262,6 +262,46 @@ function loadHealth() {
   t('원본 화면이 짧았던 것을 기록한다', /GT\.bugs\.record\('original-partial'/.test(idx));
 }
 
+// ---------------------------------------------------------------- 편집기가 여럿일 때 (0.22.1)
+// 테스터 보고(0.22.0): contenteditable 3개 · send-failed ×6 inject-rejected. 숨은 편집기를 골랐다고 본다 [가정].
+{
+  const mk = ({ editors, accept }) => {
+    let active = null;
+    const ed = editors.map((o, k) => ({ tagName: 'DIV', textContent: '', name: o.name,
+      getClientRects: () => (o.hidden ? [] : [{}]), getBoundingClientRect: () => (o.hidden ? { width: 0, height: 0 } : { width: 400, height: 36 }),
+      closest: () => ({}), focus() { if (!o.hidden) active = this; }, dispatchEvent() {} }));
+    const sb = { console, Object, Array, String, JSON, Promise, Error, RegExp, Set, Math,
+      Event: function Event(type) { this.type = type; },
+      requestAnimationFrame: (f) => setTimeout(f, 0), setTimeout,
+      window: { getSelection: () => ({ removeAllRanges() {}, addRange() {} }) },
+      document: {
+        get activeElement() { return active; },
+        querySelector: (q) => (q.includes('[contenteditable') ? ed[0] : null),
+        querySelectorAll: (q) => (q === 'form[data-chatgpt-composer] [contenteditable="true"]' ? [ed[0]] : (q === '.ProseMirror[contenteditable="true"]' ? ed : [])),
+        createRange: () => ({ selectNodeContents() {} }),
+        execCommand: (_c, _u, text) => { if (!active || !accept.includes(active.name)) return false; active.textContent = text; return true; },
+        hasFocus: () => true, visibilityState: 'visible' } };
+    sb.GT = { skin: { current: { focus() {} } }, bugs: { record() {} } };
+    vm.createContext(sb);
+    vm.runInContext(read('src/content/compose.js'), sb, { filename: 'compose.js' });
+    return { C: sb.GT.compose, ed };
+  };
+  // 폼 안의 첫 편집기가 숨어 있고, 보이는 것은 둘째
+  let r = mk({ editors: [{ name: 'hidden', hidden: true }, { name: 'visible' }, { name: 'other' }], accept: ['visible', 'other'] });
+  t('보이는 편집기를 먼저 고른다 (숨은 것이 목록 앞에 있어도)', r.C.composer() === r.ed[1]);
+  t('보이는 편집기에 넣는다', r.C.tryInject('보낼 글') === '' && r.ed[1].textContent === '보낼 글' && r.ed[0].textContent === '');
+  // 보이는 첫 후보가 거절하면 다음 후보로
+  r = mk({ editors: [{ name: 'a' }, { name: 'b' }], accept: ['b'] });
+  t('거절하면 다음 후보로 넘어가 넣는다', r.C.tryInject('x') === '' && r.ed[1].textContent === 'x');
+  r = mk({ editors: [{ name: 'a' }, { name: 'b' }], accept: [] });
+  t('모두 거절하면 inject-rejected', r.C.tryInject('x') === 'inject-rejected');
+  r = mk({ editors: [{ name: 'hidden', hidden: true }, { name: 'visible' }], accept: ['visible'] });
+  const p = r.C.probe();
+  t('보고서에 후보별 크기 · 보임 · 초점', p.candidates.length === 2 && p.candidates[0].shown === true && p.candidates[1].shown === false
+    && p.candidates[1].w === 0 && 'active' in p.candidates[0] && 'inForm' in p.candidates[0]);
+  t('보고서의 found 는 실제로 고를 후보', p.found === '.ProseMirror[contenteditable="true"]');
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

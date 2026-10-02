@@ -34,6 +34,7 @@ function load(dom) {
     window: { getSelection: () => ({ removeAllRanges() {}, addRange() {} }) },
     document: {
       querySelector: (sel) => (made[sel] || (dom.button && /send-button|메시지 보내기|submit/.test(sel) ? dom.button : null)),
+      querySelectorAll: (sel) => (made[sel] ? [made[sel]] : []),
       createRange: () => ({ selectNodeContents() {} }),
       execCommand: (cmd, _u, text) => (dom.execCommand ? dom.execCommand(cmd, text, made) : false)
     }

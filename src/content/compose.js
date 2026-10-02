@@ -28,13 +28,31 @@ GT.compose = (function () {
   const SELECTOR = COMPOSERS.join(', ');
   const raf = () => new Promise((r) => requestAnimationFrame(() => r()));
 
-  const composer = () => {
-    for (const sel of COMPOSERS) {
-      const el = document.querySelector(sel);
-      if (el) return el;
-    }
-    return null;
+  // 화면에 실제로 보이는가. 숨긴 요소(display none · 크기 0)에는 초점이 안 들어가 글 넣기가 거절된다.
+  const shown = (el) => {
+    if (!el || typeof el.getClientRects !== 'function') return true;      // 판단할 수 없으면 보인다고 본다
+    if (!el.getClientRects().length) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
   };
+
+  // 후보 전부. 목록 순서대로, 겹치면 한 번만. 보이는 것을 앞에 둔다.
+  //
+  // 테스터 보고(2026-10-02, 0.22.0): 편집기가 3개 있는 화면에서 send-failed · inject-rejected 가 6번.
+  // 예전에는 목록의 첫 모양에 걸리는 첫 요소를 보이는지 따지지 않고 골랐다 — 숨은 편집기를 골랐다고 본다 [가정].
+  function candidates() {
+    const seen = new Set();
+    const all = [];
+    COMPOSERS.forEach((sel, i) => {
+      let list = [];
+      try { list = document.querySelectorAll(sel); } catch (_) { list = []; }
+      Array.from(list || []).forEach((el) => { if (!seen.has(el)) { seen.add(el); all.push({ el, i }); } });
+    });
+    return all.filter((c) => shown(c.el)).concat(all.filter((c) => !shown(c.el)));
+  }
+
+  const composer = () => { const c = candidates()[0]; return c ? c.el : null; };
+  let lastUsed = null;                 // 마지막으로 글을 넣은 입력창 — 보냈는지 확인할 때 같은 것을 본다
 
   function stopButton() {
     return document.querySelector('[data-testid="stop-button"]')
@@ -72,9 +90,21 @@ GT.compose = (function () {
   //
   // ProseMirror 는 value 대입을 무시한다. beforeinput 을 발생시키는 execCommand 로 넣는다.
   const squash = (t) => String(t || '').replace(/\s+/g, '');
+  // 보이는 후보부터 넣어 본다. 브라우저가 거절하면(inject-rejected) 다음 후보로 — 거절은 아무것도 안 바꾸므로 안전하다.
+  // 글이 들어갔는데 다르면(mismatch) 거기서 멈춘다 — 다른 곳에 또 넣으면 두 군데에 글이 남는다.
   function tryInject(text) {
-    const pm = composer();
-    if (!pm) return 'composer-not-found';
+    const list = candidates();
+    if (!list.length) return 'composer-not-found';
+    let why = 'inject-rejected';
+    for (const c of list) {
+      why = injectInto(c.el, text);
+      if (why === '') { lastUsed = c.el; return ''; }
+      if (why !== 'inject-rejected') return why;
+    }
+    return why;
+  }
+
+  function injectInto(pm, text) {
     if (pm.tagName === 'TEXTAREA' || pm.tagName === 'INPUT') return injectTextarea(pm, text) ? '' : 'inject-mismatch';
     pm.focus();
     const sel = window.getSelection();
@@ -92,13 +122,21 @@ GT.compose = (function () {
   }
   const inject = (text) => tryInject(text) === '';
 
-  // 보고서(:bug)에 넣을 입력창 상태. 글 내용은 넣지 않는다 — 개수 · 있음/없음만.
+  // 보고서(:bug)에 넣을 입력창 상태. 글 내용은 넣지 않는다 — 개수 · 크기 · 있음/없음만.
   function probe() {
     const q = (s) => { try { return document.querySelectorAll(s).length; } catch (_) { return -1; } };
-    const found = COMPOSERS.findIndex((s) => q(s) > 0);
+    const list = candidates();
+    const first = list[0];
     return {
-      found: found < 0 ? 'none' : COMPOSERS[found],
+      found: first ? COMPOSERS[first.i] : 'none',
       counts: COMPOSERS.map(q),
+      // 후보마다: 어느 모양으로 · 크기 · 보이나 · 초점 · 폼 안인가 (최대 6개)
+      candidates: list.slice(0, 6).map((c) => {
+        let w = null, h = null;
+        try { const r = c.el.getBoundingClientRect(); w = Math.round(r.width); h = Math.round(r.height); } catch (_) {}
+        return { i: c.i, w, h, shown: shown(c.el), active: c.el === document.activeElement,
+          inForm: !!(c.el.closest && c.el.closest('form')) };
+      }),
       contenteditable: q('[contenteditable="true"]'),
       textarea: q('textarea'),
       sendButton: !!sendButton(),
@@ -117,7 +155,7 @@ GT.compose = (function () {
     if (btn && !btn.disabled) {
       btn.click();
     } else {
-      const pm = composer();
+      const pm = lastUsed || composer();
       ['keydown', 'keypress', 'keyup'].forEach((type) => {
         pm.dispatchEvent(new KeyboardEvent(type, {
           key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
@@ -145,7 +183,7 @@ GT.compose = (function () {
   };
   function watchSent(text) {
     setTimeout(() => {
-      if (!holding(composer(), text)) return;
+      if (!holding(lastUsed || composer(), text)) return;
       try { GT.bugs.record('not-sent', '원본이 2초 안에 입력창을 비우지 않았다', probe()); } catch (_) {}
       // health.soft 는 같은 사유를 한 번만 찍는다 — 보낼 때마다 알려야 하므로 직접 찍는다
       try { GT.skin.current.system('warn', GT_T('compose.notSent')); } catch (_) {}
