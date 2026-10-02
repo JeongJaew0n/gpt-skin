@@ -13,7 +13,8 @@ function load({ anchors = {}, path = '/c/a', state = { idx: 3 } } = {}) {
   const calls = { pushed: [], pops: [], clicks: [], assigned: [], records: [] };
   const timers = [];
   const loc = { pathname: path, assign: (h) => calls.assigned.push(h) };
-  const hist = { state, pushState(st, _t, url) { this.state = st; calls.pushed.push([st, url]); } };
+  // 브라우저처럼 pushState 하면 곧바로 주소가 바뀐다
+  const hist = { state, pushState(st, _t, url) { this.state = st; calls.pushed.push([st, url]); loc.pathname = url; } };
   const sb = { console, Object, Math, String, Number,
     location: loc, history: hist,
     CSS: { escape: (x) => x },
@@ -63,6 +64,38 @@ function load({ anchors = {}, path = '/c/a', state = { idx: 3 } } = {}) {
   const L = load({ path: '/c/b' });
   t('이미 그 대화면 아무것도 안 한다', L.N.to('/c/b') === true && L.calls.pushed.length === 0 && L.calls.clicks.length === 0);
   t('newChat 은 / 로', (() => { const M = load(); M.N.newChat(); return M.calls.pushed[0][1] === '/'; })());
+}
+
+// 빠르게 연달아 이동해도 페이지를 새로 열지 않는다 (0.25.1)
+// 사용자 보고: 단축키를 연달아 누르면 스킨이 벗겨진다 — 앞선 이동의 확인이 '주소가 A 가 아니다' 로 읽혀 A 로 새로 열었다
+{
+  const L = load();                       // 지금 /c/a
+  L.N.to('/c/b');                         // pushState 로 주소는 /c/b
+  L.N.to('/c/c');                         // 곧바로 다음 탭 → /c/c
+  L.timers.forEach((x) => x.f());         // 두 확인이 다 돈다
+  t('연달아 이동하면 앞선 확인은 아무것도 안 한다', L.calls.assigned.length === 0 && L.loc.pathname === '/c/c');
+}
+{
+  const L = load();
+  L.N.to('/c/b');
+  L.loc.pathname = '/c/zz';               // 원본 링크 등 다른 경로로 움직였다
+  L.timers.forEach((x) => x.f());
+  t('다른 곳으로라도 움직였으면 새로 열지 않는다', L.calls.assigned.length === 0);
+}
+{
+  const L = load();
+  L.N.to('/c/b'); L.N.to('/c/c');
+  L.loc.pathname = '/c/b';                // 마지막 이동(b → c)이 되돌려져 출발지 b 로
+  L.timers.forEach((x) => x.f());
+  t('마지막 이동이 되돌려졌을 때만 새로 연다 (그것도 마지막 목적지로)', L.calls.assigned.length === 1 && L.calls.assigned[0] === '/c/c');
+}
+
+{
+  // 왕복: Ctrl+. 로 a → b, 곧바로 Ctrl+, 로 b → a. 첫 확인이 '출발지 a 그대로' 로 읽히면 b 로 새로 열어 버린다
+  const L = load();
+  L.N.to('/c/b'); L.N.to('/c/a');
+  L.timers.forEach((x) => x.f());
+  t('왕복해도 새로 열지 않는다 (마지막 이동만 확인한다)', L.calls.assigned.length === 0 && L.loc.pathname === '/c/a');
 }
 
 let bad = 0;
