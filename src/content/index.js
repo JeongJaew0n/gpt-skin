@@ -469,8 +469,9 @@
       lastPath = location.pathname;
       GT.tabs.open(location.pathname, '');      // 연 대화는 탭에 들어간다 (새 대화 화면 / 은 들어가지 않는다)
       if (GT.conversation.idFromPath()) {
-        GT.tabs.loading(true);
-        pull('route').then((ok) => { GT.tabs.loading(false); if (!ok) GT.toMain('harvest'); });
+        // 번호를 들고 간다 — 빨리 넘기면 앞선 대화의 응답이 먼저 와도 지금 대화를 받는 표시를 끄지 않는다
+        const lt = GT.tabs.loading(true);
+        pull('route').then((ok) => { GT.tabs.loading(false, lt); if (!ok) GT.toMain('harvest'); });
       } else {
         // 새 대화 화면(/). 수확할 대화가 없다 — 수확을 기다리지 말고 바로 비운다.
         // 안 비우면 본문만 사라지고 상단바·탭에 이전 대화 제목이 남는다.

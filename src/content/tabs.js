@@ -125,8 +125,22 @@ GT.tabs = (function () {
   }
 
   // 대화 원본을 받는 중인가 — 탭에 작은 표시 · 본문 위 로딩바 (막지 않는다)
+  // 켤 때 번호를 돌려준다. 끌 때 번호를 주면 그게 마지막 켜기일 때만 끈다 —
+  // A 를 받는 사이 B 로 넘어가면 A 가 먼저 끝나며 표시를 꺼서, B 를 받는 동안 이전 대화가 흐림 없이 보였다
+  // (리뷰 재현 2026-10-02). 번호 없이 끄면 예전처럼 그냥 끈다.
   let busy = false;
-  function loading(on) { if (busy === !!on) return; busy = !!on; syncBar(); emit(); }
+  let loadSeq = 0;
+  function loading(on, token) {
+    if (on) {
+      const mine = ++loadSeq;
+      if (!busy) { busy = true; syncBar(); emit(); }
+      return mine;
+    }
+    if (token !== undefined && token !== loadSeq) return 0;
+    if (!busy) return 0;
+    busy = false; syncBar(); emit();
+    return 0;
+  }
 
   // ---------------------------------------------------------------- 로딩바 (사용자 결정 2026-10-02)
   //

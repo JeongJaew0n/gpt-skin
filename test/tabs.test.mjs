@@ -236,6 +236,21 @@ const ids = (T) => T.list().map((x) => x.id).join(',');
   t('시트: 탭 줄을 숨겨도 지금 탭에 받는 중 표시', /tabEl\(\(s\.conversationTitle \|\| T\('sheet\.newChat'\)\) \+ \(busy \? ' …' : ''\), true\)/.test(sheet));
 }
 
+// 빨리 넘길 때 앞선 대화의 응답이 먼저 와도 표시를 끄지 않는다 (0.26.3, 리뷰 재현 2026-10-02)
+{
+  const { T } = load({ path: '/c/a' });
+  const a = T.loading(true);                 // A 로 이동 — 받는 중
+  const b = T.loading(true);                 // 받기 전에 B 로 이동
+  T.loading(false, a);                       // A 응답이 먼저 왔다
+  t('앞선 이동의 응답이 먼저 와도 지금 대화를 받는 중 표시는 남는다', T.isLoading() === true);
+  T.loading(false, b);
+  t('마지막 이동의 응답이 오면 끈다', T.isLoading() === false);
+  T.loading(true); T.loading(false);
+  t('번호 없이 끄면 예전처럼 끈다', T.isLoading() === false);
+  const idx = read('src/content/index.js');
+  t('라우팅 감시가 번호를 들고 pull 이 끝나면 넘긴다', /const lt = GT\.tabs\.loading\(true\);\s*pull\('route'\)\.then\(\(ok\) => \{ GT\.tabs\.loading\(false, lt\);/.test(idx));
+}
+
 // 브라우저 탭 두 개가 같은 저장소를 쓴다 — 서로의 탭을 지우지 않는다 (0.26.1, 리뷰 재현 2026-10-02)
 // 진짜 chrome.storage 처럼 set 이 끝나면 모든 인스턴스의 onChanged 를 부른다.
 {
