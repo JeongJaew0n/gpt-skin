@@ -37,7 +37,11 @@ if (line) {
   const iWin = idx.indexOf("window.addEventListener('keydown'");
   const iWinGuard = idx.indexOf('if (composing(e)) return;', iWin);
   const iToggle = idx.indexOf("e.code === 'Backquote' && e.ctrlKey", iWin);   // 2026-09-29 물리 키로
-  t('전역 핸들러도 맨 앞에서 막는다', iWinGuard > iWin && iWinGuard < iToggle);
+  // 단, 토글 키는 가드보다 먼저 본다 — 맥 한글 입력 상태에선 조합 중이 아니어도 keyCode 229 로 와서
+  // 가드 뒤에 두면 한글일 때 Ctrl+` 가 먹지 않았다 (사용자 보고 2026-10-02, 0.20.2)
+  t('토글 키는 조합 가드보다 먼저 본다', iToggle > iWin && iToggle < iWinGuard);
+  const iRest = idx.indexOf('opts.openCode && e.ctrlKey', iWin);
+  t('나머지 전역 키는 가드 뒤에 있다', iWinGuard < iRest);
 
   t('판별식이 두 핸들러보다 먼저 정의된다', idx.indexOf('const composing =') < iInput);
 }
@@ -52,6 +56,32 @@ if (line) {
 {
   t('증상을 주석에 적어뒀다', /':rename 안뇽' \+ Enter/.test(idx));
   t('추측이 아니라 실측이라고 적었다', /실측: 조합 중 Enter 가/.test(idx));
+}
+
+// --- 한글 입력 상태의 Ctrl+` 를 실제로 돌린다 ---
+{
+  let toggled = 0;
+  const input = new EventTarget();
+  Object.assign(input, { value: '', selectionStart: 0, selectionEnd: 0, style: {}, setSelectionRange() {}, focus() {} });
+  const win = new EventTarget();
+  const sb = { console, Object, Array, String, JSON, Promise, setTimeout, AbortController, Event, window: win,
+    GT: { skin: { visible: () => false, current: { setSuggest() {}, setMode() {}, syncFocus() {}, system() {}, focus() {} } },
+      store: { isStreaming: () => false, userHistory: () => [] },
+      commands: { parse: () => false, complete: () => ({ candidates: [] }), applyCompletion: () => null, run: async () => false, openPalette() {} },
+      compose: { stop: () => false, stopButton: () => null }, health: { soft() {} },
+      sidebar: { selecting: false, isOpen: () => false, filtering: false, element: null, toggle() {} }, palette: { isOpen: () => false } } };
+  vm.createContext(sb);
+  vm.runInContext(idx, sb, { filename: 'prompt.js' });
+  sb.GT.prompt.attach({ el: input, autosize() {} }, { toggle: () => { toggled++; }, capturesTyping: true });
+  const press = (props) => { const e = new Event('keydown', { cancelable: true }); Object.assign(e, { key: '₩', code: 'Backquote', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false, isComposing: false, keyCode: 192 }, props); win.dispatchEvent(e); return e; };
+  press({});
+  t('한글 모드(key ₩)에서도 Ctrl+` 로 켠다', toggled === 1);
+  const e2 = press({ keyCode: 229 });
+  t('keyCode 229(조합 중 표시)로 와도 켠다', toggled === 2 && e2.defaultPrevented);
+  press({ isComposing: true, keyCode: 229 });
+  t('조합 중에도 켠다', toggled === 3);
+  press({ ctrlKey: false, key: '₩' });
+  t('Ctrl 없이 ₩ 만 치면 켜지 않는다', toggled === 3);
 }
 
 let bad = 0;

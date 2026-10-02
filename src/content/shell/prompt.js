@@ -207,9 +207,12 @@ GT.prompt = (function () {
 
     // 전역 키
     window.addEventListener('keydown', (e) => {
-      if (composing(e)) return;
       // 토글 키는 물리 키로 본다. 맥 한글 입력 모드에서 이 키는 ₩(U+20A9) 를 내서 e.key 로는 놓친다 (UX 조사 B1).
+      // 조합 가드보다 먼저 본다 — 맥 한글 입력 상태에서는 조합 중이 아닌데도 keydown 이 '조합 중'(keyCode 229)으로
+      // 와서, 가드 뒤에 두면 한글일 때 Ctrl+` 가 먹지 않았다 (사용자 보고 2026-10-02).
+      // Ctrl 을 누른 채의 ` 는 글자를 만들지 않으므로 조합을 깨뜨릴 걱정이 없다.
       if (e.code === 'Backquote' && e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); opts.toggle(); return; }
+      if (composing(e)) return;
       // 스킨의 여닫기 키 (none 의 Ctrl+;). 숨어 있으면 열고 열려 있으면 닫는다. 물리 키(e.code)로 본다.
       // 실측 2026-09-24: 원본은 컴포저 포커스 상태에서 Ctrl+; 를 막지도 쓰지도 않는다.
       if (opts.openCode && e.ctrlKey && !e.metaKey && !e.altKey && e.code === opts.openCode) {
