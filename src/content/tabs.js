@@ -104,14 +104,51 @@ GT.tabs = (function () {
       const target = pending;
       pending = null;
       if (target) GT.navigate.to(target.href);
+      syncBar();
       emit();
     }, GO_DELAY_MS);
+    syncBar();
     return t;
   }
 
-  // 대화 원본을 받는 중인가 — 탭에 작은 표시만 띄운다 (막지 않는다)
+  // 대화 원본을 받는 중인가 — 탭에 작은 표시 · 본문 위 로딩바 (막지 않는다)
   let busy = false;
-  function loading(on) { if (busy === !!on) return; busy = !!on; emit(); }
+  function loading(on) { if (busy === !!on) return; busy = !!on; syncBar(); emit(); }
+
+  // ---------------------------------------------------------------- 로딩바 (사용자 결정 2026-10-02)
+  //
+  // 대화를 바꾸는 사이 본문에는 이전 대화가 남아 있다. 탭 구석의 ⠴ 만으로는 '아직 이전 대화' 라는 걸 놓친다.
+  // 그래서 본문 위에 얇은 막대를 띄우고 본문을 흐리게 한다. 빠른 로딩에서 번쩍이지 않게:
+  //   · BAR_DELAY_MS 넘게 걸릴 때만 띄운다
+  //   · 띄웠으면 BAR_MIN_MS 는 유지한다
+  // 두 스킨이 같은 규칙을 따르도록 판단은 여기서만 한다. 스킨은 barShown() 을 그리기만 한다.
+  const BAR_DELAY_MS = 300;
+  const BAR_MIN_MS = 300;
+  let barOn = false;
+  let barAt = 0;
+  const now = () => Date.now();
+  function setBar(on) {
+    if (barOn === on) return;
+    barOn = on;
+    if (on) barAt = now();
+    emit();
+  }
+  // 대기는 '받기 시작한 순간' 부터 센다 — 단축키를 계속 누르는 동안 다시 처음부터 세면 막대가 영영 안 뜬다.
+  let barWait = 0;                   // 띄우기 대기 중인 타이머
+  let barHide = 0;                   // 끄기 대기 중인 타이머
+  function syncBar() {
+    const want = busy || !!pending;
+    if (want) {
+      if (barHide) { clearTimeout(barHide); barHide = 0; }
+      if (!barOn && !barWait) barWait = setTimeout(() => { barWait = 0; if (busy || pending) setBar(true); }, BAR_DELAY_MS);
+      return;
+    }
+    if (barWait) { clearTimeout(barWait); barWait = 0; }
+    if (!barOn || barHide) return;
+    const left = BAR_MIN_MS - (now() - barAt);
+    if (left > 0) { barHide = setTimeout(() => { barHide = 0; if (!busy && !pending) setBar(false); }, left); return; }
+    setBar(false);
+  }
 
   function closeCurrent() {
     const cur = idOf(location.pathname);
@@ -128,6 +165,8 @@ GT.tabs = (function () {
     // 탭 줄이 '지금' 으로 강조할 대화 — 단축키로 옮겨 둔 탭이 있으면 그쪽
     activeId: () => (pending ? pending.id : idOf(location.pathname)),
     isLoading: () => busy || !!pending,
+    barShown: () => barOn,
+    BAR_DELAY_MS, BAR_MIN_MS,
     onChange(fn) { subs.push(fn); }
   };
 })();

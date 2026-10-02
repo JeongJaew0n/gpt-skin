@@ -94,6 +94,14 @@ GT.theme = (function () {
 .gt-tab-x { width: 1.2em; text-align: center; opacity: 0; cursor: pointer; border-radius: 3px; }
 .gt-tab:hover .gt-tab-x, .gt-tab[data-active="1"] .gt-tab-x { opacity: .7; }
 .gt-tab-x:hover { opacity: 1 !important; background: var(--gt-bg-3); }
+.gt-loadbar { position: relative; height: 2px; flex: 0 0 auto; overflow: hidden; }
+.gt-loadbar[data-on="1"]::before { content: ''; position: absolute; top: 0; bottom: 0; left: -30%; width: 30%;
+  background: var(--gt-green); animation: gt-loadbar 1s ease-in-out infinite; }
+@keyframes gt-loadbar { to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .gt-loadbar[data-on="1"]::before { animation: none; left: 0; width: 100%; opacity: .6; } }
+/* 받는 동안 본문은 아직 이전 대화다 — 흐리게 해서 새 대화로 착각하지 않게 */
+.gt-scroll { transition: opacity .15s linear; }
+.gt-root[data-loading="1"] .gt-scroll { opacity: .5; }
 .gt-tab-new { cursor: pointer; flex: 0 0 auto; color: var(--gt-fg-dim); border-right: 0; }
 .gt-tab-new:hover { color: var(--gt-fg); }
 

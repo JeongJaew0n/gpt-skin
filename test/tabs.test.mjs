@@ -10,17 +10,25 @@ function load({ stored, path = '/c/a' } = {}) {
   const store = { ...(stored ? { 'gt.openTabs': stored } : {}) };
   const nav = [];
   let clock = 1000;
-  let timer = null;
+  // 가짜 타이머 — 여러 개를 들고, 지연 시간별로 골라 돌린다 (이동 250ms · 로딩바 300ms)
+  let timers = []; let tid = 0;
   const sb = { console, Object, Array, String, Number, JSON, Math, Promise,
     Date: { now: () => (clock += 1) },
-    setTimeout: (f) => { timer = f; return 1; }, clearTimeout: () => { timer = null; },
+    setTimeout: (f, ms) => { timers.push({ id: ++tid, f, ms }); return tid; },
+    clearTimeout: (id) => { timers = timers.filter((x) => x.id !== id); },
     location: { pathname: path },
     chrome: { storage: { local: { get: async (k) => (k in store ? { [k]: store[k] } : {}), set: async (o) => { Object.assign(store, JSON.parse(JSON.stringify(o))); } } } } };
   sb.GT = { navigate: { to: (h) => { nav.push(h); sb.location.pathname = h; }, newChat: () => { nav.push('/'); sb.location.pathname = '/'; } } };
   vm.createContext(sb);
   vm.runInContext(read('src/content/tabs.js'), sb, { filename: 'tabs.js' });
-  const flush = () => { const f = timer; timer = null; if (f) f(); };
-  return { T: sb.GT.tabs, store, nav, sb, flush };
+  // ms 만큼 시간을 흘리고 그 안에 끝나는 타이머를 돌린다. 인자가 없으면 이동 타이머(250ms)까지.
+  const flush = (ms = 250) => {
+    clock += ms;
+    const due = timers.filter((x) => x.ms <= ms);
+    timers = timers.filter((x) => x.ms > ms).map((x) => ({ ...x, ms: x.ms - ms }));
+    due.forEach((x) => x.f());
+  };
+  return { T: sb.GT.tabs, store, nav, sb, flush, pending: () => timers.length };
 }
 const ids = (T) => T.list().map((x) => x.id).join(',');
 
@@ -194,6 +202,38 @@ const ids = (T) => T.list().map((x) => x.id).join(',');
   t('none 에서는 :close 를 숨긴다', /':close'/.test((/hiddenCommands: \[[^\]]*\]/.exec(read('src/content/skins/none.js')) || [''])[0]));
   const i18n = read('src/shared/i18n.js');
   ['cmd.close.desc', 'cmd.close.none', 'tabs.close', 'tabs.untitled'].forEach((k) => t(`문구 ${k} ko · en`, (i18n.match(new RegExp(`'${k.replace(/\./g, '\\.')}'`, 'g')) || []).length === 2));
+}
+
+// ---------------------------------------------------------------- 로딩바 (0.25.3)
+// 대화를 바꾸는 사이 본문에는 이전 대화가 남아 있다 — 본문 위에 얇은 막대 · 본문 흐림. 300ms 넘을 때만, 뜨면 300ms 는 유지.
+{
+  const { T, flush } = load({ path: '/c/a' });
+  T.open('/c/a', ''); T.open('/c/b', '');
+  T.loading(true);
+  t('받기 시작하자마자는 안 띄운다', T.barShown() === false);
+  flush(299); t('300ms 전에는 안 띄운다', T.barShown() === false);
+  flush(1); t('300ms 넘게 걸리면 띄운다', T.barShown() === true);
+  flush(100); T.loading(false);
+  t('뜬 지 300ms 안에 끝나도 바로 끄지 않는다 (번쩍임 방지)', T.barShown() === true);
+  flush(200); t('최소 300ms 를 채우면 끈다', T.barShown() === false);
+}
+{
+  const { T, flush } = load({ path: '/c/a' });
+  T.loading(true); flush(150); T.loading(false); flush(500);
+  t('빨리 끝나면 한 번도 안 띄운다', T.barShown() === false);
+}
+{
+  const { T, flush } = load({ path: '/c/a' });
+  T.open('/c/a', ''); T.open('/c/b', ''); T.open('/c/c', '');
+  T.go(1); flush(100); T.go(1); flush(100); T.go(1);
+  t('단축키를 계속 누르는 중에도 300ms 를 넘기면 띄운다 (누를 때마다 다시 세지 않는다)', (flush(100), T.barShown() === true));
+}
+{
+  const sheet = read('src/content/skins/sheet.js'), tty = read('src/content/skins/terminal.js'), theme = read('src/content/theme.js');
+  t('터미널: 본문 위 막대 · 본문 흐림', /ui\.loadbar = el\('div', 'gt-loadbar'\)/.test(tty) && /root\.dataset\.loading = on \? '1' : '0';/.test(tty) && /\.gt-root\[data-loading="1"\] \.gt-scroll \{ opacity:/.test(theme));
+  t('시트: 격자 위 막대 · 격자 흐림', /ui\.loadbar = el\('div', 'gs-loadbar'\)/.test(sheet) && /root\.dataset\.loading = on \? '1' : '0';/.test(sheet) && /\.gs-root\[data-loading="1"\] \.gs-grid \{ opacity:/.test(sheet));
+  t('움직임 줄이기면 흐르지 않는다', /prefers-reduced-motion: reduce\) \{ \.gt-loadbar/.test(theme) && /prefers-reduced-motion: reduce\) \{ \.gs-loadbar/.test(sheet));
+  t('시트: 탭 줄을 숨겨도 지금 탭에 받는 중 표시', /tabEl\(\(s\.conversationTitle \|\| T\('sheet\.newChat'\)\) \+ \(busy \? ' …' : ''\), true\)/.test(sheet));
 }
 
 let bad = 0;

@@ -148,6 +148,14 @@
   border-top: 1px solid var(--gs-hdr-b); background: var(--gs-hdr); font-size: 11.5px; user-select: none; }
 .gs-tabnav { display: flex; align-items: center; gap: 2px; padding: 0 4px; color: var(--gt-fg-dim); }
 .gs-tabnav[hidden] { display: none; }
+.gs-loadbar { position: relative; height: 2px; flex: 0 0 auto; overflow: hidden; background: #fff; }
+.gs-loadbar[data-on="1"]::before { content: ''; position: absolute; top: 0; bottom: 0; left: -30%; width: 30%;
+  background: var(--gs-accent); animation: gs-loadbar 1s ease-in-out infinite; }
+@keyframes gs-loadbar { to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .gs-loadbar[data-on="1"]::before { animation: none; left: 0; width: 100%; opacity: .6; } }
+/* 받는 동안 격자는 아직 이전 대화다 — 흐리게 */
+.gs-grid { transition: opacity .15s linear; }
+.gs-root[data-loading="1"] .gs-grid { opacity: .5; }
 .gs-tab-title { overflow: hidden; text-overflow: ellipsis; }
 .gs-tab-x { margin-left: 6px; width: 1.1em; text-align: center; opacity: 0; border-radius: 2px; }
 .gs-tab:hover .gs-tab-x, .gs-tab[data-on="1"] .gs-tab-x { opacity: .7; }
@@ -244,6 +252,8 @@
     fxbody.appendChild(ui.suggest);
     ui.fx.appendChild(fxbody);
 
+    // 대화를 받는 동안 격자 위에 뜨는 얇은 막대 (src/content/tabs.js). 자리는 늘 잡아 둔다
+    ui.loadbar = el('div', 'gs-loadbar');
     ui.grid = el('div', 'gs-grid');
     ui.grid.tabIndex = -1;
     const table = el('table');
@@ -305,7 +315,7 @@
 
     ui.sidebarSlot = GT.sidebar.build();
 
-    [ui.title, ui.rtabs, ui.ribbon, ui.fx, ui.grid, ui.tabs, ui.status].forEach((n) => root.appendChild(n));
+    [ui.title, ui.rtabs, ui.ribbon, ui.fx, ui.loadbar, ui.grid, ui.tabs, ui.status].forEach((n) => root.appendChild(n));
     shadow.appendChild(root);
     drawTabs();
   }
@@ -751,7 +761,15 @@
     if (next) GT.navigate.to(next.href); else GT.navigate.newChat();
   }
 
+  function syncLoadbar() {
+    if (!root || !ui.loadbar) return;
+    const on = !!(GT.tabs && GT.tabs.barShown && GT.tabs.barShown());
+    ui.loadbar.dataset.on = on ? '1' : '0';
+    root.dataset.loading = on ? '1' : '0';
+  }
+
   function drawTabs() {
+    syncLoadbar();
     if (!ui.tablist) return;
     const s = GT.store.state;
     const curId = GT.tabs.activeId();
@@ -781,7 +799,8 @@
       }
       return t;
     };
-    if (!chatTabs || !open.some((t) => t.id === curId)) ui.tablist.appendChild(tabEl(s.conversationTitle || T('sheet.newChat'), true));
+    // 탭 줄을 숨겨도(기본) 지금 탭에 받는 중 표시 — 예전엔 :chats 를 켰을 때만 붙었다
+    if (!chatTabs || !open.some((t) => t.id === curId)) ui.tablist.appendChild(tabEl((s.conversationTitle || T('sheet.newChat')) + (busy ? ' …' : ''), true));
     open.forEach((t) => {
       const on = t.id === curId;
       // 받는 중이면 지금 탭 이름 뒤에 … (막지 않고 표시만)

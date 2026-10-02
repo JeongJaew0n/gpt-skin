@@ -86,6 +86,9 @@
     ui.tabNew.addEventListener('mousedown', (e) => { e.preventDefault(); GT.navigate.newChat(); });
     ui.tabs.appendChild(ui.tablist); ui.tabs.appendChild(ui.tabNew);
     root.appendChild(ui.tabs);
+    // 대화를 받는 동안 본문 위에 뜨는 얇은 막대. 자리는 늘 잡아 둬 본문이 위아래로 흔들리지 않는다 (src/content/tabs.js)
+    ui.loadbar = el('div', 'gt-loadbar');
+    root.appendChild(ui.loadbar);
 
     // 중간 행 = 사이드바 + 스크롤백. 탭바·입력·상태줄은 전체 폭을 유지한다.
     ui.middle = el('div', 'gt-middle');
@@ -227,7 +230,16 @@
     if (next) GT.navigate.to(next.href); else GT.navigate.newChat();
   }
 
+  // 로딩바 · 본문 흐림 — 띄울지는 GT.tabs 가 정한다(300ms 넘을 때만 · 최소 300ms)
+  function syncLoadbar() {
+    if (!root || !ui.loadbar) return;
+    const on = !!(GT.tabs && GT.tabs.barShown && GT.tabs.barShown());
+    ui.loadbar.dataset.on = on ? '1' : '0';
+    root.dataset.loading = on ? '1' : '0';
+  }
+
   function drawTabs() {
+    syncLoadbar();
     if (!ui.tablist) return;
     const s = GT.store.state;
     const curId = GT.tabs.activeId();
