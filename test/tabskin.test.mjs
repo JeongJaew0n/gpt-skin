@@ -134,6 +134,58 @@ function content(cfg, swSkin) {
   t('옵션 문구 ko · en', (i18n.match(/'opt\.skin\.perTab\.label'/g) || []).length === 2 && (i18n.match(/'opt\.skin\.perTab\.help'/g) || []).length === 2);
 }
 
+// ---------------------------------------------------------------- :skin · :skin default
+function cmds({ perTab = false, tabSkin = null, cur = 'terminal' } = {}) {
+  const out = []; const saved = {}; const switched = [];
+  const sb = { console, Object, Array, Map, Set, String, Number, Boolean, JSON, Math, Promise, Error, RegExp, Date, setTimeout,
+    navigator: { language: 'ko' }, chrome: { runtime: { getManifest: () => ({ version: '0.0.0' }) } },
+    location: { pathname: '/' }, document: { createElement: () => ({ style: {}, appendChild() {}, addEventListener() {} }) } };
+  sb.window = sb; sb.globalThis = sb;
+  vm.createContext(sb);
+  vm.runInContext(read('src/shared/i18n.js'), sb);
+  vm.runInContext(read('src/shared/defaults.js'), sb);
+  const conf = { ...sb.GT_DEFAULTS, 'skin.perTab': perTab };
+  sb.GT = {
+    config: { keys: () => [], get: (k) => conf[k], set: async (k, v) => { saved[k] = v; conf[k] = v; return v; }, has: () => true, all: conf },
+    skin: { current: { id: cur, system: (l, x) => out.push(l + ':' + (x || '')) }, perTab: () => conf['skin.perTab'] === true,
+      get tabSkin() { return tabSkin; }, switch: async (id) => { switched.push(id); sb.GT.skin.current.id = id; return { ok: true }; }, hide() {} },
+    skins: { names: () => ['terminal', 'sheet', 'none'], label: (id) => sb.GT_T('opt.skin.choice.' + id) },
+    store: { state: { messages: [] } }, chats: { projects: () => [] }, sidebar: { chats: () => [], isOpen: () => false },
+    theme: { names: () => [] }, picker: {}, navigate: {}, convops: {}, health: { CHECKS: {}, reasons: [] }, conversation: {}, palette: {}, oai: {}, compose: {}, tabs: {}
+  };
+  vm.runInContext(read('src/content/commands.js'), sb, { filename: 'commands.js' });
+  return { C: sb.GT.commands, out, saved, switched };
+}
+{
+  const { C, out, saved, switched } = cmds({ perTab: true });
+  await C.run(':skin sheet');
+  t('켜져 있으면 :skin 결과가 이 탭만 바뀌었다고 밝힌다', switched.join() === 'sheet' && /^info:이 탭만 바꿨습니다: 시트/.test(out.at(-1)) && !('skin' in saved));
+  await C.run(':skin');
+  t('켜져 있으면 :skin 이 이 탭 · 기본을 같이 보여 준다', /이 탭: 시트 .* 기본: 터미널/.test(out.at(-1)));
+}
+{
+  const { C, out } = cmds({ perTab: false });
+  await C.run(':skin sheet');
+  t('꺼져 있으면 예전 문구 그대로', /^info:스킨을 바꿨습니다: 시트/.test(out.at(-1)));
+  await C.run(':skin');
+  t('꺼져 있으면 :skin 표시도 예전 그대로', /지금 스킨: 시트/.test(out.at(-1)));
+}
+{
+  const { C, out, saved, switched } = cmds({ perTab: true, tabSkin: 'sheet', cur: 'sheet' });
+  await C.run(':skin default none');
+  t(':skin default 는 설정의 skin(기본 스킨)에 쓰고 이 탭을 직접 바꾸지 않는다', saved.skin === 'none' && switched.length === 0);
+  t('따로 고른 탭에서 기본을 바꾸면 이 탭은 그대로라고 알린다', /이 탭처럼 따로 고른 탭은 그대로입니다/.test(out.at(-1)));
+  await C.run(':skin default');
+  t(':skin default 만 치면 기본 스킨을 보여 준다', /^info:기본 스킨: 노 스킨/.test(out.at(-1)));
+  await C.run(':skin default 엑셀');
+  t(':skin default 도 없는 스킨은 거절', /^error:알 수 없는 스킨입니다: 엑셀/.test(out.at(-1)) && saved.skin === 'none');
+}
+{
+  const { C, out, saved } = cmds({ perTab: false });
+  await C.run(':skin default sheet');
+  t('꺼져 있어도 :skin default 는 기본(모든 탭) 스킨을 바꾼다', saved.skin === 'sheet' && /^info:기본 스킨을 바꿨습니다: 시트 \(스프레드시트\)$/.test(out.at(-1)));
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

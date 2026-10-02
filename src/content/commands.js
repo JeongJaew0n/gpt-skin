@@ -304,17 +304,36 @@ GT.commands = (function () {
   def(':skin', GT_T('cmd.skin.desc'), async (args) => {
     const names = GT.skins.names();
     const cur = GT.skin.current.id;
+    const label = (n) => GT.skins.label(n);
+    const avail = () => names.map((n) => `${n} (${label(n)})`).join(', ');
+    const perTab = GT.skin.perTab && GT.skin.perTab();
+    const def = GT.config.get('skin');
+
+    // :skin default <이름> — 기본 스킨(설정의 skin). 탭별로 분할 적용이 꺼져 있으면 모든 탭의 스킨이다 (0.27.0)
+    if (args[0] === 'default') {
+      const id = args[1];
+      if (!id) return info(GT_T('cmd.skin.defaultState', label(def), avail()));
+      if (!names.includes(id)) return err(GT_T('cmd.skin.unknown', id, names.join(', ')));
+      await GT.config.set('skin', id);      // 열린 탭은 config.onChange 로 따라온다 — 이 탭도 따로 고르지 않았으면
+      return info(GT_T(perTab && GT.skin.tabSkin ? 'cmd.skin.defaultSetTab' : 'cmd.skin.defaultSet', label(id)));
+    }
+
     const id = args[0];
     if (!id) {
-      return info(GT_T('cmd.skin.state', GT.skins.label(cur),
-        names.map((n) => `${n} (${GT.skins.label(n)})`).join(', ')));
+      return info(perTab
+        ? GT_T('cmd.skin.stateTab', label(cur), label(def), avail())
+        : GT_T('cmd.skin.state', label(cur), avail()));
     }
     if (!names.includes(id)) return err(GT_T('cmd.skin.unknown', id, names.join(', ')));
-    if (id === cur) return info(GT_T('cmd.skin.already', GT.skins.label(id)));
+    if (id === cur) return info(GT_T('cmd.skin.already', label(id)));
     const r = await GT.skin.switch(id);
-    if (!r.ok) return err(GT_T('cmd.skin.failed', GT.skins.label(id), r.reason));
-    GT.skin.current.system('info', GT_T('cmd.skin.switched', GT.skins.label(id)));
-  }, null, () => GT.skins.names());
+    if (!r.ok) return err(GT_T('cmd.skin.failed', label(id), r.reason));
+    // 탭별로 분할 적용이 켜져 있으면 이 탭만 바뀌었다는 걸 밝힌다 — 안 그러면 다른 탭이 왜 그대로인지 모른다
+    GT.skin.current.system('info', perTab
+      ? GT_T('cmd.skin.switchedTab', label(id), label(GT.config.get('skin')))
+      : GT_T('cmd.skin.switched', label(id)));
+  }, null, (prev) => (prev.length === 0 ? GT.skins.names().concat('default')
+    : prev.length === 1 && prev[0] === 'default' ? GT.skins.names() : []));
 
   // 탭 줄에 대화 목록을 쭉 늘어놓거나 숨긴다 (사용자 요청 2026-10-02). 스킨마다 탭 줄이 있는 자리가 다르다.
   //   sheet     아래쪽 시트 탭 (설정 sheet.chatTabs)

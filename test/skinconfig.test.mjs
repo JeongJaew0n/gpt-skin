@@ -147,7 +147,8 @@ function commands() {
   t('없는 스킨은 거절한다', /^error:알 수 없는 스킨입니다: 엑셀/.test(out.at(-1)) && !('skin' in saved));
   await C.run(':skin terminal');
   t('지금 스킨이면 저장하지 않는다', /이미 쓰고 있는 스킨입니다: 터미널/.test(out.at(-1)) && !('skin' in saved));
-  t(':skin 인자 후보가 스킨 목록', C.complete(':skin ').candidates.join() === 'terminal');
+  t(':skin 인자 후보가 스킨 목록 + default (0.27.0)', C.complete(':skin ').candidates.join() === 'terminal,default');
+  t(':skin default 뒤 후보는 스킨 목록', C.complete(':skin default ').candidates.join() === 'terminal');
 
   await C.run(':theme amber');
   t(':theme 이 <스킨>.theme 에 쓴다', saved['terminal.theme'] === 'amber' && !('theme' in saved));
