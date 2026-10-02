@@ -127,8 +127,61 @@ if (chrome.commands && chrome.commands.onCommand) chrome.commands.onCommand.addL
   if (p && typeof p.then === 'function') p.then((ts) => send(ts && ts[0]), () => {});
 });
 
-chrome.runtime.onMessage.addListener((msg, sender) => {
+// ---------------------------------------------------------------- 탭별 스킨
+//
+// '탭별로 분할 적용'(skin.perTab)을 켜면 탭마다 스킨을 따로 둔다. 값은 storage.session 에 tabId 로 —
+// 새로고침해도 남고 브라우저를 닫으면 사라진다. 페이지의 웹 저장소는 원본 페이지 스크립트도 읽고 써서 쓰지 않는다.
+// 콘텐츠 스크립트는 자기 tabId 를 모르므로 여기서 sender.tab.id 로 대신 읽고 쓴다.
+// 다른 탭을 지정할 수 있는 것은 팝업(sender.tab 이 없는 확장 페이지)뿐이다 — 콘텐츠 스크립트가 남의 탭을 바꾸지 못하게.
+// docs/plan/2026-10-02-per-tab-skin.md §3
+const TAB_SKIN = 'tabSkin.';
+const SKIN_ID = /^[a-z][a-z0-9-]{0,31}$/;      // 실제 스킨인지는 콘텐츠 쪽 레지스트리가 판단한다
+async function tabSkinGet(tabId) {
+  try { const got = await chrome.storage.session.get(TAB_SKIN + tabId); return got[TAB_SKIN + tabId] || null; } catch (_) { return null; }
+}
+async function tabSkinSet(tabId, skin) {
+  try {
+    if (skin) await chrome.storage.session.set({ [TAB_SKIN + tabId]: skin });
+    else await chrome.storage.session.remove(TAB_SKIN + tabId);
+    return true;
+  } catch (_) { return false; }
+}
+async function tabSkinClearAll() {
+  try {
+    const all = await chrome.storage.session.get(null);
+    const keys = Object.keys(all || {}).filter((k) => k.indexOf(TAB_SKIN) === 0);
+    if (keys.length) await chrome.storage.session.remove(keys);
+    return keys.length;
+  } catch (_) { return 0; }
+}
+// 옵션을 끄면 탭별 값을 모두 지운다 — 다시 켰을 때 옛 값이 되살아나면 왜 그 탭만 다른지 알 수 없다.
+// 끄는 길(옵션 화면 · :set)이 어디든 여기 한 곳에서 지운다.
+try {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync' && changes['skin.perTab'] && changes['skin.perTab'].newValue !== true) tabSkinClearAll();
+  });
+} catch (_) {}
+
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (!msg) return;
+  if (msg.kind === 'tabSkin:get') {
+    const id = sender.tab && sender.tab.id;
+    if (!id) { reply({ skin: null }); return; }
+    tabSkinGet(id).then((skin) => reply({ skin }));
+    return true;                         // 비동기로 답한다
+  }
+  if (msg.kind === 'tabSkin:set') {
+    const fromTab = sender.tab && sender.tab.id;
+    const id = fromTab || (Number.isInteger(msg.tabId) ? msg.tabId : null);
+    const skin = msg.skin == null ? null : String(msg.skin);
+    if (!id || (skin && !SKIN_ID.test(skin))) { reply({ ok: false }); return; }
+    tabSkinSet(id, skin).then((ok) => {
+      // 팝업이 바꿨으면 그 탭에 알린다. 콘텐츠 스크립트가 스스로 바꾼 것은 이미 바뀌었다
+      if (ok && !fromTab && skin) chrome.tabs.sendMessage(id, { kind: 'skin', skin }, () => void chrome.runtime.lastError);
+      reply({ ok });
+    });
+    return true;
+  }
   if (msg.kind === 'openOptions') { chrome.runtime.openOptionsPage(); return; }
   if (msg.kind === 'reload') { reloadExtension(sender.tab && sender.tab.id); return; }
 
@@ -150,7 +203,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 // chrome.action.onClicked 는 아예 발생하지 않으므로 여기서 토글을 다루지 않는다.
 // 팝업이 콘텐츠 스크립트에 직접 토글을 쏘고, 콘텐츠 스크립트가 'visible' 로 알려준다.
 
-chrome.tabs.onRemoved.addListener((tabId) => STATE.delete(tabId));
+chrome.tabs.onRemoved.addListener((tabId) => { STATE.delete(tabId); tabSkinSet(tabId, null); });
 chrome.tabs.onUpdated.addListener((tabId, info) => {
   if (info.status === 'loading') { STATE.delete(tabId); quiet(chrome.action.setBadgeText({ tabId, text: '' })); }
 });
