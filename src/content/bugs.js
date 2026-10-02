@@ -88,6 +88,7 @@ GT.bugs = (function () {
       `gpt-skin ${typeof GT_VERSION !== 'undefined' ? GT_VERSION : '?'} · build ${typeof GT_BUILD !== 'undefined' ? GT_BUILD : '?'}`,
       `${ua} · ${plat} · locale ${typeof GT_LOCALE !== 'undefined' ? GT_LOCALE : '?'}`,
       `page ${maskPath(typeof location !== 'undefined' ? location.pathname : '')}`,
+      safe(() => `host ${GT.cover.attached() ? 'attached' : 'DETACHED'} · restored ${GT.cover.restored}`, 'host ?'),
       safe(() => `skin ${GT.skin.current.id} · visible ${GT.skin.visible() ? 'yes' : 'no'} · onBreak ${GT.config.get('onBreak')} · degraded ${GT.health.degraded ? 'yes' : 'no'}`, 'skin ?'),
       `checks ${checks}`,
       `warnings ${reasons.length}` + (reasons.length ? '\n' + reasons.map((r) => '  - ' + r).join('\n') : '')

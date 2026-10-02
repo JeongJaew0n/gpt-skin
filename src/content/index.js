@@ -103,6 +103,12 @@
   };
   const observe = (obs, node, cfg) => { obs.observe(node, cfg); disposers.push(() => obs.disconnect()); };
 
+  // 원본이 하이드레이션에 실패하면 <html> 을 다시 그리며 속성을 지운다 (실측 2026-10-02, React #418).
+  // 세대 표식이 사라지면 '다른 인스턴스로 바뀌었다' 로 읽혀 교대 · 물러남 판단이 틀어진다. 비어 있을 때만 되살린다.
+  observe(new MutationObserver(() => {
+    if (!gone && !pageRoot.dataset.gptSkinGen) pageRoot.dataset.gptSkinGen = GEN;
+  }), pageRoot, { attributes: true, attributeFilter: ['data-gpt-skin-gen'] });
+
   // 물러난다. 안내를 띄우지 않는다 — 확장을 다시 로드하면 서비스워커가 새 코드를
   // 곧바로 다시 넣으므로 사용자가 할 일이 없다. 예전에는 '새로고침해주세요' 를 띄웠다.
   function shutdown(why) {
