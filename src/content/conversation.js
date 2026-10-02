@@ -7,7 +7,9 @@ GT.conversation = (function () {
   'use strict';
 
   const idFromPath = (p) => {
-    const m = /^\/c\/([0-9a-zA-Z:-]+)/.exec(p || location.pathname);
+    // 프로젝트 안의 대화는 /g/<프로젝트>/c/<id> 다 (실측 2026-10-02: 원본 사이드바 링크 8개가 이 꼴).
+    // 예전에는 /c/ 로 시작하는 주소만 알아봐 프로젝트 대화는 대화 원본을 아예 읽지 않았다.
+    const m = /^(?:\/g\/[^/]+)?\/c\/([0-9a-zA-Z:-]+)/.exec(p || location.pathname);
     return m ? m[1] : null;
   };
 

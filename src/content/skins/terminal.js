@@ -230,13 +230,15 @@
   function drawTabs() {
     if (!ui.tablist) return;
     const s = GT.store.state;
-    const curId = GT.tabs.idOf(location.pathname);
+    const curId = GT.tabs.activeId();
+    const busy = GT.tabs.isLoading();
     const open = chatTabs ? GT.tabs.list() : [];
-    const sig = JSON.stringify([s.conversationTitle || '', !!s.streamingId, chatTabs, curId, open.map((t) => [t.id, t.title])]);
+    const sig = JSON.stringify([s.conversationTitle || '', !!s.streamingId, busy, chatTabs, curId, open.map((t) => [t.id, t.title])]);
     if (sig === tabsSig) return;
     tabsSig = sig;
     ui.tablist.textContent = '';
-    const spinner = (t) => { if (s.streamingId) { const d = el('span', null, '⠴'); d.style.color = 'var(--gt-cyan)'; t.appendChild(d); } };
+    // ⠴ — 답을 만드는 중이거나 대화 원본을 받는 중 (막지 않고 표시만)
+    const spinner = (t) => { if (s.streamingId || busy) { const d = el('span', null, '⠴'); d.style.color = 'var(--gt-cyan)'; t.appendChild(d); } };
     if (!chatTabs || !open.some((t) => t.id === curId)) {
       // 지금 대화가 열린 탭에 없다(새 대화 화면 · 탭을 끔) — 지금 대화만 맨 앞에 보인다
       const cur = tabEl(chatTabs ? '+' : 1, s.conversationTitle || 'new', true);
@@ -245,7 +247,7 @@
     }
     open.forEach((t, i) => {
       const active = t.id === curId;
-      const tab = tabEl(i + 1, t.title || s.conversationTitle && active && s.conversationTitle || GT_T('tabs.untitled'), active,
+      const tab = tabEl(i + 1, t.title || GT_T('tabs.untitled'), active,
         () => GT.navigate.to(t.href), () => closeTab(t.id));
       if (active) spinner(tab);
       ui.tablist.appendChild(tab);

@@ -754,9 +754,10 @@
   function drawTabs() {
     if (!ui.tablist) return;
     const s = GT.store.state;
-    const curId = GT.tabs.idOf(location.pathname);
+    const curId = GT.tabs.activeId();
+    const busy = GT.tabs.isLoading();
     const open = chatTabs ? GT.tabs.list() : [];
-    const sig = JSON.stringify([s.conversationTitle || '', chatTabs, curId, open.map((t) => [t.id, t.title])]);
+    const sig = JSON.stringify([s.conversationTitle || '', busy, chatTabs, curId, open.map((t) => [t.id, t.title])]);
     if (sig === tabsSig) return;
     tabsSig = sig;
     ui.tablist.textContent = '';
@@ -783,7 +784,8 @@
     if (!chatTabs || !open.some((t) => t.id === curId)) ui.tablist.appendChild(tabEl(s.conversationTitle || T('sheet.newChat'), true));
     open.forEach((t) => {
       const on = t.id === curId;
-      ui.tablist.appendChild(tabEl(t.title || (on && s.conversationTitle) || T('tabs.untitled'), on,
+      // 받는 중이면 지금 탭 이름 뒤에 … (막지 않고 표시만)
+      ui.tablist.appendChild(tabEl((t.title || T('tabs.untitled')) + (on && busy ? ' …' : ''), on,
         on ? null : () => GT.navigate.to(t.href), () => closeTab(t.id)));
     });
   }

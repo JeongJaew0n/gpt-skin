@@ -10,14 +10,17 @@ function load({ stored, path = '/c/a' } = {}) {
   const store = { ...(stored ? { 'gt.openTabs': stored } : {}) };
   const nav = [];
   let clock = 1000;
+  let timer = null;
   const sb = { console, Object, Array, String, Number, JSON, Math, Promise,
     Date: { now: () => (clock += 1) },
+    setTimeout: (f) => { timer = f; return 1; }, clearTimeout: () => { timer = null; },
     location: { pathname: path },
     chrome: { storage: { local: { get: async (k) => (k in store ? { [k]: store[k] } : {}), set: async (o) => { Object.assign(store, JSON.parse(JSON.stringify(o))); } } } } };
   sb.GT = { navigate: { to: (h) => { nav.push(h); sb.location.pathname = h; }, newChat: () => { nav.push('/'); sb.location.pathname = '/'; } } };
   vm.createContext(sb);
   vm.runInContext(read('src/content/tabs.js'), sb, { filename: 'tabs.js' });
-  return { T: sb.GT.tabs, store, nav, sb };
+  const flush = () => { const f = timer; timer = null; if (f) f(); };
+  return { T: sb.GT.tabs, store, nav, sb, flush };
 }
 const ids = (T) => T.list().map((x) => x.id).join(',');
 
@@ -58,18 +61,34 @@ const ids = (T) => T.list().map((x) => x.id).join(',');
   t('다시 본 탭은 살아남는다', T.list().some((x) => x.id === 'n5') && !T.list().some((x) => x.id === 'n6'));
 }
 {
-  const { T, nav, sb } = load({ path: '/c/b' });
+  const { T, nav, sb, flush } = load({ path: '/c/b' });
   T.open('/c/a', ''); T.open('/c/b', ''); T.open('/c/c', '');
-  T.go(1); t('Ctrl+. 다음 탭', nav.at(-1) === '/c/c');
-  T.go(1); t('끝에서 다음은 처음으로', nav.at(-1) === '/c/a');
-  T.go(-1); t('Ctrl+, 이전 (처음에서 이전은 끝)', nav.at(-1) === '/c/c');
+  T.go(1); flush(); t('Ctrl+. 다음 탭', nav.at(-1) === '/c/c');
+  T.go(1); flush(); t('끝에서 다음은 처음으로', nav.at(-1) === '/c/a');
+  T.go(-1); flush(); t('Ctrl+, 이전 (처음에서 이전은 끝)', nav.at(-1) === '/c/c');
   sb.location.pathname = '/';
-  T.go(1); t('새 대화 화면에서 다음은 첫 탭', nav.at(-1) === '/c/a');
+  T.go(1); flush(); t('새 대화 화면에서 다음은 첫 탭', nav.at(-1) === '/c/a');
   sb.location.pathname = '/';
-  T.go(-1); t('새 대화 화면에서 이전은 끝 탭', nav.at(-1) === '/c/c');
+  T.go(-1); flush(); t('새 대화 화면에서 이전은 끝 탭', nav.at(-1) === '/c/c');
   sb.location.pathname = '/c/b';
   const r = T.closeCurrent();
   t(':close 는 지금 탭을 닫고 오른쪽 탭으로', r.closed && ids(T) === 'a,c' && nav.at(-1) === '/c/c');
+}
+{
+  // 휙휙 넘기기 — 강조는 바로 옮기고, 실제 이동은 손을 멈춘 뒤 한 번만 (debounce 0.25초)
+  const { T, nav, flush } = load({ path: '/c/a' });
+  T.open('/c/a', ''); T.open('/c/b', ''); T.open('/c/c', '');
+  let redraws = 0; T.onChange(() => { redraws++; });
+  T.go(1);
+  t('누르자마자 강조가 옮겨 간다 (아직 이동은 안 함)', T.activeId() === 'b' && nav.length === 0 && redraws === 1);
+  t('옮겨 둔 동안은 받는 중 표시', T.isLoading() === true);
+  T.go(1);
+  t('한 번 더 누르면 강조가 그 다음으로 (주소가 아니라 강조 기준)', T.activeId() === 'c' && nav.length === 0);
+  flush();
+  t('손을 멈추면 마지막 탭으로 한 번만 간다 (중간 탭은 불러오지 않는다)', nav.join() === '/c/c');
+  t('대기 시간 0.25초', T.GO_DELAY_MS === 250);
+  T.loading(true); t('대화 원본을 받는 중 표시', T.isLoading() === true);
+  T.loading(false); t('받으면 표시를 끈다', T.isLoading() === false);
 }
 {
   const { T, nav } = load({ path: '/c/a' });
@@ -77,6 +96,56 @@ const ids = (T) => T.list().map((x) => x.id).join(',');
   T.closeCurrent();
   t('마지막 탭을 닫으면 새 대화', nav.at(-1) === '/' && ids(T) === '');
   t('열린 탭에 없으면 닫지 않는다', T.closeCurrent().closed === false);
+}
+
+// ---------------------------------------------------------------- 빠르게 넘길 때 탭 제목이 섞이던 것 (0.25.2)
+// 사용자 보고: 1 → 2 → 3 을 빠르게 넘기면 2 · 3번 탭 이름이 1번으로 바뀐다.
+// 주소는 먼저 바뀌고 화면 대화는 대화 원본이 도착한 뒤에 바뀐다. 그 사이 '지금 주소 + 지금 화면 제목' 을 짝지어 저장했다.
+{
+  const idx = read('src/content/index.js');
+  const pullSrc = (/  async function pull\(why\) \{[\s\S]*?\n  \}\n/.exec(idx) || [''])[0];
+  t('pull 을 꺼냈다', !!pullSrc);
+  const sb = { console, Object, Array, String, Number, JSON, Math, Promise, Map, Set, Date,
+    location: { pathname: '/c/1' },
+    chrome: { storage: { local: { get: async () => ({}), set: async () => {} } } },
+    setTimeout: (f) => 0, clearTimeout: () => {} };
+  sb.GT = { log() {}, navigate: { to() {}, newChat() {} } };
+  vm.createContext(sb);
+  vm.runInContext(read('src/content/store.js'), sb, { filename: 'store.js' });
+  vm.runInContext(read('src/content/conversation.js').replace(/async function load\(id\) \{[\s\S]*?\n  \}\n/, 'async function load(id) { return GT.__load(id); }\n'), sb, { filename: 'conversation.js' });
+  vm.runInContext(read('src/content/tabs.js'), sb, { filename: 'tabs.js' });
+  const S = sb.GT.store, T = sb.GT.tabs;
+  // index.js 의 store 변경 처리기에서 탭 제목을 쓰는 부분을 그대로 돌린다
+  const i0 = idx.indexOf('    const tabId = GT.tabs.idOf(location.pathname);');
+  const onChangeSrc = i0 > 0 ? idx.slice(i0, idx.indexOf('    const now = !!GT.store.state.streamingId;', i0)) : '';
+  t('제목 쓰는 조건을 꺼냈다', !!onChangeSrc);
+  vm.runInContext(`GT.store.onChange(() => {\n${onChangeSrc}});\n${pullSrc}\nglobalThis.__pull = pull;`, sb);
+  const titles = { 1: '하나', 2: '둘', 3: '셋' };
+  const waits = {};
+  sb.GT.__load = (id) => new Promise((res) => { waits[id] = () => res({ id, title: titles[id], messages: [{ id: 'm' + id, role: 'user', text: titles[id] }] }); });
+
+  // 1번을 보고 있다
+  T.open('/c/1', '');
+  const p1 = sb.__pull('route'); waits[1](); await p1;
+  t('1번 제목', T.list()[0].title === '하나' && S.state.conversationId === '1');
+  // 2번으로, 응답이 오기 전에 3번으로
+  sb.location.pathname = '/c/2'; T.open('/c/2', ''); const p2 = sb.__pull('route');
+  S.setTitle(S.state.conversationTitle);                          // 그 사이 화면이 다시 그려진다 (onChange — 화면은 아직 1번)
+  t('응답 전에 화면이 다시 그려져도 2번 탭에 1번 제목을 쓰지 않는다', T.list().find((x) => x.id === '2').title === '');
+  sb.location.pathname = '/c/3'; T.open('/c/3', ''); const p3 = sb.__pull('route');
+  waits[3](); await p3;                                          // 3번이 먼저 도착
+  waits[2](); await p2;                                          // 2번이 늦게 도착
+  const byId = Object.fromEntries(T.list().map((x) => [x.id, x.title]));
+  t('2번 탭에 1번 제목이 들어가지 않는다', byId['2'] !== '하나');
+  t('3번 탭은 3번 제목', byId['3'] === '셋');
+  t('2번 탭은 늦게 와도 자기 제목 (API 가 준 그 대화의 것)', byId['2'] === '둘');
+  t('늦게 온 2번 응답이 화면을 덮지 않는다 (3번 내용 그대로)', S.state.conversationId === '3' && S.state.messages.some((m) => m.text === '셋') && !S.state.messages.some((m) => m.text === '둘'));
+}
+{
+  const conv = read('src/content/conversation.js');
+  const sb = { location: { pathname: '/' } }; vm.createContext(sb);
+  vm.runInContext(conv.slice(conv.indexOf('  const idFromPath'), conv.indexOf('};', conv.indexOf('  const idFromPath')) + 2) + '\nglobalThis.__id = idFromPath;', sb);
+  t('프로젝트 안의 대화도 대화 id 를 안다 (/g/…/c/<id>)', sb.__id('/g/g-p-abc-name/c/6a95-x') === '6a95-x' && sb.__id('/c/6a95-x') === '6a95-x' && sb.__id('/g/g-p-abc/project') === null);
 }
 
 // ---------------------------------------------------------------- 단축키 (prompt.js 를 실제로 돌린다)

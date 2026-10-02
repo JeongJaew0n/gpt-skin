@@ -388,8 +388,12 @@
   let wasStreaming = false;
   GT.store.onChange(() => {
     // 열린 탭의 제목은 대화 원본을 읽은 뒤에 들어온다 (src/content/tabs.js)
+    // 주소는 먼저 바뀌고 내용은 대화 원본이 도착한 뒤에 바뀐다. 그 사이의 제목은 이전 대화의 것이라
+    // 주소의 id 와 화면 대화의 id 가 같을 때만 쓴다 — 예전에는 빠르게 넘기면 2 · 3번 탭에 1번 제목이 들어갔다.
     const tabId = GT.tabs.idOf(location.pathname);
-    if (tabId && GT.store.state.conversationTitle) GT.tabs.title(tabId, GT.store.state.conversationTitle);
+    if (tabId && tabId === GT.store.state.conversationId && GT.store.state.conversationTitle) {
+      GT.tabs.title(tabId, GT.store.state.conversationTitle);
+    }
     const now = !!GT.store.state.streamingId;
     if (now !== wasStreaming) { wasStreaming = now; GT.skin.announce(GT_T(now ? 'status.answering' : 'status.answered')); }
     GT.skin.current.render();
@@ -465,7 +469,8 @@
       lastPath = location.pathname;
       GT.tabs.open(location.pathname, '');      // 연 대화는 탭에 들어간다 (새 대화 화면 / 은 들어가지 않는다)
       if (GT.conversation.idFromPath()) {
-        pull('route').then((ok) => { if (!ok) GT.toMain('harvest'); });
+        GT.tabs.loading(true);
+        pull('route').then((ok) => { GT.tabs.loading(false); if (!ok) GT.toMain('harvest'); });
       } else {
         // 새 대화 화면(/). 수확할 대화가 없다 — 수확을 기다리지 말고 바로 비운다.
         // 안 비우면 본문만 사라지고 상단바·탭에 이전 대화 제목이 남는다.
@@ -506,7 +511,12 @@
     try {
       const conv = await GT.conversation.load(id);
       if (!conv) return false;
-      GT.store.applyHarvest(conv.messages, { title: conv.title, path: location.pathname });
+      // 탭 제목은 API 가 준 그 대화의 제목으로 — id 로 짝지어져 있어 늦게 와도 섞이지 않는다
+      if (conv.title) GT.tabs.title(id, conv.title);
+      // 응답이 오는 사이 다른 대화로 넘어갔으면 화면에는 넣지 않는다. 넣으면 그 대화 내용이 지금 주소로 깔린다
+      // (빠르게 탭을 넘길 때 — 2026-10-02). 지금 대화는 그쪽의 pull 이 채운다.
+      if (GT.conversation.idFromPath() !== id) { GT.log(`대화 원본 버림 — 받는 사이 다른 대화로 넘어갔다 (${why})`); return true; }
+      GT.store.applyHarvest(conv.messages, { title: conv.title, path: location.pathname, id });
       GT.log(`대화 원본 ${conv.messages.length}건 (${why})`);
       return true;
     } catch (e) {

@@ -88,12 +88,30 @@ GT.tabs = (function () {
     return list[(i + dir + list.length) % list.length];
   }
 
-  // 이동까지 — 단축키 · :close 가 쓴다
+  // 단축키 이동. 강조는 곧바로 옮기고, 실제 이동은 손을 멈춘 뒤 한 번만 한다 (debounce).
+  // 1 → 2 → 3 을 휙휙 넘기면 2번은 불러오지도 않는다 — 브라우저의 탭 전환 목록과 같은 느낌 (사용자 결정 2026-10-02).
+  const GO_DELAY_MS = 250;
+  let pending = null;                // 강조만 옮겨 둔, 아직 안 간 탭
+  let goTimer = 0;
   function go(dir) {
-    const t = step(dir, idOf(location.pathname));
-    if (t) GT.navigate.to(t.href);
+    const base = pending ? pending.id : idOf(location.pathname);
+    const t = step(dir, base);
+    if (!t) return null;
+    pending = t;
+    emit();
+    clearTimeout(goTimer);
+    goTimer = setTimeout(() => {
+      const target = pending;
+      pending = null;
+      if (target) GT.navigate.to(target.href);
+      emit();
+    }, GO_DELAY_MS);
     return t;
   }
+
+  // 대화 원본을 받는 중인가 — 탭에 작은 표시만 띄운다 (막지 않는다)
+  let busy = false;
+  function loading(on) { if (busy === !!on) return; busy = !!on; emit(); }
 
   function closeCurrent() {
     const cur = idOf(location.pathname);
@@ -105,8 +123,11 @@ GT.tabs = (function () {
 
   return {
     KEY, MAX, idOf,
-    load, open, title, close, step, go, closeCurrent,
+    load, open, title, close, step, go, closeCurrent, loading, GO_DELAY_MS,
     list: () => list.slice(),
+    // 탭 줄이 '지금' 으로 강조할 대화 — 단축키로 옮겨 둔 탭이 있으면 그쪽
+    activeId: () => (pending ? pending.id : idOf(location.pathname)),
+    isLoading: () => busy || !!pending,
     onChange(fn) { subs.push(fn); }
   };
 })();

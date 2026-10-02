@@ -14,6 +14,9 @@ GT.store = (function () {
     drawingSince: 0,        // 그림을 만들고 있으면 그 시작 시각 (0 이면 아님)
     startedAt: 0,
     conversationTitle: '',
+    // 화면에 있는 대화의 id — 대화 원본(API)을 받아 넣었을 때만 세운다. 주소는 먼저 바뀌고 내용은 나중에 오므로,
+    // 탭 제목처럼 '이 대화가 맞는가' 를 따져야 하는 곳은 주소가 아니라 이 값을 본다 (2026-10-02 탭 제목 섞임).
+    conversationId: null,
     path: '/'
   };
 
@@ -95,6 +98,7 @@ GT.store = (function () {
         // 대화가 통째로 바뀌는 자리다. 제목이 비어 있으면 '모르는 것'이 아니라
         // '없는 것'으로 본다 — 안 지우면 새 대화 화면에 이전 제목이 남는다.
         state.conversationTitle = meta.title || '';
+        state.conversationId = meta.id || null;       // DOM 수확처럼 id 를 모르면 '모름'
         if (meta.path) state.path = meta.path;
       }
       emit('harvest');
@@ -124,6 +128,7 @@ GT.store = (function () {
       // 이름을 바꾼 뒤 메시지를 한 번 주고받는 순간 옛 이름으로 되돌아간다.
       // 우리가 아직 아무것도 모를 때만 채운다(새 대화의 자동 제목 생성이 이 경우다).
       if (meta && meta.title && !state.conversationTitle) state.conversationTitle = meta.title;
+      if (meta && meta.id) state.conversationId = meta.id;
       if (path) state.path = path;
 
       const incoming = new Set(messages.map((m) => m.id).filter(Boolean));
