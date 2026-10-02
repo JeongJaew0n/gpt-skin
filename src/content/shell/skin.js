@@ -73,6 +73,27 @@ GT.skin = (function () {
     try { const c = GT.compose && GT.compose.composer && GT.compose.composer(); if (c) c.focus(); } catch (_) {}
   };
 
+  // ------------------------------------------------------------ 탭별 스킨 (0.27.0)
+  //
+  // '탭별로 분할 적용'(skin.perTab)을 켜면 이 탭에서 고른 스킨을 서비스 워커가 tabId 로 들고 있다.
+  // 이 탭에서 고른 게 없으면 설정의 skin(기본 스킨)을 따른다. 끄면 언제나 설정의 skin.
+  // docs/plan/2026-10-02-per-tab-skin.md
+  let tabSkin = null;                  // 이 탭에서 고른 스킨 (없으면 null)
+  const perTab = (cfg) => (cfg || GT.config.all)['skin.perTab'] === true;
+  // 이 탭이 써야 할 스킨 이름
+  const wanted = (cfg) => {
+    const c = cfg || GT.config.all;
+    if (perTab(c) && tabSkin && GT.skins.get(tabSkin)) return tabSkin;
+    return c.skin;
+  };
+  // 서비스 워커에서 이 탭의 값을 읽는다. 꺼져 있으면 묻지 않는다. 늦게 와도 값은 돌려준다(부르는 쪽이 기다림을 정한다).
+  async function loadTab(cfg) {
+    if (!perTab(cfg)) { tabSkin = null; return null; }
+    const r = await GT.askSW({ kind: 'tabSkin:get' }, 3000);
+    tabSkin = r && typeof r.skin === 'string' && GT.skins.get(r.skin) ? r.skin : null;
+    return tabSkin;
+  }
+
   // 부팅 때 설정으로 고른다. 모르는 이름이면 기본 스킨으로 간다.
   function use(id) {
     cur = GT.skins.get(id) || GT.skins.get(DEFAULT);
@@ -84,6 +105,12 @@ GT.skin = (function () {
     // use() 전에도 비어 있지 않게 기본 스킨을 준다 — 부팅 점검이 system() 을 먼저 부를 수 있다.
     get current() { return cur || GT.skins.get(DEFAULT); },
     use,
+    loadTab,
+    wanted,
+    perTab: () => perTab(),
+    get tabSkin() { return tabSkin; },
+    // 팝업이 이 탭의 스킨을 정했다 · 옵션이 꺼졌다 — 부르는 쪽이 switch 한다
+    setTabSkin(id) { tabSkin = id && GT.skins.get(id) ? id : null; },
     mount(cfg) {
       const s = this.current;
       GT.cover.apply(s.covers);
@@ -147,7 +174,11 @@ GT.skin = (function () {
       // 명령줄이 열린 채로 떠서 스킨이 바뀐 게 아니라 무언가 열린 것처럼 보인다 (사용자 보고 2026-09-24).
       if (next.covers && wasVisible) this.show();
       else { GT.cover.off(); if (hadFocus) giveBack(); }
-      if (persist) await GT.config.set('skin', id);
+      // 저장: 탭별이 켜져 있으면 이 탭에만, 아니면 설정(모든 탭)에
+      if (persist) {
+        if (perTab()) { tabSkin = id; await GT.askSW({ kind: 'tabSkin:set', skin: id }, 3000); }
+        else await GT.config.set('skin', id);
+      }
       GT.sendToSW({ kind: 'visible', visible: this.visible() });
       return { ok: true };
     },

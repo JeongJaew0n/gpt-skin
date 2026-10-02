@@ -37,6 +37,8 @@ var GT_I18N = {
     'opt.sheet.theme.choice.blue': '파랑',
     'opt.sheet.ribbon.label': '리본 표시',
     'opt.sheet.ribbon.help': '위쪽의 장식용 리본입니다. 누르면 아무 일도 일어나지 않습니다. 리본 탭을 두 번 눌러도 접힙니다.',
+    'opt.skin.perTab.label': '탭별로 분할 적용',
+    'opt.skin.perTab.help': '켜면 탭마다 스킨을 따로 씁니다. :skin 과 툴바 팝업은 지금 탭만 바꾸고, 위의 스킨은 새로 여는 탭과 아직 따로 고르지 않은 탭이 따르는 기본 스킨이 됩니다. 탭별로 고른 스킨은 새로고침해도 남고 브라우저를 닫으면 사라집니다. 끄면 모든 탭이 기본 스킨으로 돌아갑니다.',
     'opt.sheet.chatTabs.label': '시트 탭에 대화 목록 보이기',
     'opt.terminal.chatTabs.label': '위쪽 탭 줄에 대화 목록 보이기',
     'opt.terminal.chatTabs.help': '위쪽 탭 줄에 다른 대화를 tmux 창 목록처럼 늘어놓습니다. 끄면 지금 대화 탭만 남습니다. :chats 로도 켜고 끕니다.',
@@ -231,6 +233,8 @@ var GT_I18N = {
     'opt.locale.choice.en': 'English',
 
     'opt.skin.label': 'Skin',
+    'opt.skin.perTab.label': 'Per-tab skin',
+    'opt.skin.perTab.help': 'Use a separate skin in each tab. :skin and the toolbar popup change only the current tab, and the skin above becomes the default for new tabs and tabs you have not set. A per-tab skin survives reloads and is forgotten when the browser closes. Turning this off returns every tab to the default skin.',
     'opt.skin.help': 'Which interface to lay over ChatGPT. Changes apply to open ChatGPT tabs right away. Sheet shows the chat as a spreadsheet. No skin keeps the original screen and opens only a command line with Ctrl+;.',
     'opt.skin.choice.none': 'No skin (commands only)',
     'popup.skin.label': 'Skin',

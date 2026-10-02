@@ -444,7 +444,7 @@ function sidebarWith(skin, cfgInit) {
 // ---------------------------------------------------------------- 배선 (정적)
 {
   const idx = read('src/content/index.js');
-  t('옵션 화면에서 스킨을 바꾸면 열린 탭이 따라간다', /c\.skin !== GT\.skin\.current\.id[\s\S]{0,80}GT\.skin\.switch\(c\.skin, \{ persist: false \}\)/.test(idx));
+  t('옵션 화면에서 스킨을 바꾸면 열린 탭이 따라간다', /const want = GT\.skin\.wanted\(c\);\s*if \(want && want !== GT\.skin\.current\.id && GT\.skins\.get\(want\)\) \{\s*GT\.skin\.switch\(want, \{ persist: false \}\)/.test(idx));
   t('index 는 attachPrompt 로 붙인다', /GT\.skin\.attachPrompt\(\);/.test(idx) && !/GT\.prompt\.attach\(/.test(idx));
   const cmds = read('src/content/commands.js');
   t(':skin 은 바로 바꾼다', /await GT\.skin\.switch\(id\)/.test(cmds));

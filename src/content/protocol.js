@@ -68,6 +68,19 @@ var GT = (function () {
         chrome.runtime.sendMessage(msg, () => void chrome.runtime.lastError);
       } catch (_) { /* 컨텍스트가 이미 죽었다 */ }
     },
+    // 서비스 워커에 묻고 답을 기다린다. ms 안에 답이 없거나 실패하면 null — 부르는 쪽이 기본값으로 간다.
+    // 잠든 서비스 워커를 깨우는 시간이 있어 기다림에 상한을 둔다 (탭별 스킨, docs/plan/2026-10-02-per-tab-skin.md §6).
+    askSW(msg, ms) {
+      return new Promise((res) => {
+        let done = false;
+        const end = (v) => { if (!done) { done = true; res(v); } };
+        const timer = setTimeout(() => end(null), ms || 1000);
+        try {
+          if (!chrome.runtime || !chrome.runtime.id) { clearTimeout(timer); end(null); return; }
+          chrome.runtime.sendMessage(msg, (r) => { void chrome.runtime.lastError; clearTimeout(timer); end(r || null); });
+        } catch (_) { clearTimeout(timer); end(null); }
+      });
+    },
     // 진단 로그. 설정으로 끌 수 있다(:log off).
     //
     // config 를 지연해서 읽는다 — protocol 은 config 보다 먼저 로드되므로

@@ -329,6 +329,11 @@
   // -------------------------------------------------------------- 부팅 시퀀스
   const cfg = await GT.config.load();
   GT_SET_LOCALE(cfg.locale);        // 첫 렌더 전에 정해야 화면이 두 번 안 바뀐다
+  // 탭별 스킨(skin.perTab) — 이 탭에서 고른 스킨을 서비스 워커에 묻는다. 꺼져 있으면 묻지 않는다.
+  // 잠든 서비스 워커를 깨우느라 늦을 수 있어 TAB_SKIN_WAIT_MS 까지만 기다리고, 그 뒤에 오면 그때 바꾼다.
+  // docs/plan/2026-10-02-per-tab-skin.md §6
+  const TAB_SKIN_WAIT_MS = 300;
+  const tabSkinAsk = GT.skin.loadTab(cfg);
 
   const domReady = () => new Promise((r) => {
     if (document.body) return r();
@@ -336,9 +341,15 @@
       .observe(document.documentElement, { childList: true, subtree: true });
   });
   await domReady();
+  await Promise.race([tabSkinAsk, new Promise((r) => setTimeout(r, TAB_SKIN_WAIT_MS))]);
 
-  GT.skin.use(cfg.skin);
+  GT.skin.use(GT.skin.wanted(cfg));
   GT.skin.mount(cfg);
+  // 늦게 온 답 — 기본 스킨으로 그린 뒤라면 이 탭의 스킨으로 바꾼다
+  tabSkinAsk.then(() => {
+    const want = GT.skin.wanted();
+    if (!gone && want !== GT.skin.current.id && GT.skins.get(want)) GT.skin.switch(want, { persist: false });
+  });
 
   // ------------------------------------------------------------------- 입력 처리
   // 단축키(Ctrl+\` · Ctrl+; · ⌘K · Ctrl+B)와 팝업 토글은 **스킨을 붙이자마자** 연결한다.
@@ -381,6 +392,13 @@
       GT.commands.openPalette();
       reply({ ok: true, visible: GT.skin.visible() });
     }
+    // 팝업이 이 탭의 스킨을 골랐다 (탭별로 분할 적용이 켜져 있을 때 — 서비스 워커가 저장한 뒤 보낸다)
+    else if (msg.kind === 'skin') {
+      if (!GT.skin.perTab() || !GT.skins.get(msg.skin)) { reply({ ok: false }); return; }
+      GT.skin.setTabSkin(msg.skin);
+      if (msg.skin !== GT.skin.current.id) GT.skin.switch(msg.skin, { persist: false });
+      reply({ ok: true });
+    }
     else if (msg.kind === 'state') reply({ visible: GT.skin.visible(), degraded: GT.health.degraded,
       warned: GT.health.warned, reasons: GT.health.reasons });
   });
@@ -401,8 +419,12 @@
   GT.config.onChange((c) => {
     GT_SET_LOCALE(c.locale);
     // 옵션 화면에서 스킨을 바꾸면 열려 있는 탭도 바로 따라간다. 저장은 이미 됐다.
-    if (c.skin && c.skin !== GT.skin.current.id && GT.skins.get(c.skin)) {
-      GT.skin.switch(c.skin, { persist: false });
+    // 탭별로 분할 적용이 켜져 있으면 이 탭에서 따로 고른 스킨이 이긴다 — 기본 스킨 변경은 고르지 않은 탭만 따라간다.
+    // 꺼지면 이 탭의 값을 잊고 기본 스킨으로 돌아간다 (서비스 워커가 저장된 값을 지운다).
+    if (!GT.skin.perTab()) GT.skin.setTabSkin(null);
+    const want = GT.skin.wanted(c);
+    if (want && want !== GT.skin.current.id && GT.skins.get(want)) {
+      GT.skin.switch(want, { persist: false });
       return;
     }
     GT.skin.current.applyConfig(c);          // epoch 이 올라가 모든 노드를 다시 만든다
