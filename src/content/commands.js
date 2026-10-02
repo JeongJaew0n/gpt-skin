@@ -132,7 +132,8 @@ GT.commands = (function () {
     const id = target ? target.id : GT.conversation.idFromPath();
     if (!id) return err('대화를 연 다음에 쓰시거나, :rename @<n|id> <새 이름> 으로 지정하세요');
 
-    await GT.convops.rename(id, name);
+    // success 가 거짓이면 아무것도 바꾸지 않는다 — 예전에는 성공이라 알리고 상단바 제목까지 바꿨다 (0.26.4)
+    if (!(await GT.convops.rename(id, name))) return err(GT_T('cmd.op.rejected', name));
     info(`이름 변경: ${name}`);
     // 지금 대화면 상단바 제목도 바로 바꾼다
     if (id === GT.conversation.idFromPath()) {
@@ -147,7 +148,7 @@ GT.commands = (function () {
   def(':pin', '고정 — :pin <n|id> [off]', async (args) => {
     const c = needTarget(args[0]); if (!c) return;
     const on = String(args[1] || '').toLowerCase() !== 'off';
-    await GT.convops.pin(c.id, on);
+    if (!(await GT.convops.pin(c.id, on))) return err(GT_T('cmd.op.rejected', c.title));
     info(on ? `고정: ${c.title}` : `고정 해제: ${c.title}`);
     if (GT.sidebar.isOpen()) await GT.sidebar.refresh();
   });
@@ -155,7 +156,7 @@ GT.commands = (function () {
   def(':archive', '보관 — :archive <n|id> [off]', async (args) => {
     const c = needTarget(args[0]); if (!c) return;
     const on = String(args[1] || '').toLowerCase() !== 'off';
-    await GT.convops.archive(c.id, on);
+    if (!(await GT.convops.archive(c.id, on))) return err(GT_T('cmd.op.rejected', c.title));
     info(on ? `보관: ${c.title}` : `보관 해제: ${c.title}`);
     // 지금 대화인지는 id 로 본다 — 프로젝트 안의 대화는 주소가 /g/<프로젝트>/c/<id> 다
     if (on && GT.conversation.idFromPath() === c.id) GT.navigate.newChat();
@@ -169,7 +170,7 @@ GT.commands = (function () {
       warn(`되돌릴 수 없습니다. 지우려면: :rm ${c.id.slice(0, 8)} yes`);
       return info(`대상: ${c.title}`);
     }
-    await GT.convops.remove(c.id);
+    if (!(await GT.convops.remove(c.id))) return err(GT_T('cmd.op.rejected', c.title));
     warn(`삭제 요청: ${c.title}`);
     if (GT.conversation.idFromPath() === c.id) GT.navigate.newChat();
     if (GT.sidebar.isOpen()) await GT.sidebar.refresh();

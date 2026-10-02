@@ -134,6 +134,8 @@ var GT_I18N = {
     'cmd.chats.usage': '사용법: :chats [on|off|toggle]',
     'cmd.close.desc': '지금 탭을 닫습니다 — 옆 탭으로 갑니다',
     'cmd.close.none': '닫을 탭이 없습니다 (지금 대화가 열린 탭에 없습니다)',
+    // 대화 조작 API 가 200 이지만 success 가 거짓일 때 (0.26.4)
+    'cmd.op.rejected': '바뀌지 않았습니다 — 서버가 요청을 받아들이지 않았습니다: $1',
     'tabs.close': '탭 닫기 (가운데 버튼으로도 닫힙니다)',
     'tabs.untitled': '(제목 없음)',
     'compose.failed': '메시지를 보내지 못했습니다. 쓴 글은 입력줄에 되돌려 두었습니다. 계속되면 :bug 로 보고서를 복사해 개발자에게 알려 주세요',
@@ -338,6 +340,7 @@ var GT_I18N = {
     'cmd.chats.usage': 'Usage: :chats [on|off|toggle]',
     'cmd.close.desc': 'Close the current tab and move to the next one',
     'cmd.close.none': 'No tab to close (the current conversation is not an open tab)',
+    'cmd.op.rejected': 'Nothing changed — the server did not accept the request: $1',
     'tabs.close': 'Close tab (middle-click also closes)',
     'tabs.untitled': '(untitled)',
     'compose.failed': 'The message was not sent. Your text is back in the input line. If this keeps happening, copy a report with :bug and send it to the developer',
