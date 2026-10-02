@@ -122,6 +122,14 @@ if (line) {
   t('Ctrl 없이 ㅠ 만 치면 아무것도 안 한다', calls.sidebar === 3);
   press(input, { key: 'ㅊ', code: 'KeyC', ctrlKey: true });
   t('한글 Ctrl+C (ㅊ) 로 생성을 멈춘다', calls.stop === 1);
+  // 고른 글이 있으면 복사 — 막지도, 생성을 멈추지도 않는다 (0.26.6)
+  input.value = '복사할 글'; input.selectionStart = 0; input.selectionEnd = 5;
+  const cp = press(input, { key: 'c', code: 'KeyC', ctrlKey: true });
+  t('고른 글이 있는 Ctrl+C 는 브라우저 복사에 맡긴다', cp.defaultPrevented === false && calls.stop === 1);
+  input.selectionStart = input.selectionEnd = 5;
+  const st = press(input, { key: 'c', code: 'KeyC', ctrlKey: true });
+  t('고른 글이 없으면 예전처럼 생성을 멈춘다', st.defaultPrevented === true && calls.stop === 2);
+  input.value = ''; input.selectionStart = input.selectionEnd = 0;
 }
 {
   const pal = fs.readFileSync('src/content/palette.js', 'utf8'), sbar = fs.readFileSync('src/content/sidebar.js', 'utf8');

@@ -188,6 +188,9 @@ GT.prompt = (function () {
           GT.store.userSent(text);
         }
       } else if (e.code === 'KeyC' && e.ctrlKey && !e.metaKey) {   // 물리 키 — 한글이면 ㅊ 로 온다
+        // 고른 글이 있으면 복사다 (Windows Terminal 과 같은 규칙). 예전에는 늘 막아서 Windows · Linux 에서
+        // 입력줄의 글을 Ctrl+C 로 복사할 수 없었고 생성 중단이 불렸다 (리뷰 재현 2026-10-02, 0.26.6).
+        if (input.selectionStart !== input.selectionEnd) return;
         e.preventDefault();
         GT.compose.stop()
           ? GT.skin.current.system('info', '중단 요청', null, { quiet: true })
