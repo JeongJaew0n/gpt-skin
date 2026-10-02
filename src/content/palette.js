@@ -133,8 +133,8 @@ GT.palette = (function () {
     input.addEventListener('input', apply);
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { e.preventDefault(); close(); }
-      else if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) { e.preventDefault(); sel = Math.min(sel + 1, filtered.length - 1); draw(); }
-      else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'p')) { e.preventDefault(); sel = Math.max(sel - 1, 0); draw(); }
+      else if (e.key === 'ArrowDown' || (e.ctrlKey && e.code === 'KeyN')) { e.preventDefault(); sel = Math.min(sel + 1, filtered.length - 1); draw(); }
+      else if (e.key === 'ArrowUp' || (e.ctrlKey && e.code === 'KeyP')) { e.preventDefault(); sel = Math.max(sel - 1, 0); draw(); }
       else if (e.key === 'Enter') { e.preventDefault(); commit(); }
       e.stopPropagation();
     });

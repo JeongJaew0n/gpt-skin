@@ -213,7 +213,7 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   S.ui.grid.dispatch('keydown', { key: 'ArrowUp' });
   t('맨 위에서 더 올라가지 않는다', S.ui.namebox.textContent === 'A1');
   S.ui.grid.dispatch('keydown', { key: 'ArrowRight' });
-  const e = S.ui.grid.dispatch('keydown', { key: 'c', metaKey: true });
+  const e = S.ui.grid.dispatch('keydown', { key: 'c', code: 'KeyC', metaKey: true });
   t('⌘C 로 셀 글자를 복사한다', calls.copy.at(-1) === '가' && e.defaultPrevented);
   state.messages = [{ id: 'u0', role: 'user', text: '새 첫 줄' }, ...state.messages];
   S.render();
@@ -229,7 +229,7 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   state.messages = [{ id: 'a1', role: 'assistant', text: '- 하나\n  - 둘' }];
   S.render();
   S.ui.body.children[1].children[2].dispatch('mousedown');
-  S.ui.grid.dispatch('keydown', { key: 'c', ctrlKey: true });
+  S.ui.grid.dispatch('keydown', { key: 'c', code: 'KeyC', ctrlKey: true });
   t('목록 행을 복사하면 글머리를 뺀다', calls.copy.at(-1) === '둘');
   const src = read('src/content/skins/sheet.js');
   t('빈 행은 칸만 숨기고 행 번호는 보인다', /tr\.gs-blank > td:not\(\.gs-rn\) \{ color: transparent; \}/.test(src) && !/gs-blank > td \{ color: transparent/.test(src));
@@ -318,7 +318,7 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   S.ui.body.children[2].children[0].dispatch('mousedown');          // 답의 둘째 행 번호
   t('행 번호를 누르면 메시지 전체를 고른다', S.ui.body.children[1].dataset.msgsel === '1' && S.ui.body.children[2].dataset.msgsel === '1' && S.ui.body.children[0].dataset.msgsel !== '1');
   t('이름 상자는 행 범위', S.ui.namebox.textContent === '2:3');
-  S.ui.grid.dispatch('keydown', { key: 'c', metaKey: true });
+  S.ui.grid.dispatch('keydown', { key: 'c', code: 'KeyC', metaKey: true });
   t('⌘C 는 메시지 원문(마크다운)을 복사한다', calls.copy.at(-1) === '첫 문단\n\n- 항목 **굵게**');
   S.ui.body.children[3].children[0].dispatch('mousedown');          // 명령 결과 행
   t('명령 결과 행은 메시지가 아니라 고르지 않는다', S.ui.body.children[3].dataset.msgsel !== '1' && S.ui.namebox.textContent === '2:3');
@@ -440,7 +440,7 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   t('머리 행은 숫자 정렬을 하지 않는다', !b0.children[1].className.includes('gs-num'));
   t('칸 글자가 그대로', b1.children[1].textContent === '₩12,480,000');
   b1.dispatch('mousedown');
-  S.ui.grid.dispatch('keydown', { key: 'c', metaKey: true });
+  S.ui.grid.dispatch('keydown', { key: 'c', code: 'KeyC', metaKey: true });
   t('표 행을 복사하면 칸을 탭으로 잇는다', calls.copy.at(-1) === '수도권\t₩12,480,000\t많음');
 }
 
@@ -463,7 +463,7 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   const fxRow = lrows.find((tr) => tr.children[2].children.some((c) => c.className === 'gs-fxchip'));
   t('수식 행에 fx 표시', !!fxRow && fxRow.children[2].textContent === 'fx=SUM(A:A)');
   fxRow.children[2].dispatch('mousedown');
-  S.ui.grid.dispatch('keydown', { key: 'c', metaKey: true });
+  S.ui.grid.dispatch('keydown', { key: 'c', code: 'KeyC', metaKey: true });
   t('fx 표시는 복사하지 않는다', calls.copy.at(-1) === '=SUM(A:A)');
   t('블록의 표도 칸으로 나뉜다', lrows.some((tr) => tr.children[2].dataset.kind === 'table' && tr.children[2].children.length === 2));
 

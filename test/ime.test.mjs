@@ -40,8 +40,13 @@ if (line) {
   // 단, 토글 키는 가드보다 먼저 본다 — 맥 한글 입력 상태에선 조합 중이 아니어도 keyCode 229 로 와서
   // 가드 뒤에 두면 한글일 때 Ctrl+` 가 먹지 않았다 (사용자 보고 2026-10-02, 0.20.2)
   t('토글 키는 조합 가드보다 먼저 본다', iToggle > iWin && iToggle < iWinGuard);
-  const iRest = idx.indexOf('opts.openCode && e.ctrlKey', iWin);
-  t('나머지 전역 키는 가드 뒤에 있다', iWinGuard < iRest);
+  // 0.21.1 — Ctrl · ⌘ 단축키도 모두 가드 앞에서 물리 키로 본다. 글자 키(esc · / 등)는 가드 뒤
+  const iOpen = idx.indexOf('opts.openCode && e.ctrlKey', iWin);
+  const iB = idx.indexOf("e.code === 'KeyB'", iWin);
+  const iK = idx.indexOf("e.code === 'KeyK'", iWin);
+  t('Ctrl · ⌘ 단축키도 가드 앞 (한글 상태)', iOpen < iWinGuard && iB < iWinGuard && iK < iWinGuard);
+  t('esc 처리는 가드 뒤', iWinGuard < idx.indexOf("e.key === 'Escape' && GT.sidebar.selecting", iWin));
+  t('글자로 단축키를 보지 않는다', !/e\.key === '[a-z]'/.test(idx));
 
   t('판별식이 두 핸들러보다 먼저 정의된다', idx.indexOf('const composing =') < iInput);
 }
@@ -86,6 +91,43 @@ if (line) {
   t('Cmd 가 붙으면 켜지 않는다 (다른 단축키)', toggled === 4);
   press({ ctrlKey: false, key: '₩' });
   t('Ctrl 없이 ₩ 만 치면 켜지 않는다', toggled === 4);
+}
+
+// --- 한글 상태의 Ctrl · ⌘ 단축키를 실제로 돌린다 (0.21.1) ---
+// 한글이면 글자 키가 한글로 온다(b → ㅠ, k → ㅏ, c → ㅊ). Alt 가 붙어 오기도 한다 (0.20.3 실측: Backquote).
+{
+  const calls = { sidebar: 0, palette: 0, stop: 0 };
+  const input = new EventTarget();
+  Object.assign(input, { value: '', selectionStart: 0, selectionEnd: 0, style: {}, setSelectionRange() {}, focus() {} });
+  const win = new EventTarget();
+  const sb = { console, Object, Array, String, JSON, Promise, setTimeout, AbortController, Event, window: win,
+    GT: { skin: { visible: () => true, current: { setSuggest() {}, setMode() {}, syncFocus() {}, system() {}, focus() {} } },
+      store: { isStreaming: () => false, userHistory: () => [] },
+      commands: { parse: () => false, complete: () => ({ candidates: [] }), applyCompletion: () => null, run: async () => false, openPalette: () => { calls.palette++; } },
+      compose: { stop: () => { calls.stop++; return true; }, stopButton: () => null }, health: { soft() {} },
+      sidebar: { selecting: false, isOpen: () => false, filtering: false, element: null, toggle: () => { calls.sidebar++; } }, palette: { isOpen: () => false } } };
+  vm.createContext(sb);
+  vm.runInContext(idx, sb, { filename: 'prompt.js' });
+  sb.GT.prompt.attach({ el: input, autosize() {} }, { toggle() {}, capturesTyping: true });
+  const press = (target, props) => { const e = new Event('keydown', { cancelable: true }); Object.assign(e, { ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, isComposing: false, keyCode: 0 }, props); target.dispatchEvent(e); return e; };
+  press(win, { key: 'ㅠ', code: 'KeyB', ctrlKey: true, altKey: true });
+  t('한글 Ctrl+B (ㅠ · Alt) 로 목록을 연다', calls.sidebar === 1);
+  press(win, { key: 'ㅠ', code: 'KeyB', ctrlKey: true, isComposing: true, keyCode: 229 });
+  t('조합 표시가 붙어 와도 연다', calls.sidebar === 2);
+  press(win, { key: 'ㅏ', code: 'KeyK', metaKey: true });
+  t('한글 ⌘K (ㅏ) 로 팔레트를 연다', calls.palette === 1);
+  press(win, { key: 'ㄴ', code: 'KeyS', metaKey: true, shiftKey: true });
+  t('한글 ⌘⇧S 로 목록을 연다', calls.sidebar === 3);
+  press(win, { key: 'ㅠ', code: 'KeyB' });
+  t('Ctrl 없이 ㅠ 만 치면 아무것도 안 한다', calls.sidebar === 3);
+  press(input, { key: 'ㅊ', code: 'KeyC', ctrlKey: true });
+  t('한글 Ctrl+C (ㅊ) 로 생성을 멈춘다', calls.stop === 1);
+}
+{
+  const pal = fs.readFileSync('src/content/palette.js', 'utf8'), sbar = fs.readFileSync('src/content/sidebar.js', 'utf8');
+  const sheet = fs.readFileSync('src/content/skins/sheet.js', 'utf8');
+  t('팔레트 · 목록의 Ctrl+N/P 도 물리 키', /e\.code === 'KeyN'/.test(pal) && /e\.code === 'KeyP'/.test(pal) && /e\.code === 'KeyN'/.test(sbar) && /e\.code === 'KeyP'/.test(sbar));
+  t('시트 ⌘C 도 물리 키', !/e\.key === 'c'/.test(sheet) && (sheet.match(/e\.code === 'KeyC'/g) || []).length === 2);
 }
 
 let bad = 0;

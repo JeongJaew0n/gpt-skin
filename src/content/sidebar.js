@@ -383,8 +383,8 @@ GT.sidebar = (function () {
     inp.addEventListener('keydown', (e) => {
       e.stopPropagation();
       if (e.key === 'Escape') { e.preventDefault(); exitFilter(); }
-      else if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) { e.preventDefault(); move(1); }
-      else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'p')) { e.preventDefault(); move(-1); }
+      else if (e.key === 'ArrowDown' || (e.ctrlKey && e.code === 'KeyN')) { e.preventDefault(); move(1); }
+      else if (e.key === 'ArrowUp' || (e.ctrlKey && e.code === 'KeyP')) { e.preventDefault(); move(-1); }
       else if (e.key === 'Enter') { e.preventDefault(); open(chatRows()[sel]); }
     });
     filterEl.appendChild(slash); filterEl.appendChild(inp);

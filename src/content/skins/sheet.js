@@ -696,7 +696,7 @@
   function onGridKey(e) {
     if (!sel) return;
     if (sel.msg) {
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'c' || e.key === 'C')) {
+      if ((e.metaKey || e.ctrlKey) && e.code === 'KeyC') {
         const picked = (shadow.getSelection ? shadow.getSelection() : document.getSelection());
         if (picked && String(picked).length) return;
         const text = msgText.get(sel.msg);
@@ -717,7 +717,7 @@
       if (tr.scrollIntoView) tr.scrollIntoView({ block: 'nearest' });
       return;
     }
-    if ((e.metaKey || e.ctrlKey) && (e.key === 'c' || e.key === 'C')) {
+    if ((e.metaKey || e.ctrlKey) && e.code === 'KeyC') {
       const picked = (shadow.getSelection ? shadow.getSelection() : document.getSelection());
       if (picked && String(picked).length) return;       // 드래그로 고른 글자가 있으면 그걸 복사한다 (기본 동작)
       const td = sel.tr.children[1 + c];

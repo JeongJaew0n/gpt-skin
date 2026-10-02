@@ -15,7 +15,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('손잡이는 글리프가 아니라 SVG 로 그린다', /createElementNS\([^)]*svg/.test(tty) && /'line'/.test(tty));
   t('손잡이 클릭이 toggle 로 간다', /burger\.addEventListener\('click'[\s\S]{0,120}GT\.sidebar\.toggle\(\)/.test(tty));
   t('사이드바 안에도 접기 손잡이', /gt-sb-close/.test(sb) && /toggle\(false\)/.test(sb));
-  t('Ctrl\+B 도 같은 경로', /e\.key === 'b' && e\.ctrlKey[\s\S]{0,80}GT\.sidebar\.toggle\(\)/.test(prm));
+  t('Ctrl\+B 도 같은 경로', /e\.code === 'KeyB' && e\.ctrlKey[\s\S]{0,80}GT\.sidebar\.toggle\(\)/.test(prm));
   t(':sidebar 도 같은 경로', /GT\.sidebar\.toggle\(a === 'on'/.test(cmds));
   t('config.set 을 직접 부르는 토글이 남아 있지 않다',
     !/config\.set\('sidebar\.visible'/.test(cmds) && !/config\.set\('sidebar\.visible'/.test(idx) && !/config\.set\('sidebar\.visible'/.test(prm));

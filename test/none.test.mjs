@@ -56,10 +56,11 @@ function promptWith(options) {
 }
 {
   const p = promptWith({ visible: false, opts: { openCode: 'Semicolon' } });
-  p.key(p.win, { key: ';', code: 'Semicolon', ctrlKey: true, isComposing: true, keyCode: 229 });
-  t('조합 중 Ctrl+; 는 무시한다', p.calls.show === 0);
   p.key(p.win, { key: ';', code: 'Semicolon', ctrlKey: true, metaKey: true });
   t('⌘ 가 섞이면 무시한다', p.calls.show === 0);
+  // 0.21.1 — 한글 입력 상태는 조합 표시 · Alt 가 붙어 온다. 수정키 단축키는 조합을 만들지 않으므로 연다
+  p.key(p.win, { key: 'ㅣ', code: 'Semicolon', ctrlKey: true, altKey: true, isComposing: true, keyCode: 229 });
+  t('한글 상태(조합 표시 · Alt)에서도 Ctrl+; 로 연다', p.calls.show === 1);
   p.key(p.win, { key: 'ㅣ', code: 'Semicolon', ctrlKey: true });
   t('레이아웃과 무관하게 물리 키로 본다', p.calls.show === 1);
 }
