@@ -34,6 +34,19 @@ GT.tabs = (function () {
     return list.slice();
   }
 
+  // 다른 브라우저 탭이 저장한 목록을 받는다. 저장은 메모리의 목록을 통째로 쓰므로, 안 받으면
+  // 두 탭이 서로의 탭을 지운다 — A · B 가 [x,y] 를 읽고 B 가 z 를 열고 A 가 w 를 열면 z 가 사라졌다
+  // (리뷰 재현 2026-10-02). 같은 목록이면(자기 저장의 메아리) 다시 그리지 않는다.
+  // 남는 경쟁: 두 탭이 같은 틱에 저장하면 여전히 나중 것이 이긴다 [가정: 드묾].
+  function onStored(changes, area) {
+    if (area !== 'local' || !changes || !changes[KEY]) return;
+    const next = Array.isArray(changes[KEY].newValue) ? changes[KEY].newValue.filter(valid).slice(0, MAX) : [];
+    if (JSON.stringify(next) === JSON.stringify(list)) return;
+    list = next;
+    emit();
+  }
+  try { chrome.storage.onChanged.addListener(onStored); } catch (_) {}
+
   // 넘치면 가장 오래 안 본 탭부터 닫는다. 방금 연 탭은 가장 최근에 본 탭이라 닫히지 않는다.
   function trim() {
     while (list.length > MAX) {

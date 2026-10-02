@@ -236,6 +236,34 @@ const ids = (T) => T.list().map((x) => x.id).join(',');
   t('시트: 탭 줄을 숨겨도 지금 탭에 받는 중 표시', /tabEl\(\(s\.conversationTitle \|\| T\('sheet\.newChat'\)\) \+ \(busy \? ' …' : ''\), true\)/.test(sheet));
 }
 
+// 브라우저 탭 두 개가 같은 저장소를 쓴다 — 서로의 탭을 지우지 않는다 (0.26.1, 리뷰 재현 2026-10-02)
+// 진짜 chrome.storage 처럼 set 이 끝나면 모든 인스턴스의 onChanged 를 부른다.
+{
+  const store = {}; const subs = [];
+  const local = { get: async (k) => (k in store ? { [k]: JSON.parse(JSON.stringify(store[k])) } : {}),
+    set: async (o) => { const changes = {}; Object.keys(o).forEach((k) => { changes[k] = { oldValue: store[k], newValue: JSON.parse(JSON.stringify(o[k])) }; store[k] = JSON.parse(JSON.stringify(o[k])); }); subs.forEach((f) => f(changes, 'local')); } };
+  const inst = (path) => {
+    const sb = { console, Object, Array, String, Number, JSON, Math, Promise, Date, setTimeout, clearTimeout, location: { pathname: path },
+      chrome: { storage: { local, onChanged: { addListener: (f) => subs.push(f) } } }, GT: { navigate: { to() {}, newChat() {} } } };
+    vm.createContext(sb); vm.runInContext(read('src/content/tabs.js'), sb, { filename: 'tabs.js' });
+    return sb.GT.tabs;
+  };
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const A = inst('/c/x'), B = inst('/c/x');
+  A.open('/c/x', ''); A.open('/c/y', ''); await tick();
+  await A.load(); await B.load();
+  let redraw = 0; B.onChange(() => { redraw++; });
+  B.open('/c/z', ''); await tick();
+  t('다른 탭이 연 대화가 이 탭 목록에도 들어온다', ids(A) === 'x,y,z');
+  A.open('/c/w', ''); await tick();
+  t('그 뒤 이 탭이 열어도 다른 탭의 대화가 사라지지 않는다', store['gt.openTabs'].map((x) => x.id).join(',') === 'x,y,z,w' && ids(B) === 'x,y,z,w');
+  A.close('y'); await tick();
+  t('닫은 것도 다른 탭에 따라간다', ids(B) === 'x,z,w');
+  const before = redraw; B.title('z', '제트'); await tick();
+  t('자기 저장이 메아리로 돌아와도 한 번만 다시 그린다', redraw === before + 1 && A.list().find((x) => x.id === 'z').title === '제트');
+  t('다른 저장소(sync) 변경은 무시한다', (subs.forEach((f) => f({ 'gt.openTabs': { newValue: [] } }, 'sync')), ids(A) === 'x,z,w'));
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');
