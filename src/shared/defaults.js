@@ -1,7 +1,7 @@
 // gpt-skin 빌드 스탬프.
 // 크롬은 언팩 확장 파일을 캐시한다. "고쳤는데 왜 그대로지?" 를 추측으로 풀지 않으려고 둔다.
 // 터미널 부팅 줄과 :version 에 찍힌다. 이 값이 안 바뀌면 확장이 다시 로드되지 않은 것이다.
-var GT_BUILD = '2026-10-02 13:54';
+var GT_BUILD = '2026-10-02 14:03';
 
 // 버전은 manifest.json 이 정본이다. 소스에 또 적으면 반드시 갈린다 —
 // 실제로 manifest 가 0.1.0 인 동안 :version 이 0.1.0 을 따로 들고 있었다.
@@ -66,6 +66,8 @@ var GT_SCHEMA = [
   { section: 'display', key: 'sheet.theme', type: 'enum', def: 'green', skin: 'sheet',
     choices: ['green', 'blue'] },
   { section: 'display', key: 'sheet.ribbon', type: 'bool', def: true, skin: 'sheet' },
+  // 시트 탭 줄에 다른 대화를 늘어놓을지. 끄면 지금 대화 탭과 + 만 남고 대화 목록을 읽지 않는다 (사용자 요청 2026-10-02).
+  { section: 'display', key: 'sheet.chatTabs', type: 'bool', def: false, skin: 'sheet' },
   // 시트는 스프레드시트 글꼴을 쓴다. none 의 명령줄은 이 글꼴을 쓴다.
   { section: 'display', key: 'font.family', type: 'text', skin: ['terminal', 'none'],
     def: "'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace" },

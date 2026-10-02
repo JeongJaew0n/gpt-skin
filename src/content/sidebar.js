@@ -38,14 +38,15 @@ GT.sidebar = (function () {
   }
 
   async function toggleGroup(key) {
-    const opening = collapsed.has(key);
+    const gid = key.startsWith('p:') ? key.slice(2) : null;
+    // 아직 안 읽은 프로젝트는 접힌 채로 보이지만 collapsed 에는 없다 — 누르면 '펼치기' 다
+    const opening = collapsed.has(key) || !!(gid && !GT.chats.isProjectLoaded(gid));
     if (opening) collapsed.delete(key); else collapsed.add(key);
     saveCollapsed();
     rebuild();
 
     // 프로젝트를 처음 펼치면 그 안의 대화를 그때 읽어온다.
     // 첫 페이지(40개)에 안 걸린 프로젝트는 비어 보이기 때문이다.
-    const gid = key.startsWith('p:') ? key.slice(2) : null;
     if (!opening || !gid || GT.chats.isProjectLoaded(gid)) return;
     busy = '프로젝트 읽는 중…'; draw();
     try { absorb(await GT.chats.loadProject(gid)); }
@@ -83,7 +84,7 @@ GT.sidebar = (function () {
         const h = el('div', 'gt-sb-head');
         h.appendChild(el('span', 'gt-sb-caret', r.collapsed ? '▸' : '▾'));
         h.appendChild(el('span', 'gt-sb-headlabel', r.label));
-        h.appendChild(el('span', 'gt-sb-count', String(r.count)));
+        h.appendChild(el('span', 'gt-sb-count', r.count == null ? '' : String(r.count)));
         h.addEventListener('mousedown', (e) => { e.preventDefault(); toggleGroup(r.key); });
         listEl.appendChild(h);
         return;

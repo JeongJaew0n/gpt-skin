@@ -57,14 +57,20 @@ GT.chats = (function () {
   function flatten(g, collapsed) {
     const shut = collapsed instanceof Set ? collapsed : new Set(collapsed || []);
     const rows = [];
-    const section = (key, label, items) => {
-      if (!items.length) return;
-      const isShut = shut.has(key);
-      rows.push({ kind: 'header', key, label, collapsed: isShut, count: items.length });
+    // keep: 비어 있어도 머리줄을 낸다. 아직 안 읽은 프로젝트(loaded false)는 접힌 채, 개수 없이(null).
+    //
+    // 프로젝트의 대화는 기본 대화 목록 API 에 들어 있지 않아 처음엔 늘 비어 있다. 예전에는 빈 묶음을 건너뛰어
+    // 프로젝트 이름이 한 번도 안 보였고, 펼칠 때 읽어 오는 코드(sidebar.toggleGroup)에 닿을 길이 없었다
+    // (실측 2026-10-02, 로그인 계정: 프로젝트 API 5개 · 원본 사이드바 링크 8개 · 우리 목록엔 ~/chats 만).
+    const section = (key, label, items, keep, loaded) => {
+      if (!items.length && !keep) return;
+      const unread = keep && !items.length && !loaded;
+      const isShut = unread || shut.has(key);
+      rows.push({ kind: 'header', key, label, collapsed: isShut, count: unread ? null : items.length });
       if (!isShut) items.forEach((c) => rows.push({ kind: 'chat', group: key, ...c }));
     };
     section('pinned', '~/pinned', g.pinned);
-    g.projects.forEach((p) => section('p:' + p.id, '~/projects/' + p.name, p.items));
+    g.projects.forEach((p) => section('p:' + p.id, '~/projects/' + p.name, p.items, true, !!p.loaded));
     section('chats', '~/chats', g.chats);
     return rows;
   }
@@ -122,6 +128,7 @@ GT.chats = (function () {
       if (have.has(p.id)) return;
       g.projects.push({ id: p.id, name: p.name, items: [] });
     });
+    g.projects.forEach((p) => { p.loaded = loaded.has(p.id); });
     g.projects.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
     return g;
   };

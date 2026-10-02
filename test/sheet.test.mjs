@@ -326,10 +326,31 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   t('셀을 누르면 메시지 선택이 풀린다', S.ui.body.children[1].dataset.msgsel !== '1' && S.ui.namebox.textContent === 'B1');
 }
 
-// ---------------------------------------------------------------- 시트 탭
+// ---------------------------------------------------------------- 시트 탭 — 기본은 대화 목록을 숨긴다 (0.21.0)
+{
+  const { S, calls, sb } = load();
+  let loads = 0;
+  const realLoad = sb.GT.chats.load;
+  sb.GT.chats.load = async () => { loads++; return realLoad(); };
+  S.mount({ 'font.size': 13 });
+  await tick(); await tick();
+  t('기본은 지금 대화 탭만', S.ui.tablist.children.length === 1 && S.ui.tablist.children[0].textContent === '도커 정리');
+  t('기본은 대화 목록을 읽지 않는다', loads === 0);
+  t('넘기기 버튼도 숨긴다', S.ui.tabnav.hidden === true);
+  S.ui.tabs.children[2].dispatch('click');
+  t('숨겨도 + 는 새 대화', calls.newChat === 1);
+  S.applyConfig({ 'font.size': 13, 'sheet.chatTabs': true });
+  await tick(); await tick();
+  t('켜면 목록을 읽어 탭으로 늘어놓는다', loads === 1 && S.ui.tablist.children.length === 3 && S.ui.tabnav.hidden === false);
+  S.applyConfig({ 'font.size': 13, 'sheet.chatTabs': false });
+  t('다시 끄면 지금 대화 탭만', S.ui.tablist.children.length === 1);
+  t('설정 항목이 시트 전용 · 기본 끔', (() => { const f = sb.GT_SCHEMA.find((x) => x.key === 'sheet.chatTabs'); return f && f.def === false && f.skin === 'sheet' && f.type === 'bool'; })());
+}
+
+// ---------------------------------------------------------------- 시트 탭 — 켰을 때
 {
   const { S, calls } = load();
-  S.mount({ 'font.size': 13 });
+  S.mount({ 'font.size': 13, 'sheet.chatTabs': true });
   await tick(); await tick();
   const tabs = S.ui.tablist.children.map((n) => n.textContent);
   t('첫 탭은 지금 대화', tabs[0] === '도커 정리' && S.ui.tablist.children[0].dataset.on === '1');

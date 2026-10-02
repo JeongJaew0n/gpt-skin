@@ -147,6 +147,7 @@
 .gs-tabs { flex: 0 0 auto; display: flex; align-items: stretch; height: 26px; padding: 0 4px;
   border-top: 1px solid var(--gs-hdr-b); background: var(--gs-hdr); font-size: 11.5px; user-select: none; }
 .gs-tabnav { display: flex; align-items: center; gap: 2px; padding: 0 4px; color: var(--gt-fg-dim); }
+.gs-tabnav[hidden] { display: none; }
 .gs-tabnav button, .gs-plus, .gs-zoom button { all: unset; cursor: pointer; padding: 0 5px; }
 .gs-tabnav button:hover, .gs-plus:hover, .gs-zoom button:hover { color: var(--gt-fg); }
 .gs-tablist { flex: 1; min-width: 0; display: flex; overflow: hidden; scroll-behavior: smooth; }
@@ -272,6 +273,7 @@
     prev.addEventListener('click', () => { ui.tablist.scrollLeft -= 240; });
     next.addEventListener('click', () => { ui.tablist.scrollLeft += 240; });
     nav.appendChild(prev); nav.appendChild(next);
+    ui.tabnav = nav;
     ui.tablist = el('div', 'gs-tablist');
     ui.tablist.addEventListener('wheel', (e) => { ui.tablist.scrollLeft += e.deltaY || e.deltaX; e.preventDefault(); }, { passive: false });
     const plus = el('button', 'gs-plus', '+'); plus.title = T('sheet.newTab');
@@ -314,6 +316,9 @@
     varStyle.textContent = `.gt-root{${decls};--gt-font:inherit;--gt-size:${cfg['font.size']}px;`
       + `--gt-lh:${Number(cfg['line.height']) || 1.5};--gt-sb-w:${Number(cfg['sidebar.width']) || 30}ch;font-size:${cfg['font.size']}px;}`;
     if (ui.ribbon) ui.ribbon.hidden = cfg['sheet.ribbon'] === false;
+    // 대화 목록 탭은 켰을 때만. 방금 켰으면 목록을 읽는다.
+    const want = cfg['sheet.chatTabs'] === true;
+    if (want !== chatTabs) { chatTabs = want; if (want) loadChats(true); else drawTabs(); }
     epoch += 1;
   }
 
@@ -732,7 +737,11 @@
   }
 
   // ---------------------------------------------------------------- 시트 탭 (대화 목록)
+  // 시트 탭 줄에 다른 대화를 늘어놓는가 (설정 sheet.chatTabs, 기본 끔). 끄면 목록을 읽지도 않는다.
+  let chatTabs = false;
+
   async function loadChats(force) {
+    if (!chatTabs) { drawTabs(); return; }
     const now = Date.now();
     if (!force && now - chatsAt < 30000) return;
     chatsAt = now;
@@ -757,6 +766,8 @@
     cur.dataset.on = '1';
     cur.title = cur.textContent;
     ui.tablist.appendChild(cur);
+    if (ui.tabnav) ui.tabnav.hidden = !chatTabs;
+    if (!chatTabs) return;
     chats.filter((c) => c.id !== curId).slice(0, 40).forEach((c) => {
       const t = el('div', 'gs-tab', c.title);
       t.title = c.title;
@@ -884,7 +895,7 @@
       msgText.clear();
       systemLog.length = 0;
       localLog.length = 0; localMemo.clear();
-      sel = null; chats = []; chatsAt = 0; chatsPath = '';
+      sel = null; chats = []; chatsAt = 0; chatsPath = ''; chatTabs = false;
       shadow = null; root = null; varStyle = null;
       Object.keys(ui).forEach((k) => { delete ui[k]; });
     },
