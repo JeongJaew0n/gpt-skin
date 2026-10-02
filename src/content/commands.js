@@ -157,7 +157,8 @@ GT.commands = (function () {
     const on = String(args[1] || '').toLowerCase() !== 'off';
     await GT.convops.archive(c.id, on);
     info(on ? `보관: ${c.title}` : `보관 해제: ${c.title}`);
-    if (on && location.pathname === '/c/' + c.id) GT.navigate.newChat();
+    // 지금 대화인지는 id 로 본다 — 프로젝트 안의 대화는 주소가 /g/<프로젝트>/c/<id> 다
+    if (on && GT.conversation.idFromPath() === c.id) GT.navigate.newChat();
     if (GT.sidebar.isOpen()) await GT.sidebar.refresh();
   });
 
@@ -170,7 +171,7 @@ GT.commands = (function () {
     }
     await GT.convops.remove(c.id);
     warn(`삭제 요청: ${c.title}`);
-    if (location.pathname === '/c/' + c.id) GT.navigate.newChat();
+    if (GT.conversation.idFromPath() === c.id) GT.navigate.newChat();
     if (GT.sidebar.isOpen()) await GT.sidebar.refresh();
   });
 
@@ -222,8 +223,9 @@ GT.commands = (function () {
     const id = c ? c.id : GT.conversation.idFromPath();
     if (!id) return err('공유할 대화를 찾지 못했습니다 — :share <n|id>');
 
-    if (location.pathname !== '/c/' + id) {
-      GT.navigate.to('/c/' + id);
+    // 지금 대화면 옮기지 않는다. 프로젝트 대화는 주소가 /g/<프로젝트>/c/<id> 라 '/c/' + id 와 비교하면 늘 다르다
+    if (GT.conversation.idFromPath() !== id) {
+      GT.navigate.to((c && c.href) || '/c/' + id);
       await new Promise((r) => setTimeout(r, 1200));
     }
     const btn = document.querySelector(GT.convops.SHARE_BUTTON);

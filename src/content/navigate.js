@@ -43,7 +43,7 @@ GT.navigate = (function () {
       if (mine !== seq) return;                      // 그 뒤에 다른 이동이 있었다 — 그쪽이 확인한다
       if (location.pathname === href) return;        // 넘어갔다
       if (location.pathname !== from) return;        // 다른 곳으로라도 움직였다 — 라우터는 살아 있다
-      try { GT.bugs.record('navigate-fallback', `라우팅이 안 먹어 새로 연다: ${href.replace(/\/c\/[^/]+/, '/c/…')}`); } catch (_) {}
+      try { GT.bugs.record('navigate-fallback', `라우팅이 안 먹어 새로 연다: ${GT.bugs.maskPath(href)}`); } catch (_) {}
       location.assign(href);
     }, VERIFY_MS);
   }

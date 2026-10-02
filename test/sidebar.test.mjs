@@ -65,6 +65,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
              flatten: () => [] }
   };
   vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync('src/content/conversation.js', 'utf8'), sandbox, { filename: 'conversation.js' });   // 지금 대화 판별 (0.26.2)
   vm.runInContext(fs.readFileSync('src/content/sidebar.js', 'utf8'), sandbox, { filename: 'sidebar.js' });
   const S = sandbox.GT.sidebar;
   sandbox.__nav = nav;
@@ -107,6 +108,7 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
              flatten: () => [] }
   };
   vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync('src/content/conversation.js', 'utf8'), sandbox, { filename: 'conversation.js' });   // 지금 대화 판별 (0.26.2)
   vm.runInContext(fs.readFileSync('src/content/sidebar.js', 'utf8'), sandbox, { filename: 'sidebar.js' });
   const S = sandbox.GT.sidebar;
   S.build();

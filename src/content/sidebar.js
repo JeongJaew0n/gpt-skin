@@ -54,10 +54,8 @@ GT.sidebar = (function () {
     busy = ''; draw();
   }
 
-  const currentId = () => {
-    const m = /^\/c\/([0-9a-f-]+)/.exec(location.pathname);
-    return m ? m[1] : null;
-  };
+  // 프로젝트 안의 대화(/g/<프로젝트>/c/<id>)도 지금 대화다. 판별은 conversation 한 곳에서 한다.
+  const currentId = () => GT.conversation.idFromPath();
 
   function applyFilter() {
     if (!query) { visibleRows = rows; return; }

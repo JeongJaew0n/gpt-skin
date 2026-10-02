@@ -8,6 +8,8 @@ import fs from 'node:fs'; import vm from 'node:vm';
 
 const results = []; const t = (n, ok) => results.push([n, ok]);
 const src = fs.readFileSync('src/content/navigate.js', 'utf8');
+// 버그 기록의 경로 가리기는 bugs.js 의 것을 그대로 쓴다 (0.26.2 — 예전엔 navigate 가 /c/ 만 따로 가렸다)
+const realMask = (() => { const b = { console, String, Date, GT: { log() {} } }; vm.createContext(b); vm.runInContext(fs.readFileSync('src/content/bugs.js', 'utf8'), b); return b.GT.bugs.maskPath; })();
 
 function load({ anchors = {}, path = '/c/a', state = { idx: 3 } } = {}) {
   const calls = { pushed: [], pops: [], clicks: [], assigned: [], records: [] };
@@ -22,7 +24,7 @@ function load({ anchors = {}, path = '/c/a', state = { idx: 3 } } = {}) {
     PopStateEvent: function PopStateEvent(type, o) { this.type = type; Object.assign(this, o || {}); },
     window: { dispatchEvent: (e) => { calls.pops.push(e); return true; } },
     document: { querySelector: (q) => { const m = /a\[href="([^"]+)"\]/.exec(q); return m ? anchors[m[1]] || null : null; } } };
-  sb.GT = { bugs: { record: (...a) => calls.records.push(a) } };
+  sb.GT = { bugs: { record: (...a) => calls.records.push(a), maskPath: realMask } };
   vm.createContext(sb);
   vm.runInContext(src, sb, { filename: 'navigate.js' });
   const link = (href, visible) => ({ getClientRects: () => (visible ? [{}] : []), click() { calls.clicks.push(href); if (visible) loc.pathname = href; } });
