@@ -302,6 +302,14 @@ function loadHealth() {
   t('보고서의 found 는 실제로 고를 후보', p.found === '.ProseMirror[contenteditable="true"]');
 }
 
+// 탭별로 분할 적용이면 이 탭 스킨이 따로 고른 것인지 기본인지 (0.28.1)
+{
+  const sk = (perTab, tabSkin) => ({ skin: { current: { id: 'sheet' }, visible: () => true, perTab: () => perTab, tabSkin } });
+  t('보고서 — 꺼져 있으면 예전 그대로', /skin sheet · visible/.test(loadBugs(sk(false, null)).B.report()));
+  t('보고서 — 이 탭에서 고른 스킨이면 (tab)', /skin sheet \(tab\) · visible/.test(loadBugs(sk(true, 'sheet')).B.report()));
+  t('보고서 — 기본을 따르면 (default)', /skin sheet \(default\) · visible/.test(loadBugs(sk(true, null)).B.report()));
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

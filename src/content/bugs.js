@@ -89,7 +89,8 @@ GT.bugs = (function () {
       `${ua} · ${plat} · locale ${typeof GT_LOCALE !== 'undefined' ? GT_LOCALE : '?'}`,
       `page ${maskPath(typeof location !== 'undefined' ? location.pathname : '')}`,
       safe(() => `host ${GT.cover.attached() ? 'attached' : 'DETACHED'} · restored ${GT.cover.restored}`, 'host ?'),
-      safe(() => `skin ${GT.skin.current.id} · visible ${GT.skin.visible() ? 'yes' : 'no'} · onBreak ${GT.config.get('onBreak')} · degraded ${GT.health.degraded ? 'yes' : 'no'}`, 'skin ?'),
+      // 탭별로 분할 적용이면 이 탭이 따로 고른 스킨인지(tab) 기본을 따르는지(default) — 같은 사용자도 탭마다 화면이 다르다 (0.28.1)
+      safe(() => `skin ${GT.skin.current.id}${GT.skin.perTab && GT.skin.perTab() ? (GT.skin.tabSkin ? ' (tab)' : ' (default)') : ''} · visible ${GT.skin.visible() ? 'yes' : 'no'} · onBreak ${GT.config.get('onBreak')} · degraded ${GT.health.degraded ? 'yes' : 'no'}`, 'skin ?'),
       `checks ${checks}`,
       `warnings ${reasons.length}` + (reasons.length ? '\n' + reasons.map((r) => '  - ' + r).join('\n') : '')
     ];
