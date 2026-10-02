@@ -99,9 +99,6 @@ GT.theme = (function () {
   background: var(--gt-green); animation: gt-loadbar 1s ease-in-out infinite; }
 @keyframes gt-loadbar { to { left: 100%; } }
 @media (prefers-reduced-motion: reduce) { .gt-loadbar[data-on="1"]::before { animation: none; left: 0; width: 100%; opacity: .6; } }
-/* 받는 동안 본문은 아직 이전 대화다 — 흐리게 해서 새 대화로 착각하지 않게 */
-.gt-scroll { transition: opacity .15s linear; }
-.gt-root[data-loading="1"] .gt-scroll { opacity: .5; }
 .gt-tab-new { cursor: pointer; flex: 0 0 auto; color: var(--gt-fg-dim); border-right: 0; }
 .gt-tab-new:hover { color: var(--gt-fg); }
 
@@ -192,7 +189,9 @@ GT.theme = (function () {
 .gt-sb-src[data-bad="1"] { color: var(--gt-red); }
 
 /* ---- scrollback ---- */
-.gt-scroll { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; padding: 22px 28px 8px; }
+.gt-scroll { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; padding: 22px 28px 8px; transition: opacity .15s linear; }
+/* 받는 동안 본문은 아직 이전 대화다 — 흐리게 해서 새 대화로 착각하지 않게 */
+.gt-root[data-loading="1"] .gt-scroll { opacity: .5; }
 .gt-turn { display: flex; flex-direction: column; gap: 4px; margin-bottom: 20px; }
 .gt-meta { display: flex; gap: 10px; font-size: 11.5px; color: var(--gt-fg-faint); align-items: center; }
 .gt-user-line { display: flex; gap: 10px; }
