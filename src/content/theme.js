@@ -76,14 +76,21 @@ GT.theme = (function () {
 .gt-tab { display: flex; align-items: center; gap: 8px; padding: 0 14px;
   border-right: 1px solid var(--gt-bg-3); color: var(--gt-fg-faint); }
 .gt-tab[data-active="1"] { color: var(--gt-fg); box-shadow: inset 0 -2px 0 var(--gt-green); }
-/* 대화 탭(:chats) — 가로로 쭉 늘어놓고 넘치면 가로로 민다. 스크롤바는 숨긴다(휠로 민다). */
-.gt-tablist { display: flex; align-items: stretch; flex: 1 1 auto; min-width: 0; overflow-x: auto; }
+/* 대화 탭(:chats) — 가로로 쭉 늘어놓고 넘치면 가로로 민다. 스크롤바는 숨긴다(휠로 민다).
+   구분은 '칸 채우기 + 틈 + 글자 밝기' 로 한다 (사용자 보고 2026-10-02: 다른 탭 구분이 힘들다).
+   예전: 안 고른 탭 글자 fg-faint 2.3:1 · 구분선 bg-3 1.2:1 (modern-dark) — 글자도 경계도 바탕에 묻혔다.
+   테두리를 진하게 하면 선만 늘고, 채도를 올리면 이미 뜻이 있는 색(초록 = 지금 · 시안 = 생성 중)과 겹친다.
+   그래서 탭마다 한 단계 밝은 바탕(bg-2)에 2px 틈, 글자는 fg-dim(5.6:1). 지금 탭은 본문 바탕(bg-1) + fg + 초록 밑줄. */
+.gt-tabbar { background: var(--gt-bg-0); }
+.gt-tablist { display: flex; align-items: stretch; gap: 2px; padding: 3px 0 0 3px; flex: 1 1 auto; min-width: 0; overflow-x: auto; }
 .gt-tablist::-webkit-scrollbar { display: none; }
-.gt-tablist .gt-tab { flex: 0 0 auto; max-width: 26ch; cursor: pointer; white-space: nowrap; }
+.gt-tablist .gt-tab { flex: 0 0 auto; max-width: 26ch; cursor: pointer; white-space: nowrap;
+  background: var(--gt-bg-2); color: var(--gt-fg-dim); border-right: 0; padding: 0 12px; }
 .gt-tablist .gt-tab > span:last-child { overflow: hidden; text-overflow: ellipsis; }
-.gt-tablist .gt-tab:hover { color: var(--gt-fg); background: var(--gt-bg-2); }
-.gt-tab-n { color: var(--gt-fg-faint); }
-.gt-tab-new { cursor: pointer; flex: 0 0 auto; }
+.gt-tablist .gt-tab:hover { color: var(--gt-fg); background: var(--gt-bg-3); }
+.gt-tablist .gt-tab[data-active="1"] { background: var(--gt-bg-1); color: var(--gt-fg); cursor: default; }
+.gt-tab-n { color: inherit; opacity: .65; }
+.gt-tab-new { cursor: pointer; flex: 0 0 auto; color: var(--gt-fg-dim); border-right: 0; }
 .gt-tab-new:hover { color: var(--gt-fg); }
 
 /* ---- 사이드바 ---- */

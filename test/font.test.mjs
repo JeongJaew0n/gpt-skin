@@ -85,6 +85,24 @@ t('범위가 스키마와 명령에서 같다', /min: 10, max: 24/.test(defs) &&
   t('8px·10px 짜리가 남아 있지 않다', !/::-webkit-scrollbar \{ width: (8|10)px/.test(css));
 }
 
+// --- 터미널 대화 탭 구분 (0.24.2) — 사용자 보고: 다른 탭 구분이 힘들다 ---
+{
+  const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const lum = (h) => { const n = parseInt(h.slice(1), 16); return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255); };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const themeSrc = fs.readFileSync('src/content/theme.js', 'utf8');
+  t('안 고른 탭: 한 단계 밝은 바탕 · fg-dim 글자 · 칸 사이 틈',
+    /\.gt-tablist \.gt-tab \{[^}]*background: var\(--gt-bg-2\); color: var\(--gt-fg-dim\)/.test(themeSrc) && /\.gt-tablist \{[^}]*gap: 2px/.test(themeSrc));
+  t('지금 탭: 본문 바탕 · fg', /\.gt-tablist \.gt-tab\[data-active="1"\] \{ background: var\(--gt-bg-1\); color: var\(--gt-fg\)/.test(themeSrc));
+  // 모든 테마에서 안 고른 탭 글자가 4.5:1 이상 (예전 fg-faint 는 modern-dark 에서 2.3:1)
+  for (const th of ['modern-dark', 'crt-green', 'amber']) {
+    const block = themeSrc.slice(themeSrc.indexOf(`'${th}'`) >= 0 ? themeSrc.indexOf(`'${th}'`) : themeSrc.indexOf(`${th}:`));
+    const tok = (k) => (new RegExp(`'--gt-${k}': '(#[0-9a-f]{6})'`).exec(block) || [])[1];
+    const dim = tok('fg-dim'), bg2 = tok('bg-2');
+    t(`${th}: 안 고른 탭 글자 4.5:1 이상`, !!dim && !!bg2 && ratio(dim, bg2) >= 4.5);
+  }
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');
