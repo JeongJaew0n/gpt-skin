@@ -80,8 +80,12 @@ if (line) {
   t('keyCode 229(조합 중 표시)로 와도 켠다', toggled === 2 && e2.defaultPrevented);
   press({ isComposing: true, keyCode: 229 });
   t('조합 중에도 켠다', toggled === 3);
+  press({ key: '`', altKey: true });
+  t('한글 상태처럼 Alt 가 붙어 와도 켠다 (실측: ctrl · alt 둘 다 true)', toggled === 4);
+  press({ metaKey: true });
+  t('Cmd 가 붙으면 켜지 않는다 (다른 단축키)', toggled === 4);
   press({ ctrlKey: false, key: '₩' });
-  t('Ctrl 없이 ₩ 만 치면 켜지 않는다', toggled === 3);
+  t('Ctrl 없이 ₩ 만 치면 켜지 않는다', toggled === 4);
 }
 
 let bad = 0;

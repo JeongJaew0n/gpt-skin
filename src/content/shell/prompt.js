@@ -211,7 +211,9 @@ GT.prompt = (function () {
       // 조합 가드보다 먼저 본다 — 맥 한글 입력 상태에서는 조합 중이 아닌데도 keydown 이 '조합 중'(keyCode 229)으로
       // 와서, 가드 뒤에 두면 한글일 때 Ctrl+` 가 먹지 않았다 (사용자 보고 2026-10-02).
       // Ctrl 을 누른 채의 ` 는 글자를 만들지 않으므로 조합을 깨뜨릴 걱정이 없다.
-      if (e.code === 'Backquote' && e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); opts.toggle(); return; }
+      // Alt 는 따지지 않는다 — 맥 한글 입력 상태에서는 Ctrl+` 를 누르면 Alt 가 붙어서 온다
+      // (실측 2026-10-02, 사용자 크롬: key '`' · code Backquote · ctrl true · alt true). Alt 를 막으면 한글일 때 안 먹었다.
+      if (e.code === 'Backquote' && e.ctrlKey && !e.metaKey) { e.preventDefault(); opts.toggle(); return; }
       if (composing(e)) return;
       // 스킨의 여닫기 키 (none 의 Ctrl+;). 숨어 있으면 열고 열려 있으면 닫는다. 물리 키(e.code)로 본다.
       // 실측 2026-09-24: 원본은 컴포저 포커스 상태에서 Ctrl+; 를 막지도 쓰지도 않는다.
