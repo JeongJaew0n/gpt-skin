@@ -157,6 +157,7 @@ GT.commands = (function () {
     const c = needTarget(args[0]); if (!c) return;
     const on = String(args[1] || '').toLowerCase() !== 'off';
     if (!(await GT.convops.archive(c.id, on))) return err(GT_T('cmd.op.rejected', c.title));
+    if (on) GT.tabs.close(c.id);          // 보관한 대화는 열린 탭에서도 닫는다 — 남겨 두면 누를 때 없는 대화로 간다 (0.26.5)
     info(on ? `보관: ${c.title}` : `보관 해제: ${c.title}`);
     // 지금 대화인지는 id 로 본다 — 프로젝트 안의 대화는 주소가 /g/<프로젝트>/c/<id> 다
     if (on && GT.conversation.idFromPath() === c.id) GT.navigate.newChat();
@@ -171,6 +172,7 @@ GT.commands = (function () {
       return info(`대상: ${c.title}`);
     }
     if (!(await GT.convops.remove(c.id))) return err(GT_T('cmd.op.rejected', c.title));
+    GT.tabs.close(c.id);                  // 지운 대화는 열린 탭에서도 닫는다 (0.26.5)
     warn(`삭제 요청: ${c.title}`);
     if (GT.conversation.idFromPath() === c.id) GT.navigate.newChat();
     if (GT.sidebar.isOpen()) await GT.sidebar.refresh();
