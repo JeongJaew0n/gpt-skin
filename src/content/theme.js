@@ -76,6 +76,15 @@ GT.theme = (function () {
 .gt-tab { display: flex; align-items: center; gap: 8px; padding: 0 14px;
   border-right: 1px solid var(--gt-bg-3); color: var(--gt-fg-faint); }
 .gt-tab[data-active="1"] { color: var(--gt-fg); box-shadow: inset 0 -2px 0 var(--gt-green); }
+/* 대화 탭(:chats) — 가로로 쭉 늘어놓고 넘치면 가로로 민다. 스크롤바는 숨긴다(휠로 민다). */
+.gt-tablist { display: flex; align-items: stretch; flex: 1 1 auto; min-width: 0; overflow-x: auto; }
+.gt-tablist::-webkit-scrollbar { display: none; }
+.gt-tablist .gt-tab { flex: 0 0 auto; max-width: 26ch; cursor: pointer; white-space: nowrap; }
+.gt-tablist .gt-tab > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.gt-tablist .gt-tab:hover { color: var(--gt-fg); background: var(--gt-bg-2); }
+.gt-tab-n { color: var(--gt-fg-faint); }
+.gt-tab-new { cursor: pointer; flex: 0 0 auto; }
+.gt-tab-new:hover { color: var(--gt-fg); }
 
 /* ---- 사이드바 ---- */
 /* 본문을 밀어내지 않고 그 위에 덮는다(원본과 같은 동작).

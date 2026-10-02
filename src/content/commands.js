@@ -311,21 +311,18 @@ GT.commands = (function () {
     GT.skin.current.system('info', GT_T('cmd.skin.switched', GT.skins.label(id)));
   }, null, () => GT.skins.names());
 
-  // 대화 목록을 보이거나 숨긴다. 스킨마다 '대화 목록' 이 다르다 (사용자 요청 2026-10-02).
-  //   sheet     아래쪽 시트 탭 줄 (설정 sheet.chatTabs)
-  //   terminal  왼쪽 사이드바 (설정 sidebar.visible — :sidebar on/off 와 같은 경로)
+  // 탭 줄에 대화 목록을 쭉 늘어놓거나 숨긴다 (사용자 요청 2026-10-02). 스킨마다 탭 줄이 있는 자리가 다르다.
+  //   sheet     아래쪽 시트 탭 (설정 sheet.chatTabs)
+  //   terminal  위쪽 탭 줄 — tmux 창 목록처럼 (설정 terminal.chatTabs)
   // none 은 원본 화면에 목록이 있어 숨긴다.
   def(':chats', GT_T('cmd.chats.desc'), async (args) => {
     const a = (args[0] || '').toLowerCase();
     if (a && !['on', 'off', 'toggle'].includes(a)) return err(GT_T('cmd.chats.usage'));
-    if (GT.skin.current.id === 'sheet') {
-      const cur = GT.config.get('sheet.chatTabs') === true;
-      const next = a === 'on' ? true : a === 'off' ? false : !cur;
-      await GT.config.set('sheet.chatTabs', next);
-      return info(GT_T(next ? 'cmd.chats.on' : 'cmd.chats.off'));
-    }
-    const next = await GT.sidebar.toggle(a === 'on' ? true : a === 'off' ? false : undefined);
-    info(GT_T(next ? 'cmd.chats.sidebarOn' : 'cmd.chats.sidebarOff'));
+    const key = GT.skin.current.id === 'sheet' ? 'sheet.chatTabs' : 'terminal.chatTabs';
+    const cur = GT.config.get(key) === true;
+    const next = a === 'on' ? true : a === 'off' ? false : !cur;
+    await GT.config.set(key, next);
+    info(GT_T(next ? 'cmd.chats.on' : 'cmd.chats.off'));
   }, null, (prev) => (prev.length ? [] : ['on', 'off', 'toggle']));
 
   // 지금 스킨에서 뜻이 있는 항목만 보여 준다. 다른 스킨의 항목도 :set 으로는 바꿀 수 있다.

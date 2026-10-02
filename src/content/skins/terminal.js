@@ -78,8 +78,13 @@
     top.appendChild(brand); top.appendChild(ui.title); top.appendChild(right);
     root.appendChild(top);
 
-    // tabbar — v1 은 현재 대화 하나만 보여준다
+    // tabbar — 지금 대화 탭. :chats(설정 terminal.chatTabs)를 켜면 다른 대화를 tmux 창 목록처럼 쭉 늘어놓는다.
     ui.tabs = el('div', 'gt-tabbar');
+    ui.tablist = el('div', 'gt-tablist');
+    ui.tablist.addEventListener('wheel', (e) => { ui.tablist.scrollLeft += e.deltaY || e.deltaX; e.preventDefault(); }, { passive: false });
+    ui.tabNew = el('div', 'gt-tab gt-tab-new', '+ :new');
+    ui.tabNew.addEventListener('mousedown', (e) => { e.preventDefault(); GT.navigate.newChat(); });
+    ui.tabs.appendChild(ui.tablist); ui.tabs.appendChild(ui.tabNew);
     root.appendChild(ui.tabs);
 
     // 중간 행 = 사이드바 + 스크롤백. 탭바·입력·상태줄은 전체 폭을 유지한다.
@@ -185,8 +190,65 @@
     return root;
   }
 
+  // ---------------------------------------------------------------- 대화 탭 (:chats)
+  //
+  // renderChrome 은 1초마다 돈다. 탭을 매번 다시 만들면 가로 스크롤 자리가 튀므로 지문이 바뀔 때만 그린다.
+  let chatTabs = false;
+  let tabChats = [];
+  let tabsAt = 0;
+  let tabsPath = '';
+  let tabsSig = '';
+
+  async function loadTabChats(force) {
+    if (!chatTabs) return;
+    const now = Date.now();
+    if (!force && now - tabsAt < 30000) return;
+    tabsAt = now;
+    const shape = (g) => {
+      if (!g) return [];
+      const list = [].concat(g.pinned || [], g.chats || [], ...((g.projects || []).map((p) => p.items || [])));
+      const seen = new Set();
+      return list.filter((c) => c && c.id && !seen.has(c.id) && seen.add(c.id));
+    };
+    try { tabChats = shape(GT.chats.state); } catch (_) { tabChats = []; }
+    drawTabs();
+    try { tabChats = shape(await GT.chats.load()); } catch (_) { /* 목록을 못 읽어도 지금 대화 탭은 보인다 */ }
+    drawTabs();
+  }
+
+  function drawTabs() {
+    if (!ui.tablist) return;
+    const s = GT.store.state;
+    const curId = GT.conversation && GT.conversation.idFromPath ? GT.conversation.idFromPath() : null;
+    if (s.path !== tabsPath) { tabsPath = s.path; loadTabChats(false); }
+    const others = chatTabs ? tabChats.filter((c) => c.id !== curId).slice(0, 40) : [];
+    const sig = JSON.stringify([s.conversationTitle || '', !!s.streamingId, chatTabs, others.map((c) => [c.id, c.title])]);
+    if (sig === tabsSig) return;
+    tabsSig = sig;
+    ui.tablist.textContent = '';
+    const tab = (n, title, active) => {
+      const t = el('div', 'gt-tab');
+      if (active) t.dataset.active = '1';
+      t.appendChild(el('span', 'gt-tab-n', String(n)));
+      t.appendChild(el('span', null, title));
+      t.title = title;
+      return t;
+    };
+    const cur = tab(1, s.conversationTitle || 'new', true);
+    if (s.streamingId) { const d = el('span', null, '⠴'); d.style.color = 'var(--gt-cyan)'; cur.appendChild(d); }
+    ui.tablist.appendChild(cur);
+    others.forEach((c, i) => {
+      const t = tab(i + 2, c.title, false);
+      t.addEventListener('mousedown', (e) => { e.preventDefault(); GT.navigate.to(c.href); });
+      ui.tablist.appendChild(t);
+    });
+  }
+
   function applyConfig(cfg) {
     if (!varStyle) return;
+    // 대화 탭은 켰을 때만. 방금 켰으면 목록을 읽는다.
+    const wantTabs = cfg['terminal.chatTabs'] === true;
+    if (wantTabs !== chatTabs) { chatTabs = wantTabs; tabsSig = ''; if (wantTabs) loadTabChats(true); else drawTabs(); }
     epoch += 1;              // 렌더 결과가 달라질 수 있다. 다음 렌더에서 전부 다시 만든다
     varStyle.textContent = GT.theme.vars(cfg);
     syncSidebar();
@@ -570,14 +632,7 @@
     }
     ui.clock.textContent = new Date().toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
-    ui.tabs.textContent = '';
-    const tab = el('div', 'gt-tab'); tab.dataset.active = '1';
-    tab.appendChild(el('span', null, '1'));
-    tab.appendChild(el('span', null, s.conversationTitle || 'new'));
-    if (s.streamingId) { const d = el('span', null, '⠴'); d.style.color = 'var(--gt-cyan)'; tab.appendChild(d); }
-    ui.tabs.appendChild(tab);
-    ui.tabs.appendChild(el('span', 'gt-spacer'));
-    const plus = el('div', 'gt-tab', '+ :new'); ui.tabs.appendChild(plus);
+    drawTabs();
 
     ui.compMeta.textContent = '';
     const g = el('span', null, 'user@gpt'); g.style.color = 'var(--gt-green)';
@@ -740,6 +795,7 @@
     // 확장이 다시 로드되면 이 스크립트는 고아가 된다. 호스트 제거는 GT.skin.destroy 가 cover 로 한다.
     destroy() {
       pool.clear();
+      chatTabs = false; tabChats = []; tabsAt = 0; tabsPath = ''; tabsSig = '';
       host = null; shadow = null; root = null;
     },
     applyConfig,
