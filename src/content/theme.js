@@ -86,10 +86,14 @@ GT.theme = (function () {
 .gt-tablist::-webkit-scrollbar { display: none; }
 .gt-tablist .gt-tab { flex: 0 0 auto; max-width: 26ch; cursor: pointer; white-space: nowrap;
   background: var(--gt-bg-2); color: var(--gt-fg-dim); border-right: 0; padding: 0 12px; }
-.gt-tablist .gt-tab > span:last-child { overflow: hidden; text-overflow: ellipsis; }
 .gt-tablist .gt-tab:hover { color: var(--gt-fg); background: var(--gt-bg-3); }
 .gt-tablist .gt-tab[data-active="1"] { background: var(--gt-bg-1); color: var(--gt-fg); cursor: default; }
 .gt-tab-n { color: inherit; opacity: .65; }
+.gt-tab-title { overflow: hidden; text-overflow: ellipsis; }
+/* 닫기(×) — 지금 탭 · 마우스를 올린 탭에서만 보인다 (VS Code 와 같다). 자리는 늘 잡아 둬 폭이 흔들리지 않는다 */
+.gt-tab-x { width: 1.2em; text-align: center; opacity: 0; cursor: pointer; border-radius: 3px; }
+.gt-tab:hover .gt-tab-x, .gt-tab[data-active="1"] .gt-tab-x { opacity: .7; }
+.gt-tab-x:hover { opacity: 1 !important; background: var(--gt-bg-3); }
 .gt-tab-new { cursor: pointer; flex: 0 0 auto; color: var(--gt-fg-dim); border-right: 0; }
 .gt-tab-new:hover { color: var(--gt-fg); }
 

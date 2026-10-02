@@ -63,7 +63,9 @@ function load(opts = {}) {
   let thinking = false;
   const sb = { console, Object, Array, Map, Set, String, Number, Boolean, JSON, Math, Promise, Error, RegExp, Date, setTimeout,
     document: doc, navigator: { language: 'ko' }, CSS: { escape: (x) => x },
-    chrome: { runtime: { getManifest: () => ({ version: '0.0.0' }) } } };
+    location: { pathname: '/c/abc' },
+    chrome: { runtime: { getManifest: () => ({ version: '0.0.0' }) },
+      storage: { local: { get: async () => ({}), set: async (o) => { sb.__stored = o; } } } } };
   sb.window = sb; sb.globalThis = sb;
   vm.createContext(sb);
   ['src/shared/i18n.js', 'src/shared/defaults.js'].forEach((f) => vm.runInContext(read(f), sb, { filename: f }));
@@ -84,6 +86,7 @@ function load(opts = {}) {
   };
   vm.runInContext(read('src/content/markdown.js'), sb, { filename: 'markdown.js' });
   vm.runInContext(read('src/content/renderplan.js'), sb, { filename: 'renderplan.js' });
+  vm.runInContext(read('src/content/tabs.js'), sb, { filename: 'tabs.js' });
   vm.runInContext(read('src/content/shell/skin.js'), sb, { filename: 'skin.js' });
   vm.runInContext(read('src/content/skins/sheet.js'), sb, { filename: 'sheet.js' });
   const S = sb.GT.skins.get('sheet');
@@ -326,39 +329,37 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   t('셀을 누르면 메시지 선택이 풀린다', S.ui.body.children[1].dataset.msgsel !== '1' && S.ui.namebox.textContent === 'B1');
 }
 
-// ---------------------------------------------------------------- 시트 탭 — 기본은 대화 목록을 숨긴다 (0.21.0)
+// ---------------------------------------------------------------- 시트 탭 — 열린 탭 (0.25.0)
+// 내가 연 대화만 · × 로 닫기 · 터미널과 같은 목록 (src/content/tabs.js). 기본은 지금 대화 탭만.
 {
   const { S, calls, sb } = load();
   let loads = 0;
-  const realLoad = sb.GT.chats.load;
-  sb.GT.chats.load = async () => { loads++; return realLoad(); };
+  sb.GT.chats.load = async () => { loads++; return { pinned: [], chats: [], projects: [] }; };
+  sb.GT.tabs.open('/c/x2', 'K8s 설명');
+  sb.GT.tabs.open('/c/abc', '도커 정리');
+  sb.GT.tabs.open('/g/g-p-1/c/p9', '프로젝트 대화');
   S.mount({ 'font.size': 13 });
   await tick(); await tick();
   t('기본은 지금 대화 탭만', S.ui.tablist.children.length === 1 && S.ui.tablist.children[0].textContent === '도커 정리');
-  t('기본은 대화 목록을 읽지 않는다', loads === 0);
   t('넘기기 버튼도 숨긴다', S.ui.tabnav.hidden === true);
   S.ui.tabs.children[2].dispatch('click');
   t('숨겨도 + 는 새 대화', calls.newChat === 1);
   S.applyConfig({ 'font.size': 13, 'sheet.chatTabs': true });
-  await tick(); await tick();
-  t('켜면 목록을 읽어 탭으로 늘어놓는다', loads === 1 && S.ui.tablist.children.length === 3 && S.ui.tabnav.hidden === false);
+  const names = () => S.ui.tablist.children.map((n) => n.children[0].textContent);
+  t('켜면 열린 탭을 연 순서대로', names().join('|') === 'K8s 설명|도커 정리|프로젝트 대화' && S.ui.tabnav.hidden === false);
+  t('지금 대화 탭이 켜져 있다', S.ui.tablist.children[1].dataset.on === '1');
+  t('탭 줄 때문에 대화 목록 API 를 읽지 않는다', loads === 0);
+  S.ui.tablist.children[2].dispatch('mousedown', { button: 0 });
+  t('탭을 누르면 그 대화로 (프로젝트 경로 그대로)', calls.nav.at(-1) === '/g/g-p-1/c/p9');
+  S.ui.tablist.children[0].children[1].dispatch('mousedown', { button: 0, stopPropagation() {} });
+  t('× 로 닫는다 (다른 탭이면 이동 없이)', names().join('|') === '도커 정리|프로젝트 대화' && calls.nav.at(-1) === '/g/g-p-1/c/p9');
+  S.ui.tablist.children[1].dispatch('mousedown', { button: 1 });
+  t('가운데 버튼으로도 닫는다', names().join('|') === '도커 정리');
+  S.ui.tablist.children[0].children[1].dispatch('mousedown', { button: 0, stopPropagation() {} });
+  t('지금 탭을 닫고 남은 탭이 없으면 새 대화', calls.newChat === 2);
   S.applyConfig({ 'font.size': 13, 'sheet.chatTabs': false });
   t('다시 끄면 지금 대화 탭만', S.ui.tablist.children.length === 1);
   t('설정 항목이 시트 전용 · 기본 끔', (() => { const f = sb.GT_SCHEMA.find((x) => x.key === 'sheet.chatTabs'); return f && f.def === false && f.skin === 'sheet' && f.type === 'bool'; })());
-}
-
-// ---------------------------------------------------------------- 시트 탭 — 켰을 때
-{
-  const { S, calls } = load();
-  S.mount({ 'font.size': 13, 'sheet.chatTabs': true });
-  await tick(); await tick();
-  const tabs = S.ui.tablist.children.map((n) => n.textContent);
-  t('첫 탭은 지금 대화', tabs[0] === '도커 정리' && S.ui.tablist.children[0].dataset.on === '1');
-  t('다른 대화가 탭으로 (지금 대화는 한 번만)', tabs.join('|') === '도커 정리|고정 대화|K8s 설명');
-  S.ui.tablist.children[2].dispatch('click');
-  t('탭을 누르면 그 대화로 간다', calls.nav.at(-1) === '/c/x2');
-  S.ui.tabs.children[2].dispatch('click');
-  t('+ 는 새 대화', calls.newChat === 1);
 }
 
 // ---------------------------------------------------------------- 명령 결과 · 생각 중 · 설정
@@ -541,10 +542,10 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   const tty = read('src/content/skins/terminal.js'), none = read('src/content/skins/none.js');
   // 터미널 위쪽 탭 줄 (하네스 실측 2026-10-02: 끔 → 지금 대화 1개, 켬 → 4개, 탭을 누르면 그 대화로, 끄면 1개)
   t('터미널 탭 줄은 설정 terminal.chatTabs 로 켠다', /const wantTabs = cfg\['terminal\.chatTabs'\] === true;/.test(tty));
-  t('켤 때만 목록을 읽는다', /if \(!chatTabs\) return;\n    const now = Date\.now\(\);/.test(tty));
+  t('탭 줄은 열린 탭(GT.tabs)을 그린다 — 대화 목록 API 를 읽지 않는다', /const open = chatTabs \? GT\.tabs\.list\(\) : \[\];/.test(tty) && !/GT\.chats\.load\(/.test(tty.slice(tty.indexOf('대화 탭 (:chats)'), tty.indexOf('function applyConfig'))));
   t('1초마다 다시 그리지 않는다 (지문이 같으면 그대로)', /if \(sig === tabsSig\) return;/.test(tty));
-  t('탭을 누르면 그 대화로', /GT\.navigate\.to\(c\.href\)/.test(tty));
-  t('스킨을 떼면 탭 상태도 비운다', /chatTabs = false; tabChats = \[\]; tabsAt = 0; tabsPath = ''; tabsSig = '';/.test(tty));
+  t('탭을 누르면 그 대화로 · × 로 닫는다', /\(\) => GT\.navigate\.to\(t\.href\), \(\) => closeTab\(t\.id\)\)/.test(tty));
+  t('스킨을 떼면 탭 상태도 비운다', /chatTabs = false; tabsSig = '';/.test(tty));
   t('터미널 탭 설정이 터미널 전용 · 기본 끔', (() => { const f = sb.GT_SCHEMA ? sb.GT_SCHEMA.find((x) => x.key === 'terminal.chatTabs') : null;
     const src = read('src/shared/defaults.js'); return /key: 'terminal\.chatTabs', type: 'bool', def: false, skin: 'terminal'/.test(src) && (f === null || f.def === false); })());
   t('터미널에서는 숨기지 않는다', !/':chats'/.test((/hiddenCommands: \[[^\]]*\]/.exec(tty) || [''])[0]));

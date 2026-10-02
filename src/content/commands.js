@@ -325,6 +325,12 @@ GT.commands = (function () {
     info(GT_T(next ? 'cmd.chats.on' : 'cmd.chats.off'));
   }, null, (prev) => (prev.length ? [] : ['on', 'off', 'toggle']));
 
+  // 지금 탭을 닫는다 — 옆 탭으로 간다 (열린 탭: src/content/tabs.js)
+  def(':close', GT_T('cmd.close.desc'), () => {
+    const r = GT.tabs.closeCurrent();
+    if (!r.closed) return info(GT_T('cmd.close.none'));
+  });
+
   // 지금 스킨에서 뜻이 있는 항목만 보여 준다. 다른 스킨의 항목도 :set 으로는 바꿀 수 있다.
   def(':config', '설정 전체 보기', () => {
     const cfg = GT.config.all;

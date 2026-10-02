@@ -10,7 +10,7 @@
   'use strict';
   const missing = [];
   if (typeof GT === 'undefined') missing.push('GT (protocol.js)');
-  else ['config', 'oai', 'store', 'chats', 'conversation', 'convops', 'markdown', 'renderplan', 'theme', 'skins', 'skin', 'palette', 'sidebar', 'compose', 'picker', 'navigate', 'commands', 'health', 'cover', 'clipboard', 'prompt']
+  else ['config', 'oai', 'store', 'chats', 'tabs', 'conversation', 'convops', 'markdown', 'renderplan', 'theme', 'skins', 'skin', 'palette', 'sidebar', 'compose', 'picker', 'navigate', 'commands', 'health', 'cover', 'clipboard', 'prompt']
     .forEach((k) => { if (!GT[k]) missing.push('GT.' + k); });
   if (typeof GT_DEFAULTS === 'undefined') missing.push('GT_DEFAULTS (shared/defaults.js)');
   if (typeof GT_T !== 'function') missing.push('GT_T (shared/i18n.js)');
@@ -387,6 +387,9 @@
   // 생성의 시작과 끝을 스크린리더에 알린다 (가장자리에서만 — 토큰마다가 아니다).
   let wasStreaming = false;
   GT.store.onChange(() => {
+    // 열린 탭의 제목은 대화 원본을 읽은 뒤에 들어온다 (src/content/tabs.js)
+    const tabId = GT.tabs.idOf(location.pathname);
+    if (tabId && GT.store.state.conversationTitle) GT.tabs.title(tabId, GT.store.state.conversationTitle);
     const now = !!GT.store.state.streamingId;
     if (now !== wasStreaming) { wasStreaming = now; GT.skin.announce(GT_T(now ? 'status.answering' : 'status.answered')); }
     GT.skin.current.render();
@@ -460,6 +463,7 @@
   every(600, () => {
     if (location.pathname !== lastPath) {
       lastPath = location.pathname;
+      GT.tabs.open(location.pathname, '');      // 연 대화는 탭에 들어간다 (새 대화 화면 / 은 들어가지 않는다)
       if (GT.conversation.idFromPath()) {
         pull('route').then((ok) => { if (!ok) GT.toMain('harvest'); });
       } else {
@@ -513,6 +517,9 @@
 
   // 첫 로드 — API 를 먼저 시도하고, 안 되면 원본이 스레드를 붙일 시간을 주고 수확한다
   pull('boot').then((ok) => { if (!ok) setTimeout(() => GT.toMain('harvest'), 1200); });
+  // 열린 탭 — 저장해 둔 목록을 읽고 지금 대화를 넣는다. 탭이 바뀌면 상단(탭 줄)을 다시 그린다.
+  GT.tabs.onChange(() => { try { GT.skin.current.renderChrome(); } catch (_) {} });
+  GT.tabs.load().then(() => GT.tabs.open(location.pathname, GT.store.state.conversationTitle));
 
   // 원본은 턴을 한 번에 다 그리지 않는다(진입 경로에 따라 앞쪽이 늦게 붙거나 아예 안 붙는다).
   // 한 번 수확하고 끝내면 그 차이가 그대로 스크롤백의 구멍이 된다.

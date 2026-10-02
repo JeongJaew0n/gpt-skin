@@ -148,6 +148,10 @@
   border-top: 1px solid var(--gs-hdr-b); background: var(--gs-hdr); font-size: 11.5px; user-select: none; }
 .gs-tabnav { display: flex; align-items: center; gap: 2px; padding: 0 4px; color: var(--gt-fg-dim); }
 .gs-tabnav[hidden] { display: none; }
+.gs-tab-title { overflow: hidden; text-overflow: ellipsis; }
+.gs-tab-x { margin-left: 6px; width: 1.1em; text-align: center; opacity: 0; border-radius: 2px; }
+.gs-tab:hover .gs-tab-x, .gs-tab[data-on="1"] .gs-tab-x { opacity: .7; }
+.gs-tab-x:hover { opacity: 1 !important; background: var(--gs-hdr-b); }
 .gs-tabnav button, .gs-plus, .gs-zoom button { all: unset; cursor: pointer; padding: 0 5px; }
 .gs-tabnav button:hover, .gs-plus:hover, .gs-zoom button:hover { color: var(--gt-fg); }
 .gs-tablist { flex: 1; min-width: 0; display: flex; overflow: hidden; scroll-behavior: smooth; }
@@ -176,9 +180,6 @@
   let spinAt = 0;
   let sel = null;              // { key, col }  고른 셀
   let stickBottom = true;
-  let chats = [];              // 시트 탭에 보일 대화 [{id,title,href}]
-  let chatsAt = 0;
-  let chatsPath = '';
   const systemLog = [];
   let sysSeq = 0;
   // :messup 블록 — 화면에만 있다. 서버로 가지 않고 대화 기록에도 안 남는다. terminal 의 localLog 와 같은 모양.
@@ -306,7 +307,7 @@
 
     [ui.title, ui.rtabs, ui.ribbon, ui.fx, ui.grid, ui.tabs, ui.status].forEach((n) => root.appendChild(n));
     shadow.appendChild(root);
-    loadChats(true);
+    drawTabs();
   }
 
   function applyConfig(cfg) {
@@ -318,7 +319,7 @@
     if (ui.ribbon) ui.ribbon.hidden = cfg['sheet.ribbon'] === false;
     // 대화 목록 탭은 켰을 때만. 방금 켰으면 목록을 읽는다.
     const want = cfg['sheet.chatTabs'] === true;
-    if (want !== chatTabs) { chatTabs = want; if (want) loadChats(true); else drawTabs(); }
+    if (want !== chatTabs) { chatTabs = want; tabsSig = ''; drawTabs(); }
     epoch += 1;
   }
 
@@ -737,44 +738,54 @@
   }
 
   // ---------------------------------------------------------------- 시트 탭 (대화 목록)
-  // 시트 탭 줄에 다른 대화를 늘어놓는가 (설정 sheet.chatTabs, 기본 끔). 끄면 목록을 읽지도 않는다.
+  // 시트 탭 줄에 열린 탭(GT.tabs)을 늘어놓는가 (설정 sheet.chatTabs, 기본 끔).
+  // 내가 연 대화만 · × 로 닫기 · Ctrl+, / Ctrl+. 로 이동 — 터미널과 같은 목록이다 (src/content/tabs.js).
   let chatTabs = false;
+  let tabsSig = '';
 
-  async function loadChats(force) {
-    if (!chatTabs) { drawTabs(); return; }
-    const now = Date.now();
-    if (!force && now - chatsAt < 30000) return;
-    chatsAt = now;
-    const shape = (g) => {
-      if (!g) return [];
-      const list = [].concat(g.pinned || [], g.chats || [], ...((g.projects || []).map((p) => p.items || [])));
-      const seen = new Set();
-      return list.filter((c) => c && c.id && !seen.has(c.id) && seen.add(c.id));
-    };
-    try { chats = shape(GT.chats.state); } catch (_) { chats = []; }
+  function closeTab(id) {
+    const cur = GT.tabs.idOf(location.pathname);
+    const next = GT.tabs.close(id);
     drawTabs();
-    try { chats = shape(await GT.chats.load()); } catch (_) { /* 목록을 못 읽어도 지금 대화 탭은 보인다 */ }
-    drawTabs();
+    if (id !== cur) return;
+    if (next) GT.navigate.to(next.href); else GT.navigate.newChat();
   }
 
   function drawTabs() {
     if (!ui.tablist) return;
     const s = GT.store.state;
-    const curId = GT.conversation && GT.conversation.idFromPath ? GT.conversation.idFromPath() : null;
+    const curId = GT.tabs.idOf(location.pathname);
+    const open = chatTabs ? GT.tabs.list() : [];
+    const sig = JSON.stringify([s.conversationTitle || '', chatTabs, curId, open.map((t) => [t.id, t.title])]);
+    if (sig === tabsSig) return;
+    tabsSig = sig;
     ui.tablist.textContent = '';
-    const cur = el('div', 'gs-tab', s.conversationTitle || T('sheet.newChat'));
-    cur.dataset.on = '1';
-    cur.title = cur.textContent;
-    ui.tablist.appendChild(cur);
     if (ui.tabnav) ui.tabnav.hidden = !chatTabs;
-    if (!chatTabs) return;
-    chats.filter((c) => c.id !== curId).slice(0, 40).forEach((c) => {
-      const t = el('div', 'gs-tab', c.title);
-      t.title = c.title;
-      t.addEventListener('click', () => GT.navigate.to(c.href));
-      ui.tablist.appendChild(t);
+    const tabEl = (title, on, onOpen, onClose) => {
+      const t = el('div', 'gs-tab');
+      t.appendChild(el('span', 'gs-tab-title', title));
+      t.title = title;
+      if (on) t.dataset.on = '1';
+      if (onOpen) t.addEventListener('mousedown', (e) => {
+        if (e.target && e.target.classList && e.target.classList.contains('gs-tab-x')) return;   // × 는 닫기만
+        if (e.button === 1) { e.preventDefault(); if (onClose) onClose(); return; }
+        if (e.button !== 0) return;
+        onOpen();
+      });
+      if (onClose) {
+        const x = el('span', 'gs-tab-x', '×');
+        x.title = T('tabs.close');
+        x.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); onClose(); });
+        t.appendChild(x);
+      }
+      return t;
+    };
+    if (!chatTabs || !open.some((t) => t.id === curId)) ui.tablist.appendChild(tabEl(s.conversationTitle || T('sheet.newChat'), true));
+    open.forEach((t) => {
+      const on = t.id === curId;
+      ui.tablist.appendChild(tabEl(t.title || (on && s.conversationTitle) || T('tabs.untitled'), on,
+        on ? null : () => GT.navigate.to(t.href), () => closeTab(t.id)));
     });
-    ui.tablist.scrollLeft = 0;
   }
 
   // ---------------------------------------------------------------- 상단 · 하단
@@ -795,8 +806,7 @@
     }
     bits.push(new Date().toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' }));
     ui.meta.textContent = bits.join(' · ');
-    if (s.path !== chatsPath) { chatsPath = s.path; drawTabs(); loadChats(false); }
-    else if (ui.tablist.firstChild && ui.tablist.firstChild.textContent !== (s.conversationTitle || T('sheet.newChat'))) drawTabs();
+    drawTabs();                  // 지문이 같으면 그대로 둔다
     ui.count.textContent = T('sheet.status.messages', s.messages.length);
     ui.chars.textContent = T('sheet.status.chars', GT.store.approxChars().toLocaleString('ko-KR'));
     ui.zoom.textContent = Math.round((Number(GT.config.get('font.size')) || 13) / 13 * 100) + '%';
@@ -895,7 +905,7 @@
       msgText.clear();
       systemLog.length = 0;
       localLog.length = 0; localMemo.clear();
-      sel = null; chats = []; chatsAt = 0; chatsPath = ''; chatTabs = false;
+      sel = null; chatTabs = false; tabsSig = '';
       shadow = null; root = null; varStyle = null;
       Object.keys(ui).forEach((k) => { delete ui[k]; });
     },

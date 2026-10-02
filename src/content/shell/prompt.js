@@ -228,6 +228,10 @@ GT.prompt = (function () {
       if (GT.skin.visible()) {
         if (e.code === 'KeyK' && !e.shiftKey && (e.metaKey || e.ctrlKey)) { e.preventDefault(); GT.commands.openPalette(); return; }
         if (e.code === 'KeyB' && e.ctrlKey && !e.metaKey && !e.shiftKey) { e.preventDefault(); GT.sidebar.toggle(); return; }
+        // 열린 탭 사이 이동 — Ctrl+, 이전 · Ctrl+. 다음 (사용자 요청 2026-10-02). 물리 키라 한글 상태에서도 된다.
+        if ((e.code === 'Comma' || e.code === 'Period') && e.ctrlKey && !e.metaKey && !e.shiftKey) {
+          e.preventDefault(); GT.tabs.go(e.code === 'Period' ? 1 : -1); return;
+        }
         // 원본 ChatGPT 와 같은 사이드바 키 (⌘/Ctrl+⇧S) — 원본에서 익힌 손버릇이 그대로 먹게 한다 [가정: 웹 자료].
         // 맥 입력칸에서 Ctrl+B 는 커서를 한 칸 뒤로 옮기는 키라, 그 키를 쓰기 싫은 사람의 대안도 된다.
         if (e.code === 'KeyS' && e.shiftKey && (e.metaKey || e.ctrlKey)) { e.preventDefault(); GT.sidebar.toggle(); return; }

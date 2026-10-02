@@ -192,55 +192,63 @@
 
   // ---------------------------------------------------------------- 대화 탭 (:chats)
   //
-  // renderChrome 은 1초마다 돈다. 탭을 매번 다시 만들면 가로 스크롤 자리가 튀므로 지문이 바뀔 때만 그린다.
+  // 열린 탭(GT.tabs)을 VS Code 에디터 탭처럼 그린다 — 내가 연 대화만 · × 로 닫기 · Ctrl+, / Ctrl+. 로 이동.
+  // 끄면 지금 대화 탭 하나만. renderChrome 은 1초마다 도므로 지문이 같으면 다시 그리지 않는다(가로 스크롤 자리 유지).
   let chatTabs = false;
-  let tabChats = [];
-  let tabsAt = 0;
-  let tabsPath = '';
   let tabsSig = '';
 
-  async function loadTabChats(force) {
-    if (!chatTabs) return;
-    const now = Date.now();
-    if (!force && now - tabsAt < 30000) return;
-    tabsAt = now;
-    const shape = (g) => {
-      if (!g) return [];
-      const list = [].concat(g.pinned || [], g.chats || [], ...((g.projects || []).map((p) => p.items || [])));
-      const seen = new Set();
-      return list.filter((c) => c && c.id && !seen.has(c.id) && seen.add(c.id));
-    };
-    try { tabChats = shape(GT.chats.state); } catch (_) { tabChats = []; }
+  // 탭 하나. 지금 탭은 강조, 닫기(×)는 열린 탭에만.
+  function tabEl(n, title, active, onOpen, onClose) {
+    const t = el('div', 'gt-tab');
+    if (active) t.dataset.active = '1';
+    t.appendChild(el('span', 'gt-tab-n', String(n)));
+    t.appendChild(el('span', 'gt-tab-title', title));
+    t.title = title;
+    if (onOpen) t.addEventListener('mousedown', (e) => {
+      if (e.target && e.target.classList && e.target.classList.contains('gt-tab-x')) return;   // × 는 닫기만
+      if (e.button === 1) { e.preventDefault(); if (onClose) onClose(); return; }   // 가운데 버튼 = 닫기 (VS Code 와 같다)
+      if (e.button !== 0) return;
+      e.preventDefault(); onOpen();
+    });
+    if (onClose) {
+      const x = el('span', 'gt-tab-x', '×');
+      x.title = GT_T('tabs.close');
+      x.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); onClose(); });
+      t.appendChild(x);
+    }
+    return t;
+  }
+
+  function closeTab(id) {
+    const cur = GT.tabs.idOf(location.pathname);
+    const next = GT.tabs.close(id);
     drawTabs();
-    try { tabChats = shape(await GT.chats.load()); } catch (_) { /* 목록을 못 읽어도 지금 대화 탭은 보인다 */ }
-    drawTabs();
+    if (id !== cur) return;
+    if (next) GT.navigate.to(next.href); else GT.navigate.newChat();
   }
 
   function drawTabs() {
     if (!ui.tablist) return;
     const s = GT.store.state;
-    const curId = GT.conversation && GT.conversation.idFromPath ? GT.conversation.idFromPath() : null;
-    if (s.path !== tabsPath) { tabsPath = s.path; loadTabChats(false); }
-    const others = chatTabs ? tabChats.filter((c) => c.id !== curId).slice(0, 40) : [];
-    const sig = JSON.stringify([s.conversationTitle || '', !!s.streamingId, chatTabs, others.map((c) => [c.id, c.title])]);
+    const curId = GT.tabs.idOf(location.pathname);
+    const open = chatTabs ? GT.tabs.list() : [];
+    const sig = JSON.stringify([s.conversationTitle || '', !!s.streamingId, chatTabs, curId, open.map((t) => [t.id, t.title])]);
     if (sig === tabsSig) return;
     tabsSig = sig;
     ui.tablist.textContent = '';
-    const tab = (n, title, active) => {
-      const t = el('div', 'gt-tab');
-      if (active) t.dataset.active = '1';
-      t.appendChild(el('span', 'gt-tab-n', String(n)));
-      t.appendChild(el('span', null, title));
-      t.title = title;
-      return t;
-    };
-    const cur = tab(1, s.conversationTitle || 'new', true);
-    if (s.streamingId) { const d = el('span', null, '⠴'); d.style.color = 'var(--gt-cyan)'; cur.appendChild(d); }
-    ui.tablist.appendChild(cur);
-    others.forEach((c, i) => {
-      const t = tab(i + 2, c.title, false);
-      t.addEventListener('mousedown', (e) => { e.preventDefault(); GT.navigate.to(c.href); });
-      ui.tablist.appendChild(t);
+    const spinner = (t) => { if (s.streamingId) { const d = el('span', null, '⠴'); d.style.color = 'var(--gt-cyan)'; t.appendChild(d); } };
+    if (!chatTabs || !open.some((t) => t.id === curId)) {
+      // 지금 대화가 열린 탭에 없다(새 대화 화면 · 탭을 끔) — 지금 대화만 맨 앞에 보인다
+      const cur = tabEl(chatTabs ? '+' : 1, s.conversationTitle || 'new', true);
+      spinner(cur);
+      ui.tablist.appendChild(cur);
+    }
+    open.forEach((t, i) => {
+      const active = t.id === curId;
+      const tab = tabEl(i + 1, t.title || s.conversationTitle && active && s.conversationTitle || GT_T('tabs.untitled'), active,
+        () => GT.navigate.to(t.href), () => closeTab(t.id));
+      if (active) spinner(tab);
+      ui.tablist.appendChild(tab);
     });
   }
 
@@ -248,7 +256,7 @@
     if (!varStyle) return;
     // 대화 탭은 켰을 때만. 방금 켰으면 목록을 읽는다.
     const wantTabs = cfg['terminal.chatTabs'] === true;
-    if (wantTabs !== chatTabs) { chatTabs = wantTabs; tabsSig = ''; if (wantTabs) loadTabChats(true); else drawTabs(); }
+    if (wantTabs !== chatTabs) { chatTabs = wantTabs; tabsSig = ''; drawTabs(); }
     epoch += 1;              // 렌더 결과가 달라질 수 있다. 다음 렌더에서 전부 다시 만든다
     varStyle.textContent = GT.theme.vars(cfg);
     syncSidebar();
@@ -795,7 +803,7 @@
     // 확장이 다시 로드되면 이 스크립트는 고아가 된다. 호스트 제거는 GT.skin.destroy 가 cover 로 한다.
     destroy() {
       pool.clear();
-      chatTabs = false; tabChats = []; tabsAt = 0; tabsPath = ''; tabsSig = '';
+      chatTabs = false; tabsSig = '';
       host = null; shadow = null; root = null;
     },
     applyConfig,

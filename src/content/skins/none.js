@@ -207,7 +207,7 @@
     defaultTheme: 'modern-dark',
     get configKeys() { return GT_SCHEMA.filter((f) => f.skin && GT_SKIN_HAS(f, 'none')).map((f) => f.key); },
     // 글씨 크기 · 테마는 원본이 정한다. :messup 은 스크롤백이 없어 끼울 자리가 없다.
-    hiddenCommands: [':font', ':theme', ':messup', ':chats'],
+    hiddenCommands: [':font', ':theme', ':messup', ':chats', ':close'],
 
     get ui() { return ui; },    // 계약 밖
     get prompt() {

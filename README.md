@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 1899](https://img.shields.io/badge/테스트-1899_케이스-22C55E)
+![테스트 1941](https://img.shields.io/badge/테스트-1941_케이스-22C55E)
 
 </div>
 
@@ -169,7 +169,8 @@ sheet 는 한 행에 한 줄로 그린다. A 열은 누가 말했는지, B 열�
 <tr><td><code>:log dump [n]</code> · <code>:log clear</code></td><td>쌓인 진단 줄 보기 / 비우기 <sub>(꺼져 있어도 쌓인다)</sub></td></tr>
 <tr><td><code>:version</code></td><td>지금 실행 중인 코드의 빌드 시각</td></tr>
 <tr><td><code>:reload</code></td><td>확장을 다시 읽고 이 탭을 새로고침 <sub>(<code>chrome://extensions</code> 의 ↻ + 새로고침과 같다)</sub></td></tr>
-<tr><td><code>:chats [on|off]</code></td><td>탭 줄에 대화 목록을 쭉 늘어놓거나 숨긴다 — 시트는 아래쪽, 터미널은 위쪽 <sub>(기본 숨김)</sub></td></tr>
+<tr><td><code>:chats [on|off]</code></td><td>탭 줄에 열린 탭을 보이거나 숨긴다 — 시트는 아래쪽, 터미널은 위쪽 <sub>(기본 숨김 · <kbd>Ctrl</kbd>+<kbd>,</kbd> 이전 · <kbd>Ctrl</kbd>+<kbd>.</kbd> 다음)</sub></td></tr>
+<tr><td><code>:close</code></td><td>지금 탭을 닫고 옆 탭으로 간다 <sub>(탭의 × · 가운데 버튼으로도)</sub></td></tr>
 <tr><td><code>:bug [clear]</code></td><td>버그 보고서를 복사한다 — 개발자에게 붙여 넣어 보낸다 <sub>(대화 내용은 안 들어간다)</sub></td></tr>
 <tr><td><code>:messup [횟수|clear]</code></td><td>화면에만 가짜 출력을 끼워 넣는다 <sub>(서버로 안 간다)</sub></td></tr>
 </table>
@@ -260,6 +261,7 @@ src/content/                          ← 매니페스트 주입 순서
   picker.js                           모델 · 추론 수준 선택
   navigate.js                         라우팅
   messup.js                           :messup 가짜 출력 생성기 (terminal · sheet 맛)
+  tabs.js                             열린 탭 — VS Code 에디터 탭처럼 (터미널 · 시트 공용)
   bugs.js                             오류 기록 · :bug 보고서 (팝업 '진단 복사' 와 같은 글)
   commands.js                         명령 레지스트리 + 자동완성
   health.js                           깨짐 감지 · 정책 적용
@@ -380,7 +382,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>52개 파일 · 1899 케이스</b></summary>
+<summary><b>53개 파일 · 1941 케이스</b></summary>
 
 <br>
 
@@ -427,6 +429,7 @@ tools/test.sh
 | `reload` | 9 | `:reload` — 탭을 적어 두고 다시 읽는가 · 재주입이 못 붙은 탭만 새로고침하는가 · 페이지 스크립트가 부를 길이 없는가 |
 | `reinject` | 39 | 업데이트 뒤 재주입 — 옛 tap 이 비키는가 · 교대 · 켜 둔 상태 이어받기 |
 | `shortcuts` | 21 | 새로고침 직후 단축키 — 연결이 부팅 점검 대기보다 앞에 있는가 · 원본 복귀 시 거절 · 켜 둔 화면을 점검 전에 켜는가 (revert 는 뒤) |
+| `tabs` | 41 | 열린 탭 — 연 순서 · 닫으면 옆 탭 · 20개 상한 · local 저장 · Ctrl+, / Ctrl+. (한글 상태 포함) |
 | `navigate` | 9 | 대화 전환 — 숨은 원본 링크는 누르지 않는가 · 라우터 표식(idx · key)을 맞춰 넣는가 · 안 넘어가면 새로 여는가 |
 | `hostkeep` | 14 | 원본이 문서를 다시 그려 스킨 호스트를 지워도 다시 붙이는가 · 호스트가 없으면 원본을 가리지 않는가 |
 | `bugs` | 71 | 오류 기록 · 놓친 예외 거르기 · :bug 보고서에 대화 내용이 없는가 · 전송 실패 사유 셋 · 실패하면 쓴 글을 되돌리는가 · 글자 끊김을 대화 원본과 재서 남기는가 |
@@ -479,7 +482,7 @@ tools/test.sh
 | 생각 중 표시 · 회전자 | 실제 테마 CSS 로 세 상태(추론 중 · 스트리밍 · 완료)를 렌더해 확인 |
 | 툴바 패널 글자 대비 | 계산 — 전부 4.5:1 이상 (도움말은 2.3 → 7.8) |
 | 인용 마커 | 실측 — API·SSE·fiber 세 경로의 표기를 각각 확인하고, 실제 응답 데이터로 렌더 |
-| 순수 로직 | 1899 케이스 통과 (위 표) |
+| 순수 로직 | 1941 케이스 통과 (위 표) |
 | 녹화 스트림 재생 | 실제 SSE 1건을 `tap.js` 에 재생 (`test/replay.test.mjs`) |
 | ProseMirror 주입 · 전송 버튼 활성화 | 실제 페이지에서 확인 |
 | SSE 가로채기 (`res.body.tee()`) | 실제 페이지에서 확인 |
