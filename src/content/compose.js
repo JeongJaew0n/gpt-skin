@@ -176,10 +176,13 @@ GT.compose = (function () {
   // 자동으로 한 번 더 누르지 않는다 — 원본이 늦게 비우는 것뿐이면 두 번 보내진다.
   // 남아 있으면 알리기만 한다. 사용자가 원본에서 확인하고 보내면 된다.
   const SENT_CHECK_MS = 2000;
+  // contenteditable 은 공백 · 줄바꿈을 빼고 비교한다 — ProseMirror 는 줄바꿈을 문단으로 바꿔 textContent 에서 사라지므로,
+  // 그대로 비교하면 여러 줄 글은 남아 있어도 '보냈다' 로 읽혔다 (리뷰 2026-10-02, 0.26.7). 넣을 때(injectInto)와 같은 기준이다.
   const holding = (el, text) => {
     if (!el) return false;
-    const v = (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') ? el.value : el.textContent;
-    return String(v || '').trim() === String(text || '').trim() && String(text || '').trim() !== '';
+    if (!String(text || '').trim()) return false;
+    if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') return String(el.value || '').trim() === String(text).trim();
+    return squash(el.textContent) === squash(text);
   };
   function watchSent(text) {
     setTimeout(() => {

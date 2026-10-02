@@ -150,6 +150,10 @@ async function sendWith({ clears }) {
   t('남은 글 판정 — 사용자가 이어 쓴 글은 다른 글', !C.holding({ tagName: 'TEXTAREA', value: '다른 글' }, '보낼 글'));
   t('남은 글 판정 — 빈 글은 남은 게 아니다', !C.holding({ tagName: 'TEXTAREA', value: '' }, ''));
   t('남은 글 판정 — ProseMirror 는 textContent', C.holding({ tagName: 'DIV', textContent: '보낼 글' }, '보낼 글'));
+  // ProseMirror 는 줄바꿈을 문단으로 바꿔 textContent 에서 사라진다 — 여러 줄 글도 남았다고 봐야 한다 (0.26.7)
+  t('남은 글 판정 — ProseMirror 의 여러 줄 글', C.holding({ tagName: 'DIV', textContent: '첫 줄둘째 줄' }, '첫 줄\n둘째 줄'));
+  t('남은 글 판정 — ProseMirror 에 다른 글이면 아니다', !C.holding({ tagName: 'DIV', textContent: '첫 줄' }, '첫 줄\n둘째 줄'));
+  t('남은 글 판정 — textarea 는 줄바꿈까지 그대로 비교한다', !C.holding({ tagName: 'TEXTAREA', value: '첫 줄둘째 줄' }, '첫 줄\n둘째 줄'));
 }
 {
   const i18n = fs.readFileSync('src/shared/i18n.js', 'utf8');
