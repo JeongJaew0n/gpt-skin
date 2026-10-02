@@ -23,6 +23,8 @@ body { width: 300px; }
 }
 .skins-label { color: var(--ds-text-2); flex: 0 0 auto; }
 .skin-list { flex: 1; }
+/* 탭별로 분할 적용일 때 — 스킨 버튼이 무엇을 바꾸는지 (0.28.0) */
+.skin-note { margin: -4px 0 0; padding: 0 14px 8px; color: var(--ds-text-2); font-size: 11px; }
 
 .rows { padding: var(--ds-sp-1) 0; }
 .row {

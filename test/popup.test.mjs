@@ -27,7 +27,8 @@ function makeChrome({ tab, state, lastError, sync }) {
     api: {
       runtime: {
         get lastError() { return lastError; },
-        openOptionsPage() { sent.push({ openOptions: true }); }
+        openOptionsPage() { sent.push({ openOptions: true }); },
+        sendMessage(msg, cb) { sent.push({ sw: msg }); if (cb) cb({ ok: true }); }   // 서비스 워커로 (탭별 스킨)
       },
       tabs: {
         query: async () => (tab ? [tab] : []),
@@ -226,6 +227,29 @@ const CHAT = { id: 7, url: 'https://chatgpt.com/c/abc' };
   t('팝업이 디자인 시스템을 먼저 불러온다',
     html.indexOf('../shared/ds.css') > 0 && html.indexOf('../shared/ds.css') < html.indexOf('popup.css'));
   t('팝업 CSS 에 색을 직접 적지 않는다 (토큰만)', !/#[0-9a-fA-F]{3,8}\b|rgba?\(/.test(css.replace(/\/\*[\s\S]*?\*\//g, '')));
+}
+
+// --- 탭별로 분할 적용 (skin.perTab, 0.28.0) ---
+{
+  const p = await run({ tab: CHAT, sync: { skin: 'terminal', 'skin.perTab': true }, state: () => ({ visible: true, degraded: false, skin: 'sheet', tabSkin: 'sheet' }) });
+  const btns = p.$('#skin-list').children;
+  t('켜져 있으면 이 탭의 스킨이 켜져 보인다 (기본 스킨이 아니라)', btns[1].dataset.on === '1' && btns[0].dataset.on === '0');
+  t('이 탭만 바뀐다고 밝힌다', p.$('#skin-note').hidden === false && /이 탭만/.test(p.$('#skin-note').textContent));
+  await btns[2].click();
+  const sw = p.sent.filter((x) => x.sw).map((x) => x.sw);
+  t('누르면 서비스 워커에 이 탭 id 로 저장을 맡긴다', sw.length === 1 && sw[0].kind === 'tabSkin:set' && sw[0].tabId === 7 && sw[0].skin === 'none');
+  t('기본 스킨(설정의 skin)은 그대로', p.store.skin === 'terminal');
+}
+{
+  const p = await run({ tab: { id: 3, url: 'https://example.com/' }, sync: { skin: 'sheet', 'skin.perTab': true }, state: () => null });
+  const btns = p.$('#skin-list').children;
+  t('ChatGPT 탭이 아니면 기본 스킨을 보여 주고 그렇다고 밝힌다', btns[1].dataset.on === '1' && /기본 스킨/.test(p.$('#skin-note').textContent));
+  await btns[0].click();
+  t('그때 누르면 기본 스킨을 바꾼다', p.store.skin === 'terminal' && !p.sent.some((x) => x.sw));
+}
+{
+  const p = await run({ tab: CHAT, sync: { skin: 'sheet' }, state: () => ({ visible: false, degraded: false, skin: 'none' }) });
+  t('꺼져 있으면 안내가 없고 기본 스킨을 보여 준다 (예전 그대로)', p.$('#skin-note').hidden === true && p.$('#skin-list').children[1].dataset.on === '1');
 }
 
 let bad = 0;

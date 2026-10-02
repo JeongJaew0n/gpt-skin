@@ -399,7 +399,9 @@
       if (msg.skin !== GT.skin.current.id) GT.skin.switch(msg.skin, { persist: false });
       reply({ ok: true });
     }
+    // skin · tabSkin — 팝업이 탭별로 분할 적용일 때 이 탭의 스킨을 보여 준다 (0.28.0)
     else if (msg.kind === 'state') reply({ visible: GT.skin.visible(), degraded: GT.health.degraded,
+      skin: GT.skin.current.id, tabSkin: GT.skin.tabSkin || null,
       warned: GT.health.warned, reasons: GT.health.reasons });
   });
   // 생성의 시작과 끝을 스크린리더에 알린다 (가장자리에서만 — 토큰마다가 아니다).

@@ -95,7 +95,7 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 }
 {
   const idx = read('src/content/index.js');
-  t('상태 응답에 경고를 실어 보낸다', /msg\.kind === 'state'\) reply\(\{[\s\S]{0,120}warned: GT\.health\.warned, reasons: GT\.health\.reasons/.test(idx));
+  t('상태 응답에 경고를 실어 보낸다', /msg\.kind === 'state'\) reply\(\{[\s\S]{0,240}warned: GT\.health\.warned, reasons: GT\.health\.reasons/.test(idx));
 }
 
 let bad = 0;

@@ -4,6 +4,7 @@
 //   · 이 탭에 스킨 켜기       — 지금 보고 있는 탭에만. 콘텐츠 스크립트에 메시지를 쏜다
 //   · 열면 바로 스킨으로      — 기본 동작. chrome.storage.sync 의 'enabled'
 // 위에 스킨 고르기(terminal · sheet · none)가 있다. 'skin' 에 저장하면 열린 탭이 바로 따라간다.
+// 탭별로 분할 적용(skin.perTab)이 켜져 있으면 지금 탭만 바꾼다 — 서비스 워커가 그 탭 값으로 저장하고 탭에 알린다 (0.28.0).
 //
 // 둘은 다른 것이다. 기본을 켜지 않고도 이 탭만 터미널로 볼 수 있어야 한다.
 (async function () {
@@ -30,6 +31,7 @@
   let tab = null;
   let termOn = false;
   let termUsable = false;
+  let tabState = null;                 // 이 탭 콘텐츠 스크립트의 state 답 (없으면 null)
 
   const ask = (msg) => new Promise((resolve) => {
     if (!tab || !tab.id) return resolve(null);
@@ -50,6 +52,7 @@
     const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
     tab = t || null;
 
+    tabState = null;
     if (!tab || !CHATGPT.test(tab.url || '')) {
       termUsable = false; termOn = false;
       ui.helpTerm.textContent = 'ChatGPT 탭에서만 쓸 수 있습니다.';
@@ -58,6 +61,7 @@
     }
 
     const state = await ask({ kind: 'state' });
+    tabState = state;
     if (!state) {
       termUsable = false; termOn = false;
       ui.helpTerm.textContent = '아직 이 탭에 붙지 않았습니다. 새로고침이 필요합니다.';
@@ -97,7 +101,8 @@
 
   // ------------------------------------------------------------- 기본 동작
   const stored = await chrome.storage.sync.get(
-    { enabled: GT_DEFAULTS.enabled, locale: GT_DEFAULTS.locale, skin: GT_DEFAULTS.skin });
+    { enabled: GT_DEFAULTS.enabled, locale: GT_DEFAULTS.locale, skin: GT_DEFAULTS.skin, 'skin.perTab': GT_DEFAULTS['skin.perTab'] });
+  const perTab = stored['skin.perTab'] === true;
   GT_SET_LOCALE(stored.locale);
   $('#skins-label').textContent = GT_T('popup.skin.label');
   $('#tab-label').textContent = GT_T('popup.tab.label');
@@ -123,9 +128,11 @@
       if (skin === id) return;
       skin = id;
       paintSkins();
-      await chrome.storage.sync.set({ skin: id });
+      // 탭별로 분할 적용이고 이 탭에 붙어 있으면 이 탭만. 아니면(꺼짐 · ChatGPT 가 아닌 탭) 기본 스킨(모든 탭)
+      if (tabTarget()) await new Promise((r) => chrome.runtime.sendMessage({ kind: 'tabSkin:set', tabId: tab.id, skin: id }, () => { void chrome.runtime.lastError; r(); }));
+      else await chrome.storage.sync.set({ skin: id });
       // 열린 탭이 스킨을 바꾸면 보임 상태가 달라질 수 있다 (none 은 닫힌 채 시작한다). 다시 읽는다.
-      setTimeout(() => { readTab(); }, 250);
+      setTimeout(async () => { await readTab(); syncSkins(); }, 250);
     });
     $('#skin-list').appendChild(b);
     return b;
@@ -138,6 +145,17 @@
     });
   }
   paintSkins();
+  // 스킨 버튼이 지금 무엇을 바꾸는가 — 이 탭 / 기본. 탭 상태를 읽은 뒤에 맞춘다
+  function tabTarget() { return perTab && termUsable && !!(tab && tab.id) && !!tabState; }
+  function syncSkins() {
+    const note = $('#skin-note');
+    if (!perTab) { note.hidden = true; return; }
+    if (tabTarget() && skinField.choices.includes(tabState.skin)) skin = tabState.skin;
+    else skin = skinField.choices.includes(stored.skin) ? stored.skin : skinField.def;
+    note.textContent = GT_T(tabTarget() ? 'popup.skin.perTab' : 'popup.skin.perTabDefault');
+    note.hidden = false;
+    paintSkins();
+  }
   let defOn = !!stored.enabled;
   setSwitch(ui.swDef, defOn);
 
@@ -171,4 +189,5 @@
   $('#shortcuts').addEventListener('click', () => { chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }); window.close(); });
 
   await readTab();
+  syncSkins();
 })();

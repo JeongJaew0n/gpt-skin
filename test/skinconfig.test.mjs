@@ -169,11 +169,15 @@ function commands() {
   const opt = read('src/options/options.js');
   t('옵션 화면은 지금 스킨의 항목만 그린다', /GT_FIELDS_FOR\(current\.skin\)\.forEach/.test(opt));
   t('옵션 화면이 스키마 전체를 그리지 않는다', !/GT_SCHEMA\.forEach/.test(opt));
-  t('스킨을 바꾸면 다시 그린다', /key === 'locale' \|\| key === 'skin'\) location\.reload\(\)/.test(opt));
+  t('스킨 · 탭별로 분할 적용을 바꾸면 다시 그린다 (항목 이름이 바뀐다)', /key === 'locale' \|\| key === 'skin' \|\| key === 'skin\.perTab'\) location\.reload\(\)/.test(opt));
   const cmds = read('src/content/commands.js');
   t(':config 는 지금 스킨의 항목만', /GT_FIELDS_FOR\(GT\.skin\.current\.id\)/.test(cmds));
 }
 
+{
+  const opt = read('src/options/options.js');
+  t('탭별로 분할 적용이 켜져 있으면 스킨 항목 이름이 기본 스킨', /f\.key === 'skin' && current\['skin\.perTab'\] === true;\s*k\.appendChild\(el\('span', 'label', perTabDefault \? GT_T\('opt\.ui\.skinDefault'\) : GT_LABEL\(f\)\)\)/.test(opt));
+}
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

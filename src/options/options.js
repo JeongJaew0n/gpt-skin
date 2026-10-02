@@ -37,7 +37,8 @@
     refreshCount();
     // 언어를 바꾸면 이 화면의 모든 문구가 바뀐다. 스킨을 바꾸면 보여 줄 항목이 바뀐다.
     // 둘 다 다시 그리는 게 가장 간단하다.
-    if (key === 'locale' || key === 'skin') location.reload();
+    // 탭별로 분할 적용을 켜고 끄면 위 스킨 항목의 이름(스킨 / 기본 스킨)이 바뀐다 (0.28.0)
+    if (key === 'locale' || key === 'skin' || key === 'skin.perTab') location.reload();
     return v;
   }
 
@@ -111,7 +112,9 @@
     s.fields.forEach((f) => {
       const row = el('div', 'row');
       const k = el('div', 'k');
-      k.appendChild(el('span', 'label', GT_LABEL(f)));
+      // 탭별로 분할 적용이 켜져 있으면 여기 스킨은 '기본 스킨' 이다 — 열린 탭 중 따로 고른 탭은 따르지 않는다 (0.28.0)
+      const perTabDefault = f.key === 'skin' && current['skin.perTab'] === true;
+      k.appendChild(el('span', 'label', perTabDefault ? GT_T('opt.ui.skinDefault') : GT_LABEL(f)));
       k.appendChild(el('span', 'keyname ds-mono', f.key));
       const v = el('div', 'v');
       const c = control(f);
