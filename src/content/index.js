@@ -257,9 +257,12 @@
   // 아무 신호 없이 글자가 끊기는 경우가 있다 — 우리 화면엔 짧게 그려졌는데 어느 경로도 이상을 모른다
   // (docs/issue/2026-09-09-url-marker-dropped.md 의 '스트림이 멈추는 쪽' 은 원인 미확정).
   // 기준은 대화 원본(API)이다. 답이 끝나고 verify 재시도(최대 약 6초)가 지난 뒤 한 번 읽어 같은 id 의 길이를 잰다.
-  // 기록만 한다 — 화면을 고치지 않는다. 먼저 얼마나 자주 생기는지 본다 (사용자 결정 2026-10-01).
-  // 비용: 답마다 GET 한 번.
-  // docs/issue/2026-10-01-truncation-detect.md
+  // 짧으면 기록하고(:bug), 화면도 원본 글로 맞춘다 — 예전에는 기록만 했다(2026-10-01). 스트림이 o · p 없는 배열 줄을
+  // 버려 인용이 'citeturn…' 으로 깨지고 글자가 빠진 것이 실측됐고(2026-10-06), 같은 종류의 모르는 누락을 막는 안전망으로
+  // 맞추기로 했다 (사용자 결정 2026-10-06). 인용 출처(refs) · 그림도 원본 것을 붙인다 — 스트림으로는 오지 않는다.
+  // 원본이 화면보다 짧으면 맞추지 않는다 — 원본에 아직 덜 저장됐을 수 있다.
+  // 비용: 답마다 GET 한 번 (그대로).
+  // docs/issue/2026-10-01-truncation-detect.md · docs/issue/2026-10-06-stream-bare-array-patch-dropped.md
   const TRUNC_CHECK_MS = 8000;
   const truncChecked = new Set();
   async function checkTruncation(msgId, info) {
@@ -273,9 +276,28 @@
     const shown = GT.store.state.byId.get(msgId);
     if (!orig || !shown) { GT.log('끊김 검사: 원본에서 이 답을 찾지 못했다'); return; }
     const t = GT.health.truncation(shown.text, orig.text);
-    if (!t) return;
-    GT.bugs.record('truncated', `화면 ${t.shown}자 / 원본 ${t.original}자 (${t.diff}자 짧음)`,
-      { ...t, droppedOps: (info && info.droppedOps) || 0, verifyTries: shown.verifyTries || 0 });
+    if (t) {
+      GT.bugs.record('truncated', `화면 ${t.shown}자 / 원본 ${t.original}자 (${t.diff}자 짧음)`,
+        { ...t, droppedOps: (info && info.droppedOps) || 0, verifyTries: shown.verifyTries || 0 });
+    }
+    if (settleWithOriginal(shown, orig)) {
+      GT.log(`끊김 검사: 화면을 대화 원본으로 맞췄다 (${String(shown.text || '').length}자)`);
+      GT.skin.current.render();
+    }
+  }
+  // 화면의 답을 원본 글로 맞춘다. 바뀌었으면 true.
+  function settleWithOriginal(shown, orig) {
+    if (typeof orig.text !== 'string' || !orig.text) return false;
+    // 인용 표시를 걷어내고 재면 안 된다 — 봉투가 안 닫힌 깨진 글은 안 걷히고 원본의 닫힌 봉투만 걷혀
+    // 원본이 더 짧게 재진다(실측 모양으로 검사하다 걸렸다). 같은 표기(PUA 봉투)끼리라 공백만 빼고 잰다.
+    const size = (x) => String(x || '').replace(/\s+/g, '').length;
+    if (size(orig.text) < size(shown.text)) return false;          // 원본이 아직 덜 됐다
+    const refsBefore = (shown.refs || []).length;
+    let changed = false;
+    if (shown.text !== orig.text) { shown.text = orig.text; changed = true; }
+    if (Array.isArray(orig.refs) && orig.refs.length !== refsBefore) { shown.refs = orig.refs; changed = true; }
+    if (Array.isArray(orig.images) && orig.images.length && !(shown.images || []).length) { shown.images = orig.images; changed = true; }
+    return changed;
   }
 
   // 그림이 원본에 붙기까지 걸리는 시간은 그때그때 다르다. 간격을 늘려 가며 몇 번 본다.
