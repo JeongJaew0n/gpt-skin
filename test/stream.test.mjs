@@ -260,6 +260,28 @@ const finalText = (evs) => { const d = evs.filter((e) => e.kind === 'delta').pop
   t('메타 경로를 건너뛰고 본문 경로를 잇는다', text === 'AB');
 }
 
+// o · p 없이 v 가 배열인 줄 — 실측 모양 그대로 (2026-10-06, docs/issue/2026-10-06-stream-bare-array-patch-dropped.md)
+// 예전에는 이 줄을 통째로 버려 인용 봉투가 안 닫혔고 'citeturn…' 이 글자로 남았다 · 그 사이 본문도 빠졌다
+{
+  const ref = { matched_text: 'citeturn754777search0turn612276search1', type: 'grouped_webpages' };
+  const ev = await collect([...ENC, addMsg('a1', 'assistant', 'text'),
+    append('격리 의무는 없다'),
+    D({ p: '', o: 'patch', v: [{ p: '/message/content/parts/0', o: 'append', v: '. citeturn754777search0turn612' },
+      { p: '/message/metadata/content_references', o: 'append', v: [ref] }] }),
+    D({ v: [{ p: '/message/content/parts/0', o: 'append', v: '276search1' }, { p: '/message/metadata/content_references/0/end_idx', o: 'replace', v: 42 }] }),
+    cont('\n\n다음 문장'),
+    COMPLETE]);
+  const txt = finalText(ev);
+  t('이름 없는 배열 줄의 본문도 받는다', txt === '격리 의무는 없다. citeturn754777search0turn612276search1\n\n다음 문장');
+  t('인용 봉투가 닫혀 있다 (U+E200 · U+E201 짝)', (txt.match(//g) || []).length === 1 && (txt.match(//g) || []).length === 1);
+  t('배열 안의 메타데이터 op 는 본문에 섞이지 않는다', !/42/.test(txt));
+}
+{
+  // 배열 안 op 가 경로를 생략하면 직전 본문 경로를 잇는다 (기존 규칙 그대로)
+  const ev = await collect([...ENC, addMsg('a1', 'assistant', 'text'), append('가'), D({ v: [{ v: '나' }, { o: 'append', v: '다' }] }), COMPLETE]);
+  t('이름 없는 배열 안의 경로 생략 조각도 잇는다', finalText(ev) === '가나다');
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

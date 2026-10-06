@@ -101,6 +101,16 @@
 
       if (typeof o.type === 'string') return this.typed(o);
 
+      // o · p 없이 v 가 배열인 줄도 patch 묶음이다. 실측(2026-10-06):
+      //   {"v":[{"p":"/message/content/parts/0","o":"append","v":"276se…"}, …]}
+      // 예전에는 o 가 없어 'append' 로 읽혔고, 값이 문자열이 아니라 어느 분기에도 안 걸려 조용히 버려졌다 —
+      // 답 하나에서 이런 줄 10개 · 본문 279자가 빠졌고(= 스트림과 원본의 차이), 인용 봉투가 안 닫혀
+      // 'citeturn…' 이 글자로 남았다. docs/issue/2026-10-06-stream-bare-array-patch-dropped.md
+      if (o.o === undefined && (o.p === undefined || o.p === '') && Array.isArray(o.v)) {
+        o.v.forEach((x) => this.op(x));
+        return;
+      }
+
       this.totalOps += 1;
       const path = typeof o.p === 'string' && o.p !== '' ? o.p : this.lastPath;
       // 경로를 생략한 델타는 직전 경로를 잇는다. 그런데 본문 사이사이에
