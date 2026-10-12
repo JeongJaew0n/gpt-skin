@@ -100,7 +100,7 @@ tools/package.sh      # dist/gpt-skin-<version>.zip
 
 | 조작 | 동작 |
 |---|---|
-| 좌측 상단 손잡이 **≡** · <kbd>Ctrl</kbd>+<kbd>B</kbd> · <kbd>⌘/Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>S</kbd> | 대화 목록 접기/펼치기 <sub>(⌘⇧S 는 원본 ChatGPT 와 같은 키)</sub> |
+| 좌측 상단 손잡이 **≡**(시트는 아래 시트 탭 줄 맨 왼쪽) · <kbd>Ctrl</kbd>+<kbd>B</kbd> · <kbd>⌘/Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>S</kbd> | 대화 목록 접기/펼치기 <sub>(⌘⇧S 는 원본 ChatGPT 와 같은 키)</sub> |
 | 본문 아무 데나 클릭 · <kbd>Esc</kbd> | 목록이 비켜난다 (오버레이 바깥 클릭) |
 | 목록에서 대화 선택 | 목록이 비켜난다 (설정으로 끌 수 있음) |
 | 오른쪽 가장자리 드래그 | 폭 조절 · 더블클릭이면 기본값 |

@@ -342,7 +342,7 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   await tick(); await tick();
   t('기본은 지금 대화 탭만', S.ui.tablist.children.length === 1 && S.ui.tablist.children[0].textContent === '도커 정리');
   t('넘기기 버튼도 숨긴다', S.ui.tabnav.hidden === true);
-  S.ui.tabs.children[2].dispatch('click');
+  S.ui.tabs.children.find((n) => n.className === 'gs-plus').dispatch('click');   // 자리가 아니라 이름으로 — 앞에 목록 버튼이 있다 (0.29.0)
   t('숨겨도 + 는 새 대화', calls.newChat === 1);
   S.applyConfig({ 'font.size': 13, 'sheet.chatTabs': true });
   const names = () => S.ui.tablist.children.map((n) => n.children[0].textContent);
@@ -551,6 +551,33 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   t('터미널에서는 숨기지 않는다', !/':chats'/.test((/hiddenCommands: \[[^\]]*\]/.exec(tty) || [''])[0]));
   t('none 에서는 숨긴다 (원본에 목록이 있다)', /hiddenCommands: \[[^\]]*':chats'/.test(none));
   t('시트에서는 숨기지 않는다', !/':chats'/.test((/hiddenCommands: \[[^\]]*\]/.exec(read('src/content/skins/sheet.js')) || [''])[0]));
+}
+
+// ---------------------------------------------------------------- 대화 목록 버튼 (0.29.0)
+// 시트 탭 줄 맨 왼쪽. Ctrl+B 와 같다. :chats 를 꺼도(넘기기 버튼이 숨어도) 보인다.
+{
+  let open = false, toggles = 0;
+  const { S, sb } = load();
+  sb.GT.sidebar.toggle = async () => { toggles++; open = !open; S.syncSidebar(); return open; };
+  sb.GT.sidebar.state = () => ({ forcedOpen: open, dismissed: false });
+  S.mount({ 'font.size': 13 });
+  const btn = S.ui.tabs.children[0];
+  t('목록 버튼이 탭 줄 맨 왼쪽', btn === S.ui.listBtn && btn.className === 'gs-listbtn');
+  t('넘기기 버튼이 숨어도 목록 버튼은 따로 있다', S.ui.tabnav.hidden === true && !S.ui.tabnav.children.includes(btn));
+  t('닫혀 있을 땐 \'열기\' 로 읽힌다', btn.dataset.open === '0' && /열기/.test(btn.attrs['aria-label']) && btn.attrs['aria-expanded'] === 'false');
+  let prevented = false;
+  btn.dispatch('mousedown', { button: 0, preventDefault() { prevented = true; } });
+  await tick();
+  t('누르면 목록을 연다 (Ctrl+B 와 같은 길)', toggles === 1);
+  t('입력줄 초점을 뺏지 않는다 (mousedown 을 막는다)', prevented);
+  t('열리면 눌림 표시 · \'닫기\' 로 읽힌다', btn.dataset.open === '1' && /닫기/.test(btn.attrs['aria-label']) && btn.attrs['aria-expanded'] === 'true');
+  btn.dispatch('mousedown', { button: 2, preventDefault() {} });
+  t('오른쪽 버튼으로는 열지 않는다', toggles === 1);
+  btn.dispatch('keydown', { key: 'Enter', preventDefault() {} });
+  await tick();
+  t('키보드(Enter)로도 닫고 연다', toggles === 2 && btn.dataset.open === '0');
+  const i18n = read('src/shared/i18n.js');
+  t('문구 ko · en', (i18n.match(/'sheet\.list\.open'/g) || []).length === 2 && (i18n.match(/'sheet\.list\.close'/g) || []).length === 2);
 }
 
 let bad = 0;

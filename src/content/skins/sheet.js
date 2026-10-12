@@ -146,6 +146,14 @@
 .gs-grid .gt-sys-body { white-space: pre-wrap; }
 .gs-tabs { flex: 0 0 auto; display: flex; align-items: stretch; height: 26px; padding: 0 4px;
   border-top: 1px solid var(--gs-hdr-b); background: var(--gs-hdr); font-size: 11.5px; user-select: none; }
+/* 목록 판은 시트 탭 줄(26px) · 상태줄(24px) 위에서 멈춘다 — 덮으면 연 버튼이 가려 같은 버튼으로 닫을 수 없다 (하네스 실측 0.29.0) */
+.gs-root > .gt-sidebar { bottom: 50px; }
+/* 대화 목록 버튼 — 시트 탭 줄 맨 왼쪽. 엑셀도 시트 탭 왼쪽 화살표에서 '모든 시트 목록' 을 연다. :chats 를 꺼도 보인다 (0.29.0) */
+.gs-listbtn { all: unset; flex: 0 0 auto; display: flex; align-items: center; padding: 0 9px; cursor: pointer; color: var(--gt-fg-dim);
+  border-right: 1px solid var(--gs-hdr-b); }
+.gs-listbtn:hover { color: var(--gt-fg); background: var(--gt-bg-2); }
+.gs-listbtn[data-open="1"] { color: var(--gs-accent); background: var(--gs-hdron); }
+.gs-listbtn:focus-visible { outline: 2px solid var(--gs-accent); outline-offset: -2px; }
 .gs-tabnav { display: flex; align-items: center; gap: 2px; padding: 0 4px; color: var(--gt-fg-dim); }
 .gs-tabnav[hidden] { display: none; }
 .gs-loadbar { position: relative; height: 2px; flex: 0 0 auto; overflow: hidden; background: #fff; }
@@ -278,6 +286,23 @@
     ui.grid.addEventListener('keydown', onGridKey);
 
     ui.tabs = el('div', 'gs-tabs');
+    // 대화 목록 버튼 (Ctrl+B 와 같다). 글리프 대신 그린다 — 폰트에 없는 문자에 기대지 않는다 (터미널 손잡이와 같은 규칙)
+    ui.listBtn = el('button', 'gs-listbtn');
+    ui.listBtn.type = 'button';
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 14 14'); svg.setAttribute('width', '13'); svg.setAttribute('height', '13'); svg.setAttribute('aria-hidden', 'true');
+    [3, 7, 11].forEach((y) => {
+      const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      ln.setAttribute('x1', '1.5'); ln.setAttribute('x2', '12.5'); ln.setAttribute('y1', String(y)); ln.setAttribute('y2', String(y));
+      ln.setAttribute('stroke', 'currentColor'); ln.setAttribute('stroke-width', '1.5'); ln.setAttribute('stroke-linecap', 'square');
+      svg.appendChild(ln);
+    });
+    ui.listBtn.appendChild(svg);
+    // mousedown 에서 막는다 — 입력줄의 초점을 뺏지 않게
+    ui.listBtn.addEventListener('mousedown', (e) => { if (e.button !== 0) return; e.preventDefault(); GT.sidebar.toggle(); });
+    // 키보드(Tab 으로 와서 Enter · Space)로도 연다
+    ui.listBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); GT.sidebar.toggle(); } });
+    paintListBtn();
     const nav = el('div', 'gs-tabnav');
     const prev = el('button', null, '◀'); prev.title = T('sheet.tabs.prev');
     const next = el('button', null, '▶'); next.title = T('sheet.tabs.next');
@@ -289,7 +314,7 @@
     ui.tablist.addEventListener('wheel', (e) => { ui.tablist.scrollLeft += e.deltaY || e.deltaX; e.preventDefault(); }, { passive: false });
     const plus = el('button', 'gs-plus', '+'); plus.title = T('sheet.newTab');
     plus.addEventListener('click', () => GT.navigate.newChat());
-    ui.tabs.appendChild(nav); ui.tabs.appendChild(ui.tablist); ui.tabs.appendChild(plus);
+    ui.tabs.appendChild(ui.listBtn); ui.tabs.appendChild(nav); ui.tabs.appendChild(ui.tablist); ui.tabs.appendChild(plus);
 
     ui.status = el('div', 'gs-status');
     ui.mode = el('span', null, T('sheet.status.ready'));
@@ -889,7 +914,17 @@
     const st = GT.sidebar.state ? GT.sidebar.state() : {};
     return !!st.forcedOpen && !st.dismissed;
   }
+  // 목록 버튼의 눌림 상태 · 이름 — 목록이 열려 있는지에 맞춘다
+  function paintListBtn() {
+    if (!ui.listBtn) return;
+    const open = sidebarShown();
+    ui.listBtn.dataset.open = open ? '1' : '0';
+    ui.listBtn.title = T(open ? 'sheet.list.close' : 'sheet.list.open');
+    ui.listBtn.setAttribute('aria-label', ui.listBtn.title);
+    ui.listBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
   function syncSidebar() {
+    paintListBtn();
     if (!root || !ui.sidebarSlot) return;
     const want = sidebarShown();
     const attached = ui.sidebarSlot.parentElement === root;
