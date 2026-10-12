@@ -539,7 +539,11 @@
   // 있는가' 를 나타내는 신호가 아니라서, 그 가장자리를 쓰면 깜빡인다.
   // 정본은 원본의 중단 버튼이다 — esc 중단도 같은 것을 본다.
   // docs/issue/2026-09-07-thinking-indicator-flicker.md
+  let wasBusy = false;
   every(200, () => {
+    // 답변 중 — 메시지 보내기를 막고 입력줄 자리표시를 바꾼다 (바뀔 때만)
+    const busyNow = GT.compose.answering();
+    if (busyNow !== wasBusy) { wasBusy = busyNow; GT.prompt.setBusy(busyNow); }
     const generating = !!GT.compose.stopButton();
     const want = generating && !GT.store.state.streamingId;
     if (GT.store.setThinking(want)) GT.skin.current.render();

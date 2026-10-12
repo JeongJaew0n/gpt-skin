@@ -108,7 +108,7 @@
     ui.mark = el('span', 'gt-prompt-mark', '❯');
     ui.input = el('textarea', 'gt-input');
     ui.input.rows = 1;
-    ui.input.placeholder = '메시지 또는 명령 (:help)';
+    ui.input.placeholder = PLACEHOLDER;
     ui.input.spellcheck = false;
     ui.cursor = cursorEl();
     row.appendChild(ui.mark); row.appendChild(ui.input); row.appendChild(ui.cursor);
@@ -762,6 +762,10 @@
 
   function focusInput() { if (ui.input) ui.input.focus(); }
 
+  // 답변 중에는 자리표시로 '지금은 보낼 수 없다' 를 알린다 (shell/prompt.js 가 Enter 를 막는다)
+  const PLACEHOLDER = '메시지 또는 명령 (:help)';
+  function setBusy(on) { if (ui.input) ui.input.placeholder = on ? GT_T('compose.busy.placeholder') : PLACEHOLDER; }
+
   function setMode(m) {
     mode = m;
     if (ui.mode) { ui.mode.textContent = m; ui.mode.dataset.mode = m; }
@@ -841,6 +845,7 @@
     clearLocal() { const n = localLog.length; localLog.length = 0; render(); return n; },
     setMode,
     setSuggest,
+    setBusy,
     syncFocus: syncCursorFocus,
     bell,
     focus: focusInput,

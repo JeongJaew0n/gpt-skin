@@ -13,6 +13,7 @@ GT.store = (function () {
     orphanDeltas: 0,        // add 없이 도착한 본문 델타 (스트림 해석이 어긋났다는 신호)
     drawingSince: 0,        // 그림을 만들고 있으면 그 시작 시각 (0 이면 아님)
     startedAt: 0,
+    lastStreamAt: 0,        // 마지막으로 begin · delta 를 받은 시각 — '답변 중' 판정이 오래된 스트림 상태에 갇히지 않게 (0.30.0)
     conversationTitle: '',
     // 화면에 있는 대화의 id — 대화 원본(API)을 받아 넣었을 때만 세운다. 주소는 먼저 바뀌고 내용은 나중에 오므로,
     // 탭 제목처럼 '이 대화가 맞는가' 를 따져야 하는 곳은 주소가 아니라 이 값을 본다 (2026-10-02 탭 제목 섞임).
@@ -289,6 +290,7 @@ GT.store = (function () {
       }
       state.slotId = m.id;
       state.streamingId = m.id;
+      state.lastStreamAt = Date.now();
       if (state.pendingThinking) {
         const rec = state.byId.get(m.id);
         if (rec) rec.thinking = state.pendingThinking;
@@ -320,6 +322,7 @@ GT.store = (function () {
 
       rec.text = text;
       rec.streaming = true;
+      state.lastStreamAt = Date.now();
       emit('delta');
     },
 

@@ -23,6 +23,7 @@ GT.skins = (function () {
     'sidebarShown',                                       // 대화 목록이 지금 이 스킨에서 보여야 하는가
     'system', 'clearSystem', 'local', 'clearLocal',       // 시스템 출력
     'setMode', 'setSuggest', 'syncFocus', 'bell',         // 상태 표시
+    'setBusy',                                            // 답변 중 — 입력줄 자리표시 (0.30.0)
     'focus', 'overlayRoot'                                // 입력 · 오버레이 자리
   ];
   // prompt 는 { el, autosize } 를 돌려주는 getter 다 (mount 전에는 el 이 null)
@@ -156,6 +157,7 @@ GT.skin = (function () {
         s.render();
         s.renderChrome();
         if (GT.store && GT.store.isStreaming && GT.store.isStreaming()) s.setMode('STREAM');
+        if (GT.prompt && GT.prompt.busy) s.setBusy(true);     // 답변 중에 스킨을 바꿔도 자리표시가 따라간다
       };
       // 열려 있던 오버레이는 옮기지 않는다
       try { if (GT.palette && GT.palette.isOpen && GT.palette.isOpen()) GT.palette.close(); } catch (_) {}

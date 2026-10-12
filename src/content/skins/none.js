@@ -236,6 +236,8 @@
     setMode(m) { if (ui.mode) ui.mode.textContent = m === 'NORMAL' || m === 'INSERT' ? '' : m; },
     setSuggest,
     syncFocus() {},
+    // 답변 중에는 명령줄 자리표시로 알린다 (shell/prompt.js 가 Enter 를 막는다)
+    setBusy(on) { if (ui.input) ui.input.placeholder = GT_T(on ? 'compose.busy.placeholder' : 'none.placeholder'); },
     bell() {
       if (!ui.bar) return;
       ui.bar.dataset.bell = '1';

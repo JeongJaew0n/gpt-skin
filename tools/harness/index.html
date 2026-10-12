@@ -102,6 +102,7 @@
   GT.compose = {
     composer: () => document.getElementById('prompt-textarea'),
     stopButton: () => (busy ? {} : null),
+    answering: () => busy,                     // 답변 중 보내기 막기 (0.30.0) — 하네스는 중단 버튼 흉내 하나로 본다
     stop() { busy = false; if (streaming) { clearInterval(streaming); streaming = null; GT.store.end(); } return true; },
     async send(text) {
       window.__sent = (window.__sent || []).concat([text]);
@@ -156,7 +157,12 @@
     GT.skin.show();
     setInterval(() => { if (GT.skin.visible()) GT.skin.current.renderChrome(); }, 1000);
     setInterval(() => { if (GT.skin.visible()) GT.skin.current.tick(); }, 90);
-    setInterval(() => { const want = !!GT.compose.stopButton() && !GT.store.state.streamingId; if (GT.store.setThinking(want)) GT.skin.current.render(); }, 200);
+    let wasBusy = false;
+    setInterval(() => {
+      const busyNow = GT.compose.answering();
+      if (busyNow !== wasBusy) { wasBusy = busyNow; GT.prompt.setBusy(busyNow); }   // index.js 와 같은 배선
+      const want = !!GT.compose.stopButton() && !GT.store.state.streamingId; if (GT.store.setThinking(want)) GT.skin.current.render();
+    }, 200);
     window.__ready = true;
   })().catch((e) => { window.__bootError = String(e && e.stack || e); console.error(e); });
 </script>

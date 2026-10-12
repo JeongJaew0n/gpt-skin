@@ -987,6 +987,8 @@
     setMode(m) { mode = m; if (root) renderChrome(); },
     setSuggest,
     syncFocus() {},
+    // 답변 중에는 수식 입력줄 자리표시로 알린다 (shell/prompt.js 가 Enter 를 막는다)
+    setBusy(on) { if (ui.input) ui.input.placeholder = on ? T('compose.busy.placeholder') : T('sheet.fx.placeholder'); },
     bell() {
       if (!ui.status) return;
       ui.status.dataset.bell = '1';

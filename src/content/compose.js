@@ -193,6 +193,16 @@ GT.compose = (function () {
     }, SENT_CHECK_MS);
   }
 
+  // 답변 중인가 — 이때는 메시지를 보내지 않는다 (docs/plan/2026-10-12-block-send-while-answering.md).
+  // 정본은 원본의 중지 버튼이다(생각 중 표시 · esc 중단과 같은 기준). 우리 스트림 상태는 보조로만 —
+  // 마지막 조각이 STREAM_STALE_MS 넘게 없으면 끝(end)을 놓친 것으로 보고 막지 않는다. 영영 막히면 안 된다.
+  const STREAM_STALE_MS = 60000;
+  function answering() {
+    if (stopButton()) return true;
+    const st = GT.store && GT.store.state;
+    return !!(st && st.streamingId && Date.now() - (st.lastStreamAt || 0) < STREAM_STALE_MS);
+  }
+
   function stop() {
     const b = stopButton();
     if (b) { b.click(); return true; }
@@ -201,5 +211,5 @@ GT.compose = (function () {
 
   // 대화 목록은 GT.chats 가 담당한다. 여기 있던 DOM 스크래핑은 그쪽 폴백으로 옮겼다 —
   // 구현이 둘이면 출처가 갈릴 때 서로 다른 목록을 보여준다.
-  return { composer, send, stop, inject, tryInject, probe, sendButton, stopButton, SELECTOR, COMPOSERS, holding, SENT_CHECK_MS };
+  return { composer, send, stop, inject, tryInject, probe, sendButton, stopButton, answering, STREAM_STALE_MS, SELECTOR, COMPOSERS, holding, SENT_CHECK_MS };
 })();

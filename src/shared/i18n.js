@@ -149,6 +149,9 @@ var GT_I18N = {
     'cmd.close.none': '닫을 탭이 없습니다 (지금 대화가 열린 탭에 없습니다)',
     // 대화 조작 API 가 200 이지만 success 가 거짓일 때 (0.26.4)
     'cmd.op.rejected': '바뀌지 않았습니다 — 서버가 요청을 받아들이지 않았습니다: $1',
+    // 답변 중 보내기 막기 (0.30.0)
+    'compose.busy.placeholder': '답변 중 — 끝나면 보낼 수 있습니다 · esc 로 중단',
+    'compose.busy.blocked': '답변이 끝난 뒤 보낼 수 있습니다. 쓴 글은 입력줄에 남겨 두었습니다 (esc 로 중단)',
     'tabs.close': '탭 닫기 (가운데 버튼으로도 닫힙니다)',
     'tabs.untitled': '(제목 없음)',
     'compose.failed': '메시지를 보내지 못했습니다. 쓴 글은 입력줄에 되돌려 두었습니다. 계속되면 :bug 로 보고서를 복사해 개발자에게 알려 주세요',
@@ -366,6 +369,8 @@ var GT_I18N = {
     'cmd.close.desc': 'Close the current tab and move to the next one',
     'cmd.close.none': 'No tab to close (the current conversation is not an open tab)',
     'cmd.op.rejected': 'Nothing changed — the server did not accept the request: $1',
+    'compose.busy.placeholder': 'Answering — you can send when it finishes · esc to stop',
+    'compose.busy.blocked': 'You can send after the answer finishes. Your text is still in the input (esc to stop)',
     'tabs.close': 'Close tab (middle-click also closes)',
     'tabs.untitled': '(untitled)',
     'compose.failed': 'The message was not sent. Your text is back in the input line. If this keeps happening, copy a report with :bug and send it to the developer',

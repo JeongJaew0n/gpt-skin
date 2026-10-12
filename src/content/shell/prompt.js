@@ -20,6 +20,15 @@ GT.prompt = (function () {
 
   let resetHistory = () => {};
 
+  // 답변 중 표시. index.js 의 200ms 틱이 상태가 바뀔 때만 부른다. 막힌 알림은 답 하나에 한 번만.
+  let busy = false;
+  let busyNoted = false;
+  function setBusy(on) {
+    busy = !!on;
+    if (!busy) busyNoted = false;
+    try { GT.skin.current.setBusy(busy); } catch (_) {}
+  }
+
   // adapter: { el, autosize }   — 스킨이 준다
   // options: { toggle, capturesTyping } — toggle 은 Ctrl+` 가 부른다.
   //   capturesTyping=false 면 '아무 데서나 타이핑하면 입력줄로' 를 끈다 (원본을 가리지 않는 스킨).
@@ -167,6 +176,13 @@ GT.prompt = (function () {
         e.preventDefault();
         const text = input.value.trim();
         if (!text) return;
+        // 답변 중에는 메시지를 보내지 않는다 — 원본이 받지 않는 요청을 넣으면 보낸 적 없는 글이 '보낸 글' 로 보였다 [가정].
+        // 쓴 글은 그대로 두고 한 번만 알린다. 명령(:help · :clear …)은 원본에 보내지 않으므로 그대로 실행한다.
+        // docs/plan/2026-10-12-block-send-while-answering.md
+        if (!GT.commands.parse(text) && GT.compose.answering && GT.compose.answering()) {
+          if (!busyNoted) { busyNoted = true; GT.skin.current.system('info', GT_T('compose.busy.blocked')); }
+          return;
+        }
         input.value = ''; autosize(); suggest(null); histReset();
         const handled = await GT.commands.run(text);
         if (handled) return;
@@ -319,6 +335,8 @@ GT.prompt = (function () {
       input.setSelectionRange(input.value.length, input.value.length);
       return true;
     },
+    setBusy,
+    get busy() { return busy; },
     get attached() { return !!input; }
   };
 })();
