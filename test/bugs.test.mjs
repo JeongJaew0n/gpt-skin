@@ -223,14 +223,14 @@ function loadHealth() {
   const m = /  const TRUNC_CHECK_MS = \d+;\n  const truncChecked = new Set\(\);\n  async function checkTruncation\(msgId, info\) \{[\s\S]*?\n  \}\n  \/\/ 화면의 답을 원본 글로 맞춘다[^\n]*\n  function settleWithOriginal\(shown, orig\) \{[\s\S]*?\n  \}\n/.exec(idx);
   t('끊김 검사 함수가 있다', !!m);
   if (m) {
-    const run = async ({ shown, orig, cid = 'c1', load, origRefs, shownRefs }) => {
+    const run = async ({ shown, orig, cid = 'c1', load, origRefs, shownRefs, origDil }) => {
       const sb = loadHealth();
       const rec = shown ? { id: 'm1', text: shown, verifyTries: 2, refs: shownRefs } : null;
       const byId = new Map(rec ? [['m1', rec]] : []);
       let loads = 0, renders = 0;
       sb.GT.store = { state: { byId } };
       sb.GT.skin = { current: { render: () => { renders++; } } };
-      sb.GT.conversation = { idFromPath: () => cid, load: load || (async () => { loads++; return { messages: orig == null ? [] : [{ id: 'm1', text: orig, refs: origRefs }] }; }) };
+      sb.GT.conversation = { idFromPath: () => cid, load: load || (async () => { loads++; return { messages: orig == null ? [] : [{ id: 'm1', text: orig, refs: origRefs, dil: !!origDil }] }; }) };
       vm.runInContext(m[0] + '\nglobalThis.__check = checkTruncation;', sb);
       await sb.__check('m1', { droppedOps: 3 });
       await sb.__check('m1', { droppedOps: 3 });
@@ -253,6 +253,10 @@ function loadHealth() {
     t('원본의 인용 출처(refs)를 붙인다 — 스트림으로는 오지 않는다', Array.isArray(r.msg.refs) && r.msg.refs.length === 1);
     r = await run({ shown: base + '스트림이 더 많이 받았다 — 원본이 아직 덜 저장됐다', orig: base });
     t('원본이 화면보다 짧으면 맞추지 않는다 (덜 저장됐을 수 있다)', r.msg.text !== base && r.renders() === 0);
+    // DIL 답: 스트림 글(태그 포함)보다 원본(태그 없는 fallback)이 짧다 — 그래도 맞춘다 (0.29.1)
+    const tagged = '핵심\n\n<box gap={3}>\n  <row align="start" gap={3}>\n    <icon name="plane" size="lg"/>\n  </row>\n</box>\n\n3단계 — 2027년';
+    r = await run({ shown: tagged, orig: '핵심\n\n3단계 — 2027년', origDil: true });
+    t('DIL 답은 원본이 짧아도 원본(fallback)으로 맞춘다', r.msg.text === '핵심\n\n3단계 — 2027년' && r.renders() === 1);
     r = await run({ shown: null, orig: base });
     t('대화를 옮겼으면(답이 없으면) 읽지 않는다', r.rec.length === 0 && r.loads() === 0);
     r = await run({ shown: base, orig: base, cid: null });

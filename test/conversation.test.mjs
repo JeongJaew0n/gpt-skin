@@ -111,6 +111,23 @@ const C = load();
   t('사이클에서 무한루프 없음', C.activeBranch(c).length >= 1);
 }
 
+// 생성형 UI(DIL) 답 — 본문 대신 fallbackMarkdown 을 쓴다 (실측 모양 그대로, 2026-10-12)
+// docs/issue/2026-10-12-dil-markup-shown-raw.md
+{
+  const body = '핵심은 이거야.\n\n<box gap={3}>\n  <row align="start" gap={3}>\n    <box background="surface-secondary" radius="lg" padding={2}>\n      <icon name="plane" size="lg"/>\n    </box>\n    <box flex="1" gap={1}>\n      3단계 — 2027년 여름 이후 <Cite ref="turn295970search0"/>\n    </box>\n  </row>\n  <divider color="subtle"/>\n</box>';
+  const fb = '핵심은 이거야.\n\n**3단계 — 2027년 여름 이후** citeturn295970search0';
+  const dil = { code: 'DIL.render(__dil.jsx(()=>{}))', constants: {}, fallbackMarkdown: fb, fallbackMarkdownVersion: 1, requiredComponents: ['Cite', 'MemoryCite'], appData: {} };
+  const c = conv([M('user', 'text', '정리해줘'), M('assistant', 'text', body, { metadata: { model_slug: 'gpt-6-thinking', model_dil_v2: dil } })]);
+  const r = C.toRecords(c);
+  t('DIL 답은 fallbackMarkdown 을 본문으로', r[1].text === fb);
+  t('본문에 DIL 마크업이 남지 않는다', !/<(box|row|icon|divider|Cite)\b/.test(r[1].text));
+  t('DIL 답이라고 표시한다 (안전망이 길이 가드를 건너뛴다)', r[1].dil === true);
+  const plain = C.toRecords(conv([M('assistant', 'text', '그냥 답', { metadata: {} })]));
+  t('DIL 이 없으면 예전처럼 본문 · dil false', plain[0].text === '그냥 답' && plain[0].dil === false);
+  const empty = C.toRecords(conv([M('assistant', 'text', body, { metadata: { model_dil_v2: { code: 'x', fallbackMarkdown: '' } } })]));
+  t('fallback 이 비어 있으면 본문을 쓴다 (빈 화면보다 낫다)', empty[0].text === body && empty[0].dil === false);
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

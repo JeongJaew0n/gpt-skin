@@ -291,7 +291,8 @@
     // 인용 표시를 걷어내고 재면 안 된다 — 봉투가 안 닫힌 깨진 글은 안 걷히고 원본의 닫힌 봉투만 걷혀
     // 원본이 더 짧게 재진다(실측 모양으로 검사하다 걸렸다). 같은 표기(PUA 봉투)끼리라 공백만 빼고 잰다.
     const size = (x) => String(x || '').replace(/\s+/g, '').length;
-    if (size(orig.text) < size(shown.text)) return false;          // 원본이 아직 덜 됐다
+    // 생성형 UI(DIL) 답은 원본 쪽이 태그 없는 대체 마크다운이라 스트림 글(태그 포함)보다 짧다 — 덜 된 게 아니다
+    if (!orig.dil && size(orig.text) < size(shown.text)) return false;          // 원본이 아직 덜 됐다
     const refsBefore = (shown.refs || []).length;
     let changed = false;
     if (shown.text !== orig.text) { shown.text = orig.text; changed = true; }

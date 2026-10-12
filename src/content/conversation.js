@@ -116,11 +116,18 @@ GT.conversation = (function () {
       // 그림을 그린 tool 메시지는 화면에서 assistant 의 응답이다.
       // role 을 그대로 쓰면 메타줄에 'tool' 이 찍히고 gutter 색도 갈린다.
       const role = m.author.role === 'tool' ? 'assistant' : m.author.role;
+      // 생성형 UI(DIL) 답은 본문에 <box> <row> 같은 마크업이 섞여 온다. 원본은 metadata.model_dil_v2.code 로 UI 를 그리고,
+      // 같은 자리에 태그 없는 대체 마크다운(fallbackMarkdown)을 함께 준다 — 인용도 우리가 아는 봉투(U+E200 cite …)로.
+      // 그것을 본문으로 쓴다. 실측(2026-10-12, gpt-6-thinking 답 22개): 22개 모두 있음 · 본문에 태그 9개 · fallback 에 태그 0개.
+      // docs/issue/2026-10-12-dil-markup-shown-raw.md
+      const dil = m.metadata && m.metadata.model_dil_v2;
+      const fallback = dil && typeof dil.fallbackMarkdown === 'string' && dil.fallbackMarkdown ? dil.fallbackMarkdown : null;
       out.push({
         id: m.id,
         role,
         model: (m.metadata && m.metadata.model_slug) || null,
-        text: parts.filter((p) => typeof p === 'string').join('\n'),
+        text: fallback != null ? fallback : parts.filter((p) => typeof p === 'string').join('\n'),
+        dil: fallback != null,
         at: m.create_time ? Math.round(m.create_time * 1000) : null,
         thinking: role === 'assistant' && pendingThinking ? pendingThinking : 0,
         refs: toRefs(m.metadata),
