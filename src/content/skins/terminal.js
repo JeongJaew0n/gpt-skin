@@ -60,13 +60,14 @@
     const brand = el('div'); brand.style.display = 'flex'; brand.style.alignItems = 'center'; brand.style.gap = '8px';
     brand.appendChild(ui.dot); brand.appendChild(el('span', 'gt-dim', 'gpt-skin'));
     ui.title = el('div', 'gt-title', '~');
-    ui.model = el('span', 'gt-model-pick', ''); ui.model.style.color = 'var(--gt-magenta)';
+    ui.model = el('button', 'gt-model-pick', ''); ui.model.type = 'button'; ui.model.style.color = 'var(--gt-magenta)';
     // 모델 이름을 누르면 모델 고르기 창 (0.31.0) — :model 과 같은 길. 원본 선택기를 못 찾으면 누를 수 없게 보인다
     ui.model.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
       e.preventDefault(); e.stopPropagation();
       GT.commands.openModelMenu();
     });
+    ui.model.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); GT.commands.openModelMenu(); } });
     ui.effort = el('span', 'gt-dim gt-effort', '');
     ui.effort.title = '추론 수준 바꾸기';
     ui.effort.addEventListener('mousedown', (e) => {
@@ -188,9 +189,15 @@
       GT.sidebar.dismiss();
     });
 
+    // 누른 자리를 기억한다 — 뗄 때의 자리만 보면 안 된다. 실측(2026-10-14, 모델 이름 클릭): 누르는 사이 버튼 글자가
+    // '⠴ ' 로 줄어 뗀 자리가 제목 칸이 됐고, 입력줄로 초점을 옮기자 방금 연 원본 모델 메뉴가 닫혀 '목록을 읽지 못했습니다' 가 됐다.
+    // 버튼 · 링크에서 누른 클릭이거나 모델 목록을 읽는 중이면 초점을 옮기지 않는다.
+    let downOnControl = false;
+    root.addEventListener('mousedown', (e) => { downOnControl = onControl(hit(e)); }, true);
     root.addEventListener('mouseup', (e) => {
       if (e.button !== 0) return;
-      if (onControl(hit(e))) return;
+      if (downOnControl || onControl(hit(e))) return;
+      if (GT.commands && GT.commands.modelMenuBusy) return;
       if (picked()) return;
       focusInput();
     });

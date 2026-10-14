@@ -163,7 +163,9 @@ GT.theme = (function () {
 .gt-ctx-item { display: flex; gap: 14px; }
 .gt-ctx-hint { margin-left: auto; color: var(--gt-green); }
 .gt-effort { cursor: default; }
-/* 모델 버튼 — 누르면 모델 고르기 창 (0.31.0) */
+/* 모델 버튼 — 누르면 모델 고르기 창 (0.31.0). button 이라 기본 모양을 지운다 (0.31.1) */
+.gt-model-pick { all: unset; color: var(--gt-magenta); cursor: default; }
+.gt-model-pick:focus-visible { outline: 1px solid var(--gt-cyan); outline-offset: 2px; }
 .gt-model-pick[data-pickable="1"] { cursor: pointer; }
 .gt-model-pick[data-pickable="1"]::after { content: " ▾"; color: var(--gt-fg-faint); }
 .gt-model-pick[data-pickable="1"]:hover { text-decoration: underline; text-underline-offset: 3px; }
