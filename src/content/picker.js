@@ -85,12 +85,17 @@ GT.picker = (function () {
     return { effort: p ? pillLabel(p) : null };
   }
 
+  // 지금 고른 모델의 이름. 메뉴를 열어야만 알 수 있어서, 목록을 읽거나 바꿀 때 본 값을 기억해 둔다 (버튼 표시용, 0.31.0).
+  let lastModel = null;
+
   async function models() {
     if (!(await open())) return null;
     const out = items()
       .filter((e) => e.getAttribute('role') === 'menuitemradio')
       .map((e, i) => ({ index: i, label: label(e), current: e.getAttribute('aria-checked') === 'true' }));
     await close();
+    const cur = out.find((m) => m.current);
+    if (cur) lastModel = cur.label;
     return out;
   }
 
@@ -106,6 +111,7 @@ GT.picker = (function () {
     pointer(el, 'pointerdown'); pointer(el, 'pointerup'); el.click();
     await wait(400);
     await close();
+    lastModel = picked;
     return { ok: true, picked };
   }
 
@@ -232,6 +238,7 @@ GT.picker = (function () {
 
   return {
     current, models, chooseModel, available: () => !!pill(),
+    modelLabel: () => lastModel,
     effort: async () => remember(await effort()),
     async setEffort(t) {
       pending = { from: effortLabel() };

@@ -60,7 +60,13 @@
     const brand = el('div'); brand.style.display = 'flex'; brand.style.alignItems = 'center'; brand.style.gap = '8px';
     brand.appendChild(ui.dot); brand.appendChild(el('span', 'gt-dim', 'gpt-skin'));
     ui.title = el('div', 'gt-title', '~');
-    ui.model = el('span', null, ''); ui.model.style.color = 'var(--gt-magenta)';
+    ui.model = el('span', 'gt-model-pick', ''); ui.model.style.color = 'var(--gt-magenta)';
+    // 모델 이름을 누르면 모델 고르기 창 (0.31.0) — :model 과 같은 길. 원본 선택기를 못 찾으면 누를 수 없게 보인다
+    ui.model.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault(); e.stopPropagation();
+      GT.commands.openModelMenu();
+    });
     ui.effort = el('span', 'gt-dim gt-effort', '');
     ui.effort.title = '추론 수준 바꾸기';
     ui.effort.addEventListener('mousedown', (e) => {
@@ -640,7 +646,14 @@
     // chrome
     ui.title.textContent = `${s.path}${s.conversationTitle ? ' — ' + s.conversationTitle : ''}`;
     const last = [...s.messages].reverse().find((m) => m.model);
-    ui.model.textContent = last ? last.model : '';
+    // 버튼에는 지금 고른 모델(목록을 읽거나 바꿀 때 본 값). 모르면 마지막 답의 모델
+    const picked = GT.picker && GT.picker.modelLabel ? GT.picker.modelLabel() : null;
+    const modelName = picked || (last ? last.model : '');
+    const pickable = !!(GT.picker && GT.picker.available && GT.picker.available());
+    const busyMenu = !!(GT.commands && GT.commands.modelMenuBusy);
+    ui.model.textContent = busyMenu ? `⠴ ${modelName}` : (modelName || (pickable ? GT_T('model.pick.title') : ''));
+    ui.model.dataset.pickable = pickable ? '1' : '0';
+    ui.model.title = pickable ? GT_T('model.pick.title') : '';
     // 추론 수준. 원본 pill 의 라벨이 정본이라 메뉴를 열지 않고 읽는다.
     // 바꾸는 중에는 스크롤백에 글을 남기는 대신 여기에 상태로 보여준다.
     if (GT.picker && GT.picker.available()) {
@@ -660,8 +673,8 @@
     const g = el('span', null, 'user@gpt'); g.style.color = 'var(--gt-green)';
     const c = el('span', null, s.path); c.style.color = 'var(--gt-cyan)';
     ui.compMeta.appendChild(g); ui.compMeta.appendChild(c);
-    if (ui.model.textContent) {
-      const mm = el('span', null, `(${ui.model.textContent})`); mm.style.color = 'var(--gt-magenta)';
+    if (modelName) {
+      const mm = el('span', null, `(${modelName})`); mm.style.color = 'var(--gt-magenta)';
       ui.compMeta.appendChild(mm);
     }
 

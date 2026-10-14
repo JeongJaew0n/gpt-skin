@@ -163,6 +163,10 @@ GT.theme = (function () {
 .gt-ctx-item { display: flex; gap: 14px; }
 .gt-ctx-hint { margin-left: auto; color: var(--gt-green); }
 .gt-effort { cursor: default; }
+/* 모델 버튼 — 누르면 모델 고르기 창 (0.31.0) */
+.gt-model-pick[data-pickable="1"] { cursor: pointer; }
+.gt-model-pick[data-pickable="1"]::after { content: " ▾"; color: var(--gt-fg-faint); }
+.gt-model-pick[data-pickable="1"]:hover { text-decoration: underline; text-underline-offset: 3px; }
 .gt-effort:hover { color: var(--gt-fg); }
 .gt-ctx-item[data-armed="1"] { background: var(--gt-red); color: var(--gt-bg-1); }
 .gt-ctx-note { padding: 6px 12px 2px; margin-top: 4px; border-top: 1px solid var(--gt-bg-3);

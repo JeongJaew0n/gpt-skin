@@ -106,7 +106,8 @@ GT.palette = (function () {
     GT.skin.current.focus();
   }
 
-  function open(list_, pick) {
+  // opts.placeholder — 대화 · 명령이 아닌 목록(모델 고르기 등)을 띄울 때 입력칸 안내를 바꾼다
+  function open(list_, pick, opts) {
     if (box) close();
     items = list_; onPick = pick;
     const root = GT.skin.current.overlayRoot();
@@ -118,7 +119,7 @@ GT.palette = (function () {
     mark = el('span', null, '\u203a'); mark.style.color = 'var(--gt-magenta)';
     input = el('input');
     input.spellcheck = false;
-    input.placeholder = GT_T('palette.placeholder');
+    input.placeholder = (opts && opts.placeholder) || GT_T('palette.placeholder');
     head.appendChild(mark); head.appendChild(input);
     box.appendChild(head);
 

@@ -16,7 +16,7 @@
 ![Chrome 111+](https://img.shields.io/badge/Chrome-111%2B-5A6570)
 ![웹스토어 준비](https://img.shields.io/badge/배포-웹스토어_준비-8B5CF6)
 ![의존성 0](https://img.shields.io/badge/의존성-0-22C55E)
-![테스트 2102](https://img.shields.io/badge/테스트-2102_케이스-22C55E)
+![테스트 2127](https://img.shields.io/badge/테스트-2127_케이스-22C55E)
 
 </div>
 
@@ -158,6 +158,7 @@ sheet 는 한 행에 한 줄로 그린다. A 열은 누가 말했는지, B 열�
 <tr><td><code>:sidebar &lt;on|off|toggle|more|width n&gt;</code></td><td>사이드바 <sub>(<code>clear-cache</code> 도 받는다)</sub></td></tr>
 <tr><td><code>:font &lt;10-24 | + | - | reset&gt;</code></td><td>글씨 크기</td></tr>
 <tr><td><code>:skin [terminal|sheet|none]</code></td><td>스킨 목록 / 바로 바꾸기 <sub>(저장된다 · none 은 원본 화면에 명령줄만 · 탭별로 분할 적용이 켜져 있으면 이 탭만)</sub></td></tr>
+<tr><td>모델 이름 클릭</td><td>모델 고르기 <sub>(터미널: 상단바 오른쪽 · 시트: 제목 줄 · <code>:model</code> 과 같다)</sub></td></tr>
 <tr><td><code>:skin default [이름]</code></td><td>기본 스킨 보기 / 바꾸기 <sub>(따로 고르지 않은 탭이 따른다)</sub></td></tr>
 <tr><td><code>:theme &lt;이름&gt;</code></td><td>지금 스킨의 테마 <sub>(<code>terminal.theme</code> 에 저장)</sub></td></tr>
 
@@ -384,7 +385,7 @@ tools/test.sh
 그렇게 빠진 적이 있다. 그래서 실패와 '죽음' 을 따로 센다.
 
 <details>
-<summary><b>57개 파일 · 2102 케이스</b></summary>
+<summary><b>58개 파일 · 2127 케이스</b></summary>
 
 <br>
 
@@ -440,6 +441,7 @@ tools/test.sh
 | `opresult` | 13 | 대화 조작이 거절(success=false)되면 실패로 알리고 아무것도 바꾸지 않는가 · 지우거나 보관하면 열린 탭에서도 닫는가 |
 | `tabskin` | 39 | 탭별로 분할 적용 — 서비스 워커의 탭별 저장 · 남의 탭을 못 바꾸는가 · 탭 닫힘 · 옵션 끄면 지우기 · 부팅 기다림 상한 · `:skin` / `:skin default` · 꺼져 있으면 예전 그대로 |
 | `busy` | 19 | 답변 중 보내기 막기 — 판정(중지 버튼 · 오래된 스트림은 풀림) · Enter 를 막고 글을 남기는가 · 알림은 답 하나에 한 번 · 명령은 그대로 · 스킨 자리표시 |
+| `modelbtn` | 17 | 스킨의 모델 버튼 — 누르면 원본 메뉴에서 읽은 모델 목록을 팔레트에 · 고르면 `:model` 과 같은 길 · 읽는 중 중복 방지 · 실패를 알리는가 |
 | `sheet` | 117 | 시트 스킨 — 한 행에 한 줄 · 스트리밍 중 두 행만 다시 · 인용 번호가 행을 건너 이어지는가 · 셀 선택·방향키·복사 · 입력 미러 · 시트 탭 · 표를 칸으로 나누고 세로줄이 맞는가 · :messup 블록 라벨·점선 |
 
 </details>
@@ -488,7 +490,7 @@ tools/test.sh
 | 생각 중 표시 · 회전자 | 실제 테마 CSS 로 세 상태(추론 중 · 스트리밍 · 완료)를 렌더해 확인 |
 | 툴바 패널 글자 대비 | 계산 — 전부 4.5:1 이상 (도움말은 2.3 → 7.8) |
 | 인용 마커 | 실측 — API·SSE·fiber 세 경로의 표기를 각각 확인하고, 실제 응답 데이터로 렌더 |
-| 순수 로직 | 2102 케이스 통과 (위 표) |
+| 순수 로직 | 2127 케이스 통과 (위 표) |
 | 녹화 스트림 재생 | 실제 SSE 1건을 `tap.js` 에 재생 (`test/replay.test.mjs`) |
 | ProseMirror 주입 · 전송 버튼 활성화 | 실제 페이지에서 확인 |
 | SSE 가로채기 (`res.body.tee()`) | 실제 페이지에서 확인 |

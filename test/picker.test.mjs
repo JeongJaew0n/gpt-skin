@@ -267,12 +267,15 @@ function world2({ extraMenuButtons = [] } = {}) {
 }
 {
   const { P } = world2();
+  t('처음엔 고른 모델을 모른다 (메뉴를 열기 전)', P.modelLabel() === null);
   t('새 원본: 클래스 없이 입력창 폼 안의 메뉴 버튼을 찾는다', P.available() === true);
   t('새 원본: 버튼 글자 두 칸 중 값(마지막 칸)만 읽는다', P.current().effort === 'High' && P.effortLabel() === 'High');
   const models = await P.models();
   t('새 원본: 모델 목록 · 현재 모델', !!models && models.length === 2 && models[0].label === 'GPT-6' && models[0].current === true);
+  t('목록을 읽으면 지금 고른 모델을 기억한다 (버튼 표시용, 0.31.0)', P.modelLabel() === 'GPT-6');
   const r = await P.chooseModel('5.6');
   t('새 원본: 이름 일부로 전환', r.ok === true && r.picked === 'GPT-5.6 Sol');
+  t('바꾸면 고른 모델을 새로 기억한다', P.modelLabel() === 'GPT-5.6 Sol');
 }
 {
   const icon = { childNodes: [], textContent: '', getAttribute: (k) => (k === 'aria-haspopup' ? 'menu' : null) };

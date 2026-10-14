@@ -27,6 +27,7 @@ GT.commands = (function () {
   };
 
   const REG = [];
+  let modelMenuBusy = false;           // 모델 목록을 읽는 중 (버튼에 ⠴ 를 띄운다)
   // args: 인자 후보를 돌려주는 함수(선택). 이미 입력된 앞 인자들을 받는다.
   const def = (name, desc, run, hint, args) => { REG.push({ name, desc, run, hint, args }); };
 
@@ -624,6 +625,25 @@ GT.commands = (function () {
     // ⌘K — 대화 검색 + 명령. 원본 ChatGPT 에서 ⌘K 는 대화 검색이라 그 손버릇을 살린다 (UX 조사 B2).
     // 대화는 이미 읽어 둔 목록(GT.chats.state)만 쓴다 — 팔레트를 연다고 새 요청을 보내지 않는다.
     // 팔레트는 ':' 로 시작하면 명령만 보여 준다 (palette.js).
+    // 모델 고르기 창 — 스킨의 모델 버튼이 부른다 (0.31.0). 목록은 원본 메뉴에서 읽고(약 1초), 팔레트에 띄운다.
+    // 고르면 :model <번호> 와 같은 길로 바꾼다. 명령(:model)은 그대로 남는다.
+    async openModelMenu() {
+      if (!GT.picker.available()) return err(GT_T('model.menu.unavailable'));
+      if (modelMenuBusy) return;
+      modelMenuBusy = true;
+      try { GT.skin.current.renderChrome(); } catch (_) {}
+      let list = null;
+      try { list = await GT.picker.models(); } finally { modelMenuBusy = false; try { GT.skin.current.renderChrome(); } catch (_) {} }
+      if (!list || !list.length) return err(GT_T('model.menu.unreadable'));
+      GT.palette.open(list.map((m) => ({ kind: 'model', name: m.label, desc: m.current ? GT_T('model.menu.current') : '', index: m.index, current: m.current })),
+        async (item) => {
+          if (item.current) return;
+          const r = await GT.picker.chooseModel(item.index);
+          if (r.ok) info(`모델 → ${r.picked}`); else err(`전환 실패 (${r.reason})`);
+          try { GT.skin.current.renderChrome(); } catch (_) {}
+        }, { placeholder: GT_T('model.menu.placeholder') });
+    },
+    get modelMenuBusy() { return modelMenuBusy; },
     openPalette() {
       GT.palette.open(paletteItems(), (item) => {
         if (item.kind === 'chat') { GT.navigate.to(item.href); return; }

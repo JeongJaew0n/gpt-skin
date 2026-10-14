@@ -38,6 +38,14 @@
   background: var(--gs-accent); color: #fff; font-size: 12px; }
 .gs-title .gs-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gs-title .gs-meta { margin-left: auto; display: flex; gap: 12px; opacity: .92; white-space: nowrap; }
+/* 모델 버튼 — 제목 줄 오른쪽 정보 앞. 누르면 모델 고르기 창 (0.31.0) */
+.gs-title .gs-modelbtn { all: unset; margin-left: auto; padding: 1px 8px; border-radius: 3px; color: #fff; white-space: nowrap; cursor: default; }
+.gs-title .gs-modelbtn + .gs-meta { margin-left: 0; }
+.gs-title .gs-modelbtn[data-pickable="1"] { cursor: pointer; }
+.gs-title .gs-modelbtn[data-pickable="1"]::after { content: " ▾"; opacity: .8; }
+.gs-title .gs-modelbtn[data-pickable="1"]:hover { background: rgba(255, 255, 255, .18); }
+.gs-title .gs-modelbtn:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+.gs-title .gs-modelbtn:empty { display: none; }
 .gs-rtabs { flex: 0 0 auto; display: flex; align-items: flex-end; height: 26px; padding: 0 6px;
   background: var(--gs-accent); user-select: none; }
 .gs-rtabs span { padding: 4px 11px; color: #fff; font-size: 11.5px; opacity: .88; cursor: default; }
@@ -221,7 +229,12 @@
     ui.title = el('div', 'gs-title');
     ui.name = el('span', 'gs-name', '');
     ui.meta = el('span', 'gs-meta', '');
-    ui.title.appendChild(ui.name); ui.title.appendChild(ui.meta);
+    // 모델 버튼 (0.31.0) — :model 과 같은 길. mousedown 에서 막아 입력줄 초점을 뺏지 않는다
+    ui.modelBtn = el('button', 'gs-modelbtn', '');
+    ui.modelBtn.type = 'button';
+    ui.modelBtn.addEventListener('mousedown', (e) => { if (e.button !== 0) return; e.preventDefault(); GT.commands.openModelMenu(); });
+    ui.modelBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); GT.commands.openModelMenu(); } });
+    ui.title.appendChild(ui.name); ui.title.appendChild(ui.modelBtn); ui.title.appendChild(ui.meta);
 
     ui.rtabs = el('div', 'gs-rtabs');
     T('sheet.ribbon.tabs').split('|').forEach((name, i) => {
@@ -844,7 +857,16 @@
     ui.name.textContent = `${s.conversationTitle || T('sheet.newChat')}.xlsx`;
     const last = [...s.messages].reverse().find((m) => m.model);
     const bits = [];
-    if (last) bits.push(last.model);
+    // 모델은 버튼으로 — 지금 고른 모델(목록을 읽거나 바꿀 때 본 값). 모르면 마지막 답의 모델
+    const picked = GT.picker && GT.picker.modelLabel ? GT.picker.modelLabel() : null;
+    const modelName = picked || (last ? last.model : '');
+    const pickable = !!(GT.picker && GT.picker.available && GT.picker.available());
+    const busyMenu = !!(GT.commands && GT.commands.modelMenuBusy);
+    const btnText = busyMenu ? `⠴ ${modelName}` : (modelName || (pickable ? T('model.pick.title') : ''));
+    if (ui.modelBtn.textContent !== btnText) ui.modelBtn.textContent = btnText;
+    ui.modelBtn.dataset.pickable = pickable ? '1' : '0';
+    ui.modelBtn.title = pickable ? T('model.pick.title') : '';
+    ui.modelBtn.setAttribute('aria-label', pickable ? T('model.pick.title') + (modelName ? ' — ' + modelName : '') : modelName);
     if (GT.picker && GT.picker.available && GT.picker.available()) {
       const p = GT.picker.pending;
       const label = GT.picker.effortLabel();
