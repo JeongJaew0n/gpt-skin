@@ -234,6 +234,52 @@ function world(opt) {
   t('팝업은 바깥 클릭으로 닫힌다', /shadow\.addEventListener\('mousedown', away, true\)/.test(tty));
 }
 
+// --- 새 원본 (실측 2026-10-14, GPT-6): '__composer-pill' 클래스가 없다 ---
+// 입력창 폼 안의 하나뿐인 메뉴 버튼 · 글자는 '추론 수준' · 'High' 두 칸 · 메뉴 안쪽은 예전과 같다
+function world2({ extraMenuButtons = [] } = {}) {
+  const state = { open: false };
+  const txt = (v) => ({ nodeType: 3, nodeValue: v });
+  const span = (v) => ({ nodeType: 1, childNodes: [txt(v)] });
+  const btn = {
+    className: 'no-drag cursor-interaction items-center',
+    childNodes: [span('추론 수준'), span('High')],
+    get textContent() { return '추론 수준High'; },
+    getAttribute: (k) => (k === 'aria-haspopup' ? 'menu' : k === 'aria-label' ? 'ChatGPT 모델 선택' : null),
+    click() { state.open = true; }, dispatchEvent() { return true; }, focus() {}
+  };
+  const radio = (text, checked) => ({ getAttribute: (k) => (k === 'role' ? 'menuitemradio' : k === 'aria-checked' ? checked : null),
+    textContent: text, click() { radio.clicked = text; }, dispatchEvent() { return true; }, querySelector: () => null });
+  const items = [radio('GPT-6', 'true'), radio('GPT-5.6 Sol', 'false')];
+  const form = { querySelector: (q) => (/contenteditable|textarea/.test(q) ? {} : null),
+    querySelectorAll: (q) => (q === 'button[aria-haspopup="menu"]' ? [...extraMenuButtons, btn] : []) };
+  const sandbox = { console, Object, Array, Set, Map, Number, String, Boolean, JSON, Promise, Error, Date, setTimeout,
+    PointerEvent: class { constructor(t) { this.type = t; } }, KeyboardEvent: class { constructor(t, o2) { this.type = t; Object.assign(this, o2); } },
+    document: {
+      querySelector: () => null,                                   // .__composer-pill 은 없다
+      getElementById: () => null,
+      querySelectorAll: (sel) => (sel === 'button' ? [btn] : sel === 'form' ? [form] : state.open ? items : []),
+      dispatchEvent(e) { if (e && e.key === 'Escape') state.open = false; return true; }
+    } };
+  sandbox.window = sandbox; sandbox.globalThis = sandbox; sandbox.GT = {};
+  vm.createContext(sandbox);
+  vm.runInContext(src, sandbox, { filename: 'picker.js' });
+  return { P: sandbox.GT.picker, state };
+}
+{
+  const { P } = world2();
+  t('새 원본: 클래스 없이 입력창 폼 안의 메뉴 버튼을 찾는다', P.available() === true);
+  t('새 원본: 버튼 글자 두 칸 중 값(마지막 칸)만 읽는다', P.current().effort === 'High' && P.effortLabel() === 'High');
+  const models = await P.models();
+  t('새 원본: 모델 목록 · 현재 모델', !!models && models.length === 2 && models[0].label === 'GPT-6' && models[0].current === true);
+  const r = await P.chooseModel('5.6');
+  t('새 원본: 이름 일부로 전환', r.ok === true && r.picked === 'GPT-5.6 Sol');
+}
+{
+  const icon = { childNodes: [], textContent: '', getAttribute: (k) => (k === 'aria-haspopup' ? 'menu' : null) };
+  const { P } = world2({ extraMenuButtons: [icon] });
+  t('폼에 아이콘만 있는 메뉴 버튼이 같이 있어도 글자가 있는 버튼을 고른다', P.current().effort === 'High');
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

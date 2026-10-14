@@ -23,10 +23,36 @@ GT.picker = (function () {
     bubbles: true, cancelable: true, pointerId: 1, button: 0, isPrimary: true
   }));
 
+  // 모델 · 추론 수준 버튼.
+  //
+  // 실측(2026-10-14, 로그인 ChatGPT · GPT-6): '__composer-pill' 클래스가 없어졌다 — 그래서 :model · :effort 가 '선택기를 찾지 못했습니다' 로 끝났다.
+  // 입력창 폼 안에서 메뉴를 여는 버튼은 이것 하나뿐이었고, 열면 안쪽 구조(모델 menuitemradio · 슬라이더를 품은 menuitem)는 예전과 같았다.
+  // 그래서 구조로 찾는다: 편집기를 품은 폼 안의 aria-haspopup=menu 버튼. 여럿이면 글자가 있는 것(아이콘만 있는 버튼이 아닌 것).
+  // aria-label('ChatGPT 모델 선택')은 언어를 타고, data-codex-intelligence-trigger 같은 data 속성은 내부 이름이라 판별자로 쓰지 않는다.
   function pill() {
-    return [...document.querySelectorAll('button')]
+    const old = [...document.querySelectorAll('button')]
       .find((b) => String(b.className).includes('__composer-pill') && b.getAttribute('aria-haspopup') === 'menu')
       || document.querySelector(PILL);
+    if (old) return old;
+    const forms = [...document.querySelectorAll('form')].filter((f) => f.querySelector('[contenteditable="true"], textarea'));
+    for (const f of forms) {
+      const btns = [...f.querySelectorAll('button[aria-haspopup="menu"]')];
+      if (btns.length === 1) return btns[0];
+      const withText = btns.filter((b) => (b.textContent || '').trim());
+      if (withText.length === 1) return withText[0];
+    }
+    return null;
+  }
+
+  // 버튼 글자에서 현재 추론 수준만. 새 버튼은 '추론 수준' · 'High' 두 칸으로 나뉘어 있다 — 마지막 글자 칸이 값이다.
+  // 예전 버튼은 칸이 하나라 그대로 같은 값이 나온다.
+  function pillLabel(p) {
+    const leaves = [];
+    const walk = (n) => (n.childNodes || []).forEach((c) => {
+      if (c.nodeType === 3) { const t = String(c.nodeValue || '').trim(); if (t) leaves.push(t); } else if (c.nodeType === 1) walk(c);
+    });
+    try { walk(p); } catch (_) {}
+    return leaves.length ? leaves[leaves.length - 1] : (p.textContent || '').trim();
   }
 
   function items() { return [...document.querySelectorAll(ITEM)]; }
@@ -56,7 +82,7 @@ GT.picker = (function () {
   // 현재 상태는 메뉴를 열지 않고도 읽을 수 있다
   function current() {
     const p = pill();
-    return { effort: p ? label(p) : null };
+    return { effort: p ? pillLabel(p) : null };
   }
 
   async function models() {
@@ -183,7 +209,7 @@ GT.picker = (function () {
     const p = pill();
     if (!p) return null;
     if (items().length) return lastEffort;         // 메뉴가 열려 있으면 라벨을 못 믿는다
-    const t = (p.textContent || '').trim();
+    const t = pillLabel(p);
     if (t) lastEffort = t;
     return lastEffort;
   }
