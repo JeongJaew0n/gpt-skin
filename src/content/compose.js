@@ -26,7 +26,6 @@ GT.compose = (function () {
     'textarea[name="prompt"]'
   ];
   const SELECTOR = COMPOSERS.join(', ');
-  const raf = () => new Promise((r) => requestAnimationFrame(() => r()));
 
   // 화면에 실제로 보이는가. 숨긴 요소(display none · 크기 0)에는 초점이 안 들어가 글 넣기가 거절된다.
   const shown = (el) => {
@@ -60,8 +59,14 @@ GT.compose = (function () {
       || document.querySelector('button[aria-label*="Stop"]');
   }
 
-  function sendButton() {
-    return document.querySelector('[data-testid="send-button"]')
+  // 보내기 버튼. 글을 넣은 입력창의 폼 안 submit 버튼이 먼저다 — 구조라 언어와 무관하다.
+  // 실측(2026-10-15, 로그인 ChatGPT · GPT-6): data-testid="send-button" 이 없어졌고, 버튼은 aria-label '보내기' · type=submit 이다.
+  // 영어 화면은 aria-label 이 다르다(그래서 예전엔 'Send' 를 따로 찾았다) — submit 은 같다.
+  function sendButton(from) {
+    const form = from && from.closest ? from.closest('form') : null;
+    const own = form ? form.querySelector('button[type="submit"]') : null;
+    return own
+      || document.querySelector('[data-testid="send-button"]')
       || document.querySelector('button[aria-label*="보내기"]')
       || document.querySelector('button[aria-label*="Send"]');
   }
@@ -146,12 +151,29 @@ GT.compose = (function () {
     };
   }
 
+  // 보내기 버튼이 나타날 때까지 기다린다.
+  // 실측(2026-10-15): 글이 비어 있을 때 그 자리는 '음성 대화 시작' 버튼이고, 글을 넣고 35~53ms 뒤에야 보내기 버튼으로 바뀐다(5회).
+  // 예전에는 화면을 두 번 그릴 동안(rAF ×2 — 60Hz 33ms · 120Hz 16ms)만 기다려 버튼이 아직 없었고, Enter 흉내로 넘어갔는데
+  // 원본은 흉내 낸 Enter 를 무시해 '원본이 메시지를 보내지 않았습니다' 가 떴다.
+  // rAF 대신 타이머로 본다 — rAF 는 뒤에 숨은 탭에서 오지 않아 멈춘다(측정하다 실제로 멈췄다).
+  const SEND_WAIT_MS = 1500;
+  const SEND_POLL_MS = 30;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function waitSendButton(from) {
+    const until = Date.now() + SEND_WAIT_MS;
+    for (;;) {
+      const b = sendButton(from);
+      if (b && !b.disabled) return b;
+      if (Date.now() >= until) return b || null;
+      await wait(SEND_POLL_MS);
+    }
+  }
+
   async function send(text) {
     const why = tryInject(text);
     if (why) return { ok: false, reason: why };
-    await raf(); await raf();
 
-    const btn = sendButton();
+    const btn = await waitSendButton(lastUsed);
     if (btn && !btn.disabled) {
       btn.click();
     } else {
@@ -163,7 +185,7 @@ GT.compose = (function () {
         }));
       });
     }
-    await raf();
+    await wait(SEND_POLL_MS);
     GT.skin.current.focus();
     watchSent(text);
     return { ok: true, via: btn ? 'button' : 'enter' };
@@ -211,5 +233,5 @@ GT.compose = (function () {
 
   // 대화 목록은 GT.chats 가 담당한다. 여기 있던 DOM 스크래핑은 그쪽 폴백으로 옮겼다 —
   // 구현이 둘이면 출처가 갈릴 때 서로 다른 목록을 보여준다.
-  return { composer, send, stop, inject, tryInject, probe, sendButton, stopButton, answering, STREAM_STALE_MS, SELECTOR, COMPOSERS, holding, SENT_CHECK_MS };
+  return { composer, send, stop, inject, tryInject, probe, sendButton, stopButton, answering, STREAM_STALE_MS, SEND_WAIT_MS, SELECTOR, COMPOSERS, holding, SENT_CHECK_MS };
 })();

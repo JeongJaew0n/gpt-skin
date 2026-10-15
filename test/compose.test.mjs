@@ -167,6 +167,38 @@ async function sendWith({ clears }) {
   t('점검 이름표도 두 모양을 말한다', /textarea\[name=prompt\]/.test(fs.readFileSync('src/content/health.js', 'utf8')));
 }
 
+// --- 보내기 버튼이 늦게 나타난다 (실측 2026-10-15: 글을 넣고 35~53ms 뒤) ---
+// 예전에는 rAF 두 번(120Hz 면 16ms)만 기다려 버튼이 아직 없었고, Enter 흉내로 넘어가 원본이 무시했다.
+{
+  const setter = (ta, v) => Object.getOwnPropertyDescriptor(Object.getPrototypeOf(ta), 'value').set.call(ta, v);
+  let ta;
+  const dom = { button: null, make: (P) => { ta = makeTextarea(P); return { 'textarea#mobile-composer-prompt': ta }; }, execCommand: () => false };
+  const btn = { disabled: false, clicks: 0, click() { this.clicks++; setter(ta, ''); } };
+  const L = load(dom);
+  setTimeout(() => { dom.button = btn; }, 60);
+  const r = await L.C.send('늦게 뜨는 버튼');
+  t('보내기 버튼이 늦게 나타나도 기다렸다가 누른다', btn.clicks === 1 && r.via === 'button');
+  t('그때 Enter 를 흉내 내지 않는다', !ta.events.includes('keydown'));
+}
+{
+  let ta;
+  const L = load({ button: null, make: (P) => { ta = makeTextarea(P); return { 'textarea#mobile-composer-prompt': ta }; }, execCommand: () => false });
+  const t0 = Date.now();
+  const r = await L.C.send('버튼이 끝내 없다');
+  const took = Date.now() - t0;
+  t('끝내 버튼이 없으면 기다림 상한 뒤 Enter 로 넘어간다', r.via === 'enter' && ta.events.includes('keydown') && took >= L.C.SEND_WAIT_MS - 50 && took < L.C.SEND_WAIT_MS + 1000);
+}
+{
+  // 글을 넣은 입력창의 폼 안 submit 이 먼저다 — 문서의 다른 '보내기' 버튼(피드백 보내기 등)을 누르지 않는다
+  const own = { disabled: false, clicks: 0, click() { this.clicks++; } };
+  const other = { disabled: false, clicks: 0, click() { this.clicks++; } };
+  let ta;
+  const form = { querySelector: (q) => (q === 'button[type="submit"]' ? own : null) };
+  const L = load({ button: other, make: (P) => { ta = makeTextarea(P); ta.closest = (q) => (q === 'form' ? form : null); return { 'textarea#mobile-composer-prompt': ta }; }, execCommand: () => false });
+  await L.C.send('폼 안 버튼');
+  t('입력창 폼 안의 submit 버튼을 누른다 (언어와 무관)', own.clicks === 1 && other.clicks === 0);
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');
