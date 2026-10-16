@@ -134,7 +134,7 @@ async function sendWith({ clears }) {
 {
   const { r, later, warns, button, C } = await sendWith({ clears: true });
   t('보내기는 버튼을 누른다', r.ok === true && button.clicks === 1);
-  t('보낸 뒤 확인 타이머를 건다', later.length === 1 && later[0].ms === C.SENT_CHECK_MS);
+  t('보낸 뒤 확인 타이머를 건다 (다시 누르기 판단 · 안 보내졌다 확인)', later.length === 2 && later.some((x) => x.ms === C.SENT_CHECK_MS) && later.some((x) => x.ms === C.SEND_RETRY_MS));
   later.forEach((x) => x.f());
   t('원본이 비웠으면(보냈으면) 아무 말도 하지 않는다', warns.length === 0);
 }
@@ -142,7 +142,7 @@ async function sendWith({ clears }) {
   const { later, warns, button } = await sendWith({ clears: false });
   later.forEach((x) => x.f());
   t('원본에 글이 남았으면 알린다', warns.length === 1 && warns[0][0] === 'warn' && warns[0][1] === 'compose.notSent');
-  t('자동으로 다시 누르지 않는다 (두 번 보내질 수 있다)', button.clicks === 1);
+  t('다시 누르는 것은 한 번까지다 (0.31.8 — 그 뒤엔 알리기만)', button.clicks === 2);
 }
 {
   const { C } = load({});
@@ -226,6 +226,46 @@ async function sendWith({ clears }) {
   const L = load({ button: other, make: (P) => { ta = makeTextarea(P); ta.closest = (q) => (q === 'form' ? form : null); return { 'textarea#mobile-composer-prompt': ta }; }, execCommand: () => false });
   await L.C.send('폼 안 버튼');
   t('입력창 폼 안의 submit 버튼을 누른다 (언어와 무관)', own.clicks === 1 && other.clicks === 0);
+}
+
+// --- 눌렀는데 원본이 받지 않았으면 한 번만 다시 누른다 (사용자 결정 2026-10-16, 0.31.8) ---
+// 실측: 정상 전송은 누르는 즉시 입력창이 비고 60ms 안에 중지 버튼. 사용자 탭의 미전송은 '글 그대로 · 중지 없음 · 보내기 버튼 있음'.
+{
+  const setter = (ta, v) => Object.getOwnPropertyDescriptor(Object.getPrototypeOf(ta), 'value').set.call(ta, v);
+  const run = async ({ firstIgnored = true, secondWorks = true, stop = false, disabledAtRetry = false } = {}) => {
+    let ta; const made = {};
+    const btn = { disabled: false, clicks: 0, click() { this.clicks++; if (this.clicks === 1 && firstIgnored) return; if (this.clicks >= 2 && !secondWorks) return; setter(ta, ''); } };
+    const L = load({ button: btn, make: (P) => { ta = makeTextarea(P); made['textarea#mobile-composer-prompt'] = ta; return made; }, execCommand: () => false });
+    const recs = [];
+    L.GT.bugs = { record: (code, msg, extra) => recs.push({ code, extra }) };
+    await L.C.send('여러 줄\n긴 글');
+    if (stop) made['[data-testid="stop-button"]'] = { click() {} };
+    if (disabledAtRetry) btn.disabled = true;
+    L.later.sort((a, b) => a.ms - b.ms).forEach((x) => x.f());
+    return { btn, recs, warns: L.warns, ta, C: L.C };
+  };
+  let r = await run();
+  t('클릭이 안 먹히면(글 그대로 · 중지 없음) 한 번 더 누른다', r.btn.clicks === 2);
+  t('다시 눌러 보내졌으면 경고를 띄우지 않는다', !r.warns.some(([lv, m]) => m === 'compose.notSent'));
+  t('다시 누른 일을 기록한다 (글 내용 없이)', r.recs.some((x) => x.code === 'send-retried' && x.extra.send.retried === true) && !JSON.stringify(r.recs).includes('긴 글'));
+  r = await run({ firstIgnored: false });
+  t('처음 클릭이 먹혔으면(입력창이 비었으면) 다시 누르지 않는다', r.btn.clicks === 1 && !r.recs.some((x) => x.code === 'send-retried'));
+  r = await run({ stop: true });
+  t('중지 버튼이 있으면(이미 보내는 중) 다시 누르지 않는다', r.btn.clicks === 1);
+  r = await run({ disabledAtRetry: true });
+  t('그때 보내기 버튼이 잠겨 있으면 누르지 않는다', r.btn.clicks === 1);
+  r = await run({ secondWorks: false });
+  t('다시 누르는 것은 한 번뿐 — 그래도 남으면 경고', r.btn.clicks === 2 && r.warns.some(([lv, m]) => m === 'compose.notSent'));
+  t('다시 누르기는 안 보내졌다 확인보다 먼저다', r.C.SEND_RETRY_MS < r.C.SENT_CHECK_MS);
+}
+{
+  // 버튼이 잠겨 있다가 풀리면 Enter 흉내로 넘어가지 않고 누른다 (예전 상한 1.5초를 넘겨도)
+  let ta;
+  const btn = { disabled: true, clicks: 0, click() { this.clicks++; } };
+  const L = load({ button: btn, make: (P) => { ta = makeTextarea(P); return { 'textarea#mobile-composer-prompt': ta }; }, execCommand: () => false });
+  setTimeout(() => { btn.disabled = false; }, 2000);
+  const r = await L.C.send('잠깐 잠긴 버튼');
+  t('잠긴 버튼이 2초 뒤 풀리면 기다렸다가 누른다', btn.clicks === 1 && r.via === 'button' && !ta.events.includes('keydown'));
 }
 
 let bad = 0;

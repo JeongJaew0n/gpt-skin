@@ -157,16 +157,37 @@ GT.compose = (function () {
   // 원본은 흉내 낸 Enter 를 무시해 '원본이 메시지를 보내지 않았습니다' 가 떴다.
   // rAF 대신 타이머로 본다 — rAF 는 뒤에 숨은 탭에서 오지 않아 멈춘다(측정하다 실제로 멈췄다).
   const SEND_WAIT_MS = 1500;
+  // 버튼은 있는데 잠겨 있으면 더 기다린다 — Enter 흉내는 원본이 무시하므로(2026-10-15 실측) 넘어가 봐야 안 보내진다.
+  const SEND_DISABLED_WAIT_MS = 5000;
   const SEND_POLL_MS = 30;
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   async function waitSendButton(from) {
-    const until = Date.now() + SEND_WAIT_MS;
+    const t0 = Date.now();
     for (;;) {
       const b = sendButton(from);
       if (b && !b.disabled) return b;
-      if (Date.now() >= until) return b || null;
+      const waited = Date.now() - t0;
+      if (waited >= (b ? SEND_DISABLED_WAIT_MS : SEND_WAIT_MS)) return b || null;
       await wait(SEND_POLL_MS);
     }
+  }
+
+  // 눌렀는데 원본이 받지 않았으면 한 번만 다시 누른다 (사용자 결정 2026-10-16).
+  // 실측(2026-10-16): 정상 전송 5번 모두 누르는 즉시 원본 입력창이 비고 60ms 안에 중지 버튼이 떴다.
+  // 그래서 SEND_RETRY_MS 뒤에도 '글이 그대로 · 중지 버튼 없음 · 보내기 버튼이 눌릴 수 있음' 이면 클릭이 안 먹힌 것이다 —
+  // 사용자 탭의 미전송 1건(10-15 18:59 KST)이 이 모양이었다: 직전 답은 74초 전에 끝났고, 서버에 그 메시지가 없었다.
+  // 셋 중 하나라도 아니면 누르지 않는다(늦게 비우는 중이거나 이미 보내는 중일 수 있다 — 두 번 보내면 안 된다).
+  const SEND_RETRY_MS = 1500;
+  function retryIfIgnored(text, how) {
+    setTimeout(() => {
+      const el = lastUsed || composer();
+      if (!holding(el, text) || stopButton()) return;
+      const b = sendButton(el);
+      if (!b || b.disabled) return;
+      b.click();
+      how.retried = true;
+      try { GT.bugs.record('send-retried', '원본이 클릭을 받지 않아 한 번 더 눌렀다', { ...probe(), send: how }); } catch (_) {}
+    }, SEND_RETRY_MS);
   }
 
   async function send(text) {
@@ -191,7 +212,9 @@ GT.compose = (function () {
     GT.skin.current.focus();
     // 보고서용 — 어떻게 눌렀는지 · 버튼을 몇 ms 기다렸는지 · 글의 길이와 줄 수 (글 내용은 남기지 않는다).
     // 실측(사용자 보고서 2026-10-15): 여러 줄 긴 글(입력창 높이 156px)에서 한 번 안 보내졌는데, 눌렀는지 · 버튼이 잠겼었는지가 없어 원인을 못 가렸다.
-    watchSent(text, { via: how, waitMs: Date.now() - t0, chars: String(text).length, lines: String(text).split('\n').length });
+    const info = { via: how, waitMs: Date.now() - t0, chars: String(text).length, lines: String(text).split('\n').length };
+    if (how === 'button') retryIfIgnored(text, info);     // 다시 누르기 판단(1.5초)이 '안 보내졌다' 확인(2초)보다 먼저다
+    watchSent(text, info);
     return { ok: true, via: how === 'button' ? 'button' : 'enter' };
   }
 
@@ -199,8 +222,8 @@ GT.compose = (function () {
   // 실측(비로그인 화면, 2026-09-28): 같은 방법으로 넣고 눌러도 가끔 안 보내지고 글이 입력창에 남았다.
   // 예전에는 그때 아무 말이 없어 보낸 줄 알았다.
   //
-  // 자동으로 한 번 더 누르지 않는다 — 원본이 늦게 비우는 것뿐이면 두 번 보내진다.
-  // 남아 있으면 알리기만 한다. 사용자가 원본에서 확인하고 보내면 된다.
+  // 다시 누르기는 retryIfIgnored 가 조건을 따져 한 번만 한다(0.31.8). 그래도 남아 있으면 알리기만 한다 —
+  // 사용자가 원본에서 확인하고 보내면 된다. 예전에는 '늦게 비우는 것뿐이면 두 번 보내진다' 는 까닭으로 다시 누르지 않았다.
   const SENT_CHECK_MS = 2000;
   // contenteditable 은 공백 · 줄바꿈을 빼고 비교한다 — ProseMirror 는 줄바꿈을 문단으로 바꿔 textContent 에서 사라지므로,
   // 그대로 비교하면 여러 줄 글은 남아 있어도 '보냈다' 로 읽혔다 (리뷰 2026-10-02, 0.26.7). 넣을 때(injectInto)와 같은 기준이다.
@@ -237,5 +260,5 @@ GT.compose = (function () {
 
   // 대화 목록은 GT.chats 가 담당한다. 여기 있던 DOM 스크래핑은 그쪽 폴백으로 옮겼다 —
   // 구현이 둘이면 출처가 갈릴 때 서로 다른 목록을 보여준다.
-  return { composer, send, stop, inject, tryInject, probe, sendButton, stopButton, answering, STREAM_STALE_MS, SEND_WAIT_MS, SELECTOR, COMPOSERS, holding, SENT_CHECK_MS };
+  return { composer, send, stop, inject, tryInject, probe, sendButton, stopButton, answering, STREAM_STALE_MS, SEND_WAIT_MS, SEND_DISABLED_WAIT_MS, SEND_RETRY_MS, SELECTOR, COMPOSERS, holding, SENT_CHECK_MS };
 })();
