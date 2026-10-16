@@ -513,8 +513,13 @@
   let lastPath = location.pathname;
   every(600, () => {
     if (location.pathname !== lastPath) {
+      const from = lastPath;
       lastPath = location.pathname;
       GT.tabs.open(location.pathname, '');      // 연 대화는 탭에 들어간다 (새 대화 화면 / 은 들어가지 않는다)
+      // 화면 진단 줄(경고 · 명령 결과)은 그 대화의 것이다. 다른 대화로 옮기면 비운다 —
+      // 안 비우면 예전 경고가 새 대화 맨 아래에 붙어 방금 난 일처럼 보인다 (사용자 보고 2026-10-16).
+      // 새 대화 화면에서 대화가 막 생긴 것(/ → /c/<id>)은 같은 대화라 둔다 — 첫 메시지의 '안 보내졌다' 경고가 여기 걸린다.
+      if (GT.tabs.leftConversation(from, location.pathname)) { try { GT.skin.current.clearSystem(); } catch (_) {} }
       if (GT.conversation.idFromPath()) {
         // 번호를 들고 간다 — 빨리 넘기면 앞선 대화의 응답이 먼저 와도 지금 대화를 받는 표시를 끄지 않는다
         const lt = GT.tabs.loading(true);

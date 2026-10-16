@@ -32,6 +32,19 @@ function load({ stored, path = '/c/a' } = {}) {
 }
 const ids = (T) => T.list().map((x) => x.id).join(',');
 
+// --- 다른 대화로 옮겼는가 — 화면 진단 줄을 대화에 묶을 때 쓴다 (사용자 보고 2026-10-16) ---
+// 한 번 뜬 '원본이 메시지를 보내지 않았습니다' 가 그 뒤로 여는 모든 대화 맨 아래에 붙어 따라다녔다.
+{
+  const { T } = load();
+  t('대화 → 다른 대화는 옮긴 것이다', T.leftConversation('/c/a', '/c/b') === true);
+  t('대화 → 새 대화 화면도 옮긴 것이다', T.leftConversation('/c/a', '/') === true);
+  t('새 대화 화면 → 막 생긴 대화는 같은 대화다 (첫 메시지)', T.leftConversation('/', '/c/new') === false);
+  t('프로젝트 첫 화면 → 그 안의 새 대화도 같은 대화다', T.leftConversation('/g/g-p-1/project', '/g/g-p-1/c/new') === false);
+  t('프로젝트 안 대화 → 다른 대화는 옮긴 것이다', T.leftConversation('/g/g-p-1/c/a', '/g/g-p-1/c/b') === true);
+  t('주소가 같으면 옮긴 것이 아니다', T.leftConversation('/c/a', '/c/a') === false);
+  t('새 대화 화면 → 다른 화면(대화 아님)은 옮긴 것이다', T.leftConversation('/', '/g/g-p-1/project') === true);
+}
+
 {
   const { T, store } = load();
   T.open('/c/a', '가'); T.open('/c/b', '나'); T.open('/c/c', '');

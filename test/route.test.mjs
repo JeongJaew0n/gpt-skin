@@ -53,6 +53,14 @@ const msg = (id, role, text) => ({ id, role, text });
   t(':rename 은 즉시 반영된다', S.state.conversationTitle === '새 이름');
 }
 
+// --- 정적: 다른 대화로 옮기면 화면 진단 줄을 비운다 (사용자 보고 2026-10-16) ---
+{
+  const idx = fs.readFileSync('src/content/index.js', 'utf8').replace(/\/\/.*$/gm, '');
+  const tick = (idx.match(/if \(location\.pathname !== lastPath\) \{[\s\S]*?GT\.prompt\.resetHistory\(\);/) || [''])[0];
+  t('주소 틱이 옮기기 전 주소를 들고 판정한다', /const from = lastPath;[\s\S]{0,80}lastPath = location\.pathname;/.test(tick));
+  t('다른 대화로 옮겼을 때만 진단 줄을 비운다', /if \(GT\.tabs\.leftConversation\(from, location\.pathname\)\)[^\n]*GT\.skin\.current\.clearSystem\(\)/.test(tick));
+}
+
 // --- 정적: 라우팅과 esc 처리 ---
 {
   const idx = fs.readFileSync('src/content/index.js', 'utf8');

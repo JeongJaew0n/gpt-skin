@@ -22,6 +22,12 @@ GT.tabs = (function () {
   const idOf = (path) => (/\/c\/([0-9a-zA-Z:-]+)/.exec(String(path || '')) || [])[1] || null;
   const valid = (t) => t && typeof t.id === 'string' && typeof t.href === 'string';
 
+  // 주소가 from → to 로 바뀐 것이 '다른 대화로 옮긴 것' 인가.
+  // 새 대화 화면(/ · 프로젝트 첫 화면)에서 첫 메시지를 보내 /c/<새 id> 가 된 것은 같은 대화가 생긴 것이라 아니다.
+  // 화면 진단 줄(경고 · 명령 결과)을 대화에 묶을 때 쓴다 — 실측(2026-10-16): 한 번 뜬 '원본이 메시지를 보내지 않았습니다' 가
+  // 그 뒤로 여는 모든 대화의 맨 아래에 붙어 따라다녀, 보낼 때마다 실패하는 것처럼 보였다.
+  const leftConversation = (from, to) => from !== to && (!!idOf(from) || !idOf(to));
+
   function emit() { subs.forEach((f) => { try { f(); } catch (_) {} }); }
   function save() { try { chrome.storage.local.set({ [KEY]: list }); } catch (_) {} }
 
@@ -186,7 +192,7 @@ GT.tabs = (function () {
   }
 
   return {
-    KEY, MAX, idOf,
+    KEY, MAX, idOf, leftConversation,
     load, open, title, close, step, go, closeCurrent, loading, GO_DELAY_MS,
     list: () => list.slice(),
     // 탭 줄이 '지금' 으로 강조할 대화 — 단축키로 옮겨 둔 탭이 있으면 그쪽
