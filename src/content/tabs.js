@@ -26,7 +26,11 @@ GT.tabs = (function () {
   // 새 대화 화면(/ · 프로젝트 첫 화면)에서 첫 메시지를 보내 /c/<새 id> 가 된 것은 같은 대화가 생긴 것이라 아니다.
   // 화면 진단 줄(경고 · 명령 결과)을 대화에 묶을 때 쓴다 — 실측(2026-10-16): 한 번 뜬 '원본이 메시지를 보내지 않았습니다' 가
   // 그 뒤로 여는 모든 대화의 맨 아래에 붙어 따라다녀, 보낼 때마다 실패하는 것처럼 보였다.
-  const leftConversation = (from, to) => from !== to && (!!idOf(from) || !idOf(to));
+  // 실측(2026-10-16, 0.31.4): 새 채팅에서 보내면 주소가 먼저 /c/local-chatgpt%3A<uuid> 인 임시 대화가 된다.
+  // 이 임시 주소에서 대화 주소로 가는 것도 '막 생긴 대화' 다.
+  const provisional = (path) => /\/c\/local-/.test(String(path || ''));
+  const leftConversation = (from, to) => from !== to
+    && ((idOf(from) && !provisional(from)) || !idOf(to));
 
   function emit() { subs.forEach((f) => { try { f(); } catch (_) {} }); }
   function save() { try { chrome.storage.local.set({ [KEY]: list }); } catch (_) {} }

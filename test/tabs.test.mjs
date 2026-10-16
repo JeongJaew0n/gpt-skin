@@ -43,6 +43,10 @@ const ids = (T) => T.list().map((x) => x.id).join(',');
   t('프로젝트 안 대화 → 다른 대화는 옮긴 것이다', T.leftConversation('/g/g-p-1/c/a', '/g/g-p-1/c/b') === true);
   t('주소가 같으면 옮긴 것이 아니다', T.leftConversation('/c/a', '/c/a') === false);
   t('새 대화 화면 → 다른 화면(대화 아님)은 옮긴 것이다', T.leftConversation('/', '/g/g-p-1/project') === true);
+  // 실측(2026-10-16): 새 채팅에서 보내면 주소가 먼저 임시 대화(/c/local-chatgpt%3A<uuid>)가 된다
+  t('새 대화 화면 → 임시 대화는 같은 대화다', T.leftConversation('/', '/c/local-chatgpt%3Affd8dfca-e725-4732-b0c9-af2c1b0d77fc') === false);
+  t('임시 대화 → 진짜 대화 주소도 같은 대화다', T.leftConversation('/c/local-chatgpt%3Affd8dfca-e725', '/c/6ad1abcd-0000-83ee-0000-000000000000') === false);
+  t('임시 대화 → 새 대화 화면은 옮긴 것이다', T.leftConversation('/c/local-chatgpt%3Affd8dfca-e725', '/') === true);
 }
 
 {
