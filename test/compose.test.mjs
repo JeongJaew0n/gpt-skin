@@ -42,7 +42,7 @@ function load(dom) {
   sb.GT = { skin: { current: { focus() {}, system: (lv, msg) => warns.push([lv, msg]) } } };
   vm.createContext(sb);
   vm.runInContext(fs.readFileSync('src/content/compose.js', 'utf8'), sb, { filename: 'compose.js' });
-  return { C: sb.GT.compose, made, events, HTMLTextAreaElement, later, warns };
+  return { C: sb.GT.compose, GT: sb.GT, made, events, HTMLTextAreaElement, later, warns };
 }
 
 // 비로그인 화면의 textarea 를 만든다
@@ -187,6 +187,35 @@ async function sendWith({ clears }) {
   const r = await L.C.send('버튼이 끝내 없다');
   const took = Date.now() - t0;
   t('끝내 버튼이 없으면 기다림 상한 뒤 Enter 로 넘어간다', r.via === 'enter' && ta.events.includes('keydown') && took >= L.C.SEND_WAIT_MS - 50 && took < L.C.SEND_WAIT_MS + 1000);
+}
+
+// --- '안 보내졌다' 기록에 어떻게 눌렀는지 남긴다 (사용자 보고서 2026-10-15: 여러 줄 긴 글에서 1건, 원인을 못 가렸다) ---
+// 글 내용은 남기지 않는다 — 길이 · 줄 수만.
+{
+  let ta;
+  const L = load({ button: null, make: (P) => { ta = makeTextarea(P); return { 'textarea#mobile-composer-prompt': ta }; }, execCommand: () => false });
+  const recs = [];
+  L.GT.bugs = { record: (code, msg, extra) => recs.push({ code, extra }) };
+  await L.C.send('첫 줄\n둘째 줄\n셋째 줄');
+  L.later.forEach((x) => x.f());
+  const rec = recs.find((x) => x.code === 'not-sent');
+  const send = rec && rec.extra && rec.extra.send;
+  t('안 보내졌다 기록에 누른 방법이 남는다 (버튼이 끝내 없었음)', !!send && send.via === 'enter-no-button');
+  t('버튼을 기다린 시간이 남는다', !!send && send.waitMs >= L.C.SEND_WAIT_MS - 50);
+  t('글의 길이와 줄 수가 남는다', !!send && send.chars === 13 && send.lines === 3);
+  t('글 내용은 기록에 들어가지 않는다', !!rec && !JSON.stringify(rec.extra).includes('둘째'));
+}
+{
+  // 버튼은 있는데 잠겨 있었다 — 따로 가린다
+  let ta;
+  const locked = { disabled: true, clicks: 0, click() { this.clicks++; } };
+  const L = load({ button: locked, make: (P) => { ta = makeTextarea(P); return { 'textarea#mobile-composer-prompt': ta }; }, execCommand: () => false });
+  const recs = [];
+  L.GT.bugs = { record: (code, msg, extra) => recs.push({ code, extra }) };
+  await L.C.send('잠긴 버튼');
+  L.later.forEach((x) => x.f());
+  const rec = recs.find((x) => x.code === 'not-sent');
+  t('버튼이 잠겨 있었으면 그렇게 남는다 (누르지 않는다)', !!(rec && rec.extra && rec.extra.send) && rec.extra.send.via === 'enter-disabled' && locked.clicks === 0);
 }
 {
   // 글을 넣은 입력창의 폼 안 submit 이 먼저다 — 문서의 다른 '보내기' 버튼(피드백 보내기 등)을 누르지 않는다

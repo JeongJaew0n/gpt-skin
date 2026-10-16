@@ -173,8 +173,10 @@ GT.compose = (function () {
     const why = tryInject(text);
     if (why) return { ok: false, reason: why };
 
+    const t0 = Date.now();
     const btn = await waitSendButton(lastUsed);
-    if (btn && !btn.disabled) {
+    const how = btn && !btn.disabled ? 'button' : (btn ? 'enter-disabled' : 'enter-no-button');
+    if (how === 'button') {
       btn.click();
     } else {
       const pm = lastUsed || composer();
@@ -187,8 +189,10 @@ GT.compose = (function () {
     }
     await wait(SEND_POLL_MS);
     GT.skin.current.focus();
-    watchSent(text);
-    return { ok: true, via: btn ? 'button' : 'enter' };
+    // 보고서용 — 어떻게 눌렀는지 · 버튼을 몇 ms 기다렸는지 · 글의 길이와 줄 수 (글 내용은 남기지 않는다).
+    // 실측(사용자 보고서 2026-10-15): 여러 줄 긴 글(입력창 높이 156px)에서 한 번 안 보내졌는데, 눌렀는지 · 버튼이 잠겼었는지가 없어 원인을 못 가렸다.
+    watchSent(text, { via: how, waitMs: Date.now() - t0, chars: String(text).length, lines: String(text).split('\n').length });
+    return { ok: true, via: how === 'button' ? 'button' : 'enter' };
   }
 
   // 원본이 실제로 보냈는지 뒤에서 확인한다. 보내면 원본은 입력창을 비운다.
@@ -206,10 +210,10 @@ GT.compose = (function () {
     if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') return String(el.value || '').trim() === String(text).trim();
     return squash(el.textContent) === squash(text);
   };
-  function watchSent(text) {
+  function watchSent(text, how) {
     setTimeout(() => {
       if (!holding(lastUsed || composer(), text)) return;
-      try { GT.bugs.record('not-sent', '원본이 2초 안에 입력창을 비우지 않았다', probe()); } catch (_) {}
+      try { GT.bugs.record('not-sent', '원본이 2초 안에 입력창을 비우지 않았다', { ...probe(), send: how || null }); } catch (_) {}
       // health.soft 는 같은 사유를 한 번만 찍는다 — 보낼 때마다 알려야 하므로 직접 찍는다
       try { GT.skin.current.system('warn', GT_T('compose.notSent')); } catch (_) {}
     }, SENT_CHECK_MS);
