@@ -103,6 +103,13 @@ GT.conversation = (function () {
     });
   }
 
+  // 본문에 생성형 UI 마크업(JSX 꼴 태그)이 있는가. 코드 블록 · 인라인 코드 안의 태그는 세지 않는다 —
+  // 코드 예시의 <div> 때문에 이스케이프된 fallback 으로 바뀌면 안 된다. 태그 이름은 보지 않는다(바뀔 수 있다).
+  function hasMarkup(body) {
+    const prose = String(body || '').replace(/```[\s\S]*?(```|$)/g, '').replace(/`[^`\n]*`/g, '');
+    return /<\/?[A-Za-z][\w.]*(\s[^<>\n]*)?\/?>/.test(prose);
+  }
+
   function toRecords(conv) {
     const branch = activeBranch(conv);
     const out = [];
@@ -120,13 +127,21 @@ GT.conversation = (function () {
       // 같은 자리에 태그 없는 대체 마크다운(fallbackMarkdown)을 함께 준다 — 인용도 우리가 아는 봉투(U+E200 cite …)로.
       // 그것을 본문으로 쓴다. 실측(2026-10-12, gpt-6-thinking 답 22개): 22개 모두 있음 · 본문에 태그 9개 · fallback 에 태그 0개.
       // docs/issue/2026-10-12-dil-markup-shown-raw.md
+      //
+      // 단, 본문에 마크업이 없으면 본문을 쓴다. fallback 은 같은 글을 마크다운으로 다시 써 낸 것이라
+      // 백슬래시 이스케이프(\! \: \*\*)가 붙고 표 구분선이 늘어난다 — 실측(2026-10-16, gpt-6-thinking 답 15개):
+      // 이스케이프만 걷으면 본문과 같은 답이 다수, 나머지는 표 구분선(|---| → |--------|)만 달랐다.
+      // fallback 을 쓰면 스트림 글(= 본문)보다 길어 끊김 검사가 헛경보(truncated)를 냈고, 안전망이 화면을
+      // 이스케이프된 글로 덮었다. docs/issue/2026-10-16-truncated-false-alarm-dil-fallback.md
       const dil = m.metadata && m.metadata.model_dil_v2;
-      const fallback = dil && typeof dil.fallbackMarkdown === 'string' && dil.fallbackMarkdown ? dil.fallbackMarkdown : null;
+      const body = parts.filter((p) => typeof p === 'string').join('\n');
+      const fallback = dil && typeof dil.fallbackMarkdown === 'string' && dil.fallbackMarkdown && hasMarkup(body) ? dil.fallbackMarkdown : null;
       out.push({
         id: m.id,
         role,
         model: (m.metadata && m.metadata.model_slug) || null,
-        text: fallback != null ? fallback : parts.filter((p) => typeof p === 'string').join('\n'),
+        text: fallback != null ? fallback : body,
+        body,                                     // 스트림과 같은 출처 — 끊김 검사는 이것과 잰다
         dil: fallback != null,
         at: m.create_time ? Math.round(m.create_time * 1000) : null,
         thinking: role === 'assistant' && pendingThinking ? pendingThinking : 0,
@@ -151,5 +166,5 @@ GT.conversation = (function () {
     };
   }
 
-  return { load, toRecords, toRefs, activeBranch, isVisible, isReasoning, idFromPath };
+  return { load, toRecords, toRefs, activeBranch, isVisible, isReasoning, idFromPath, hasMarkup };
 })();

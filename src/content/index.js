@@ -275,7 +275,9 @@
     const orig = conv && conv.messages.find((m) => m.id === msgId);
     const shown = GT.store.state.byId.get(msgId);
     if (!orig || !shown) { GT.log('끊김 검사: 원본에서 이 답을 찾지 못했다'); return; }
-    const t = GT.health.truncation(shown.text, orig.text);
+    // 스트림과 같은 출처(본문)와 잰다. 화면용 글(orig.text)은 생성형 UI 답이면 다시 써 낸 fallback 이라
+    // 이스케이프 · 표 구분선만큼 길어 헛경보를 냈다 (실측 2026-10-16 — 사용자 보고서의 truncated 7건 중 5건이 fallback 길이와 일치).
+    const t = GT.health.truncation(shown.text, typeof orig.body === 'string' ? orig.body : orig.text);
     if (t) {
       GT.bugs.record('truncated', `화면 ${t.shown}자 / 원본 ${t.original}자 (${t.diff}자 짧음)`,
         { ...t, droppedOps: (info && info.droppedOps) || 0, verifyTries: shown.verifyTries || 0 });

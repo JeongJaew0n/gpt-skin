@@ -376,6 +376,22 @@ mode('number');
   t('payload 없는 봉투도 지운다', M.stripMarks('앞' + E200 + 'memcite' + E201 + '뒤') === '앞뒤');
 }
 
+// --- 백슬래시 이스케이프 (생성형 UI 답의 fallback 모양, 실측 2026-10-16) ---
+{
+  const text = (frag) => (frag.children || []).map((c) => c.textContent || '').join('');
+  const strong = (frag) => frag.all((n) => n.className === 'gt-strong');
+  let f = M.inline('거의 맞았어\\! 서다\\: 끝');
+  t('\\! · \\: 는 글자 그대로 (백슬래시가 남지 않는다)', text(f) === '거의 맞았어! 서다: 끝');
+  f = M.inline('\\*\\*타테루는 ‘세우다’\\*\\*야');
+  t('\\*\\* 는 굵게가 아니라 별표 글자', text(f) === '**타테루는 ‘세우다’**야' && strong(f).length === 0);
+  f = M.inline('**굵게** 는 그대로');
+  t('이스케이프 없는 굵게는 그대로 굵게', strong(f).length === 1);
+  f = M.inline('코드 `a\\*b` 안은 손대지 않는다');
+  t('인라인 코드 안의 백슬래시는 그대로', f.all((n) => n.className === 'gt-code-inline').some((n) => n.textContent === 'a\\*b'));
+  f = M.inline('경로 C:\\Users 와 \\n');
+  t('구두점이 아닌 글자 앞의 백슬래시는 그대로', text(f) === '경로 C:\\Users 와 \\n');
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

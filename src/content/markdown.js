@@ -147,6 +147,10 @@ GT.markdown = (function () {
     { re: PUA_MARK, make: (m, ctx) => mark(ctx, ctx.seen++, m[1], m[2]) },
     // fiber 표기에는 봉투 속 값이 없다. 종류도 refs 를 봐야 안다.
     { re: OAI_MARK, make: (m, ctx) => { ctx.seen = Math.max(ctx.seen, +m[2] + 1); return mark(ctx, +m[2], 'cite', null); } },
+    // 백슬래시 이스케이프 (CommonMark: ASCII 구두점 앞의 \ 는 그 글자 그대로). 생성형 UI 답의 fallback 이 이렇게 온다 —
+    // 실측(2026-10-16): '거의 맞았어\!' · '\*\*타테루는 ‘세우다’\*\*야'. 처리하지 않으면 \ 가 화면에 남는다.
+    // 코드보다 앞에 둔다 — \` 는 코드 시작이 아니다. 코드 안의 \ 는 코드 규칙이 먼저(더 앞 자리) 잡는다.
+    { re: /\\([!-/:-@[-`{-~])/, make: (m) => document.createTextNode(m[1]) },
     { re: /`([^`\n]+)`/, make: (m) => el('span', 'gt-code-inline', m[1]) },
     { re: /\*\*([^*\n]+)\*\*/, make: (m) => el('strong', 'gt-strong', m[1]) },
     { re: /(?<![*\w])\*([^*\n]+)\*(?!\w)/, make: (m) => el('em', 'gt-em', m[1]) },

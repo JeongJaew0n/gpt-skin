@@ -128,6 +128,23 @@ const C = load();
   t('fallback 이 비어 있으면 본문을 쓴다 (빈 화면보다 낫다)', empty[0].text === body && empty[0].dil === false);
 }
 
+// 마크업 없는 DIL 답 — fallback 은 같은 글을 다시 써 낸 것(이스케이프 · 표 구분선)이라 본문을 쓴다 (실측 모양 그대로, 2026-10-16)
+// docs/issue/2026-10-16-truncated-false-alarm-dil-fallback.md
+{
+  const body = "거의 맞았어! **타츠는 ‘서다’**, **타테루는 ‘세우다’**야.\n\n- **立つ（たつ）**: 서다 (자동사)\n\n| 자동사 | 타동사 |\n|---|---|\n| 立つ | 立てる |";
+  const fb = "거의 맞았어\\! **타츠는 ‘서다’**, \\*\\*타테루는 ‘세우다’\\*\\*야.\n\n- **立つ（たつ）**\\: 서다 (자동사)\n\n| 자동사 | 타동사 |\n|--------|--------|\n| 立つ | 立てる |";
+  const dil = { code: 'DIL.render(__dil.jsx(()=>{}))', fallbackMarkdown: fb, fallbackMarkdownVersion: 1, requiredComponents: ['Cite', 'MemoryCite'] };
+  const r = C.toRecords(conv([M('assistant', 'text', body, { metadata: { model_slug: 'gpt-6-thinking', model_dil_v2: dil } })]));
+  t('마크업 없는 DIL 답은 본문을 쓴다 (이스케이프된 fallback 이 아니라)', r[0].text === body);
+  t('그때는 DIL 로 표시하지 않는다 (안전망의 길이 가드를 그대로 쓴다)', r[0].dil === false);
+  t('본문을 따로 들고 있다 — 끊김 검사가 스트림과 같은 출처로 잰다', r[0].body === body);
+  const code = 'HTML 예시야.\n\n```html\n<div class="a">x</div>\n```\n\n그리고 `<span>` 도.';
+  const rc = C.toRecords(conv([M('assistant', 'text', code, { metadata: { model_dil_v2: { fallbackMarkdown: code.replace('.', '\\.') } } })]));
+  t('코드 블록 · 인라인 코드 안의 태그는 마크업으로 보지 않는다', rc[0].text === code);
+  t('마크업이 있으면 판정이 참', C.hasMarkup('앞\n\n<box gap={3}>\n  <icon name="plane"/>\n</box>') === true);
+  t('평범한 마크다운은 거짓', C.hasMarkup('**굵게** 와 a < b 비교, 화살표 -> 와 <- 도') === false);
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

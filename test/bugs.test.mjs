@@ -223,14 +223,14 @@ function loadHealth() {
   const m = /  const TRUNC_CHECK_MS = \d+;\n  const truncChecked = new Set\(\);\n  async function checkTruncation\(msgId, info\) \{[\s\S]*?\n  \}\n  \/\/ 화면의 답을 원본 글로 맞춘다[^\n]*\n  function settleWithOriginal\(shown, orig\) \{[\s\S]*?\n  \}\n/.exec(idx);
   t('끊김 검사 함수가 있다', !!m);
   if (m) {
-    const run = async ({ shown, orig, cid = 'c1', load, origRefs, shownRefs, origDil }) => {
+    const run = async ({ shown, orig, cid = 'c1', load, origRefs, shownRefs, origDil, origBody }) => {
       const sb = loadHealth();
       const rec = shown ? { id: 'm1', text: shown, verifyTries: 2, refs: shownRefs } : null;
       const byId = new Map(rec ? [['m1', rec]] : []);
       let loads = 0, renders = 0;
       sb.GT.store = { state: { byId } };
       sb.GT.skin = { current: { render: () => { renders++; } } };
-      sb.GT.conversation = { idFromPath: () => cid, load: load || (async () => { loads++; return { messages: orig == null ? [] : [{ id: 'm1', text: orig, refs: origRefs, dil: !!origDil }] }; }) };
+      sb.GT.conversation = { idFromPath: () => cid, load: load || (async () => { loads++; return { messages: orig == null ? [] : [{ id: 'm1', text: orig, refs: origRefs, dil: !!origDil, ...(origBody != null ? { body: origBody } : {}) }] }; }) };
       vm.runInContext(m[0] + '\nglobalThis.__check = checkTruncation;', sb);
       await sb.__check('m1', { droppedOps: 3 });
       await sb.__check('m1', { droppedOps: 3 });
@@ -257,6 +257,13 @@ function loadHealth() {
     const tagged = '핵심\n\n<box gap={3}>\n  <row align="start" gap={3}>\n    <icon name="plane" size="lg"/>\n  </row>\n</box>\n\n3단계 — 2027년';
     r = await run({ shown: tagged, orig: '핵심\n\n3단계 — 2027년', origDil: true });
     t('DIL 답은 원본이 짧아도 원본(fallback)으로 맞춘다', r.msg.text === '핵심\n\n3단계 — 2027년' && r.renders() === 1);
+    // 끊김 검사는 화면용 글이 아니라 본문과 잰다 — 화면용 글이 이스케이프된 fallback 이면 길어서 헛경보였다 (실측 2026-10-16)
+    const plainBody = '거의 맞았어! **타테루는 ‘세우다’**야. ' + '설명 '.repeat(20);
+    const escaped = '거의 맞았어\\! \\*\\*타테루는 ‘세우다’\\*\\*야. ' + '설명 '.repeat(20) + '\\: \\: \\: \\: \\: \\: \\: \\: \\: \\: \\:';
+    r = await run({ shown: plainBody, orig: escaped, origBody: plainBody });
+    t('본문과 같으면 화면용 글이 길어도 truncated 가 아니다', r.rec.length === 0);
+    r = await run({ shown: base, orig: base + '끝까지 왔어야 할 마지막 문장입니다. 여기까지.', origBody: base + '끝까지 왔어야 할 마지막 문장입니다. 여기까지.' });
+    t('본문보다 짧으면 여전히 truncated', r.rec.length === 1);
     r = await run({ shown: null, orig: base });
     t('대화를 옮겼으면(답이 없으면) 읽지 않는다', r.rec.length === 0 && r.loads() === 0);
     r = await run({ shown: base, orig: base, cid: null });
