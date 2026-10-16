@@ -282,6 +282,43 @@ const finalText = (evs) => { const d = evs.filter((e) => e.kind === 'delta').pop
   t('이름 없는 배열 안의 경로 생략 조각도 잇는다', finalText(ev) === '가나다');
 }
 
+// o · p 없이 v 에 메시지 객체만 오는 줄 — 실측 모양 그대로 (2026-10-16, gpt-6-thinking)
+// docs/issue/2026-10-16-truncated-false-alarm-dil-fallback.md
+//   14: marker cot_token 46d9fc
+//   15: {"v":{"message":{46d9fc reasoning_recap},"conversation_id":…,"error":null,"error_code":null},"c":1}
+//   16: marker user_visible_token e561de · 17: marker final_channel_token e561de
+//   18: {"v":{"message":{e561de assistant text channel final parts:["**立つ("]},…},"c":2}   ← 첫 조각이 여기 실려 온다
+//   20: {"o":"patch","v":[{"p":"/message/content/parts/0","o":"append","v":"…"}, {"p":"/message/metadata/model_dil_v2/code",…}]}
+// 예전에는 o 가 없어 'append' 로 읽혀 add 로 못 알아봤고, 답의 맨 앞 5자가 빠졌다(화면 868 / 원본 873).
+{
+  const bareMsg = (id, ctype, part, extra) => D({ v: { message: {
+    id, author: { role: 'assistant', name: null, metadata: {} },
+    content: { content_type: ctype, parts: part == null ? [] : [part] },
+    status: 'in_progress', end_turn: null, recipient: 'all', channel: (extra && extra.channel) || null,
+    metadata: { model_slug: 'gpt-6-thinking', thinking_effort: 'standard' } },
+    conversation_id: 'c1', error: null, error_code: null }, c: (extra && extra.c) || 1 });
+  const lines = [...ENC,
+    marker('46d9fc', 'cot_token'),
+    bareMsg('46d9fc', 'reasoning_recap', null, { c: 1 }),
+    marker('e561de', 'user_visible_token'),
+    marker('e561de', 'final_channel_token'),
+    bareMsg('e561de', 'text', '**立つ(', { channel: 'final', c: 2 }),
+    D({ type: 'title_generation', title: 'x' }),
+    D({ o: 'patch', v: [{ p: '/message/content/parts/0', o: 'append', v: 'たつ)**와 ' }, { p: '/message/metadata/model_dil_v2/code', o: 'replace', v: 'DIL.render()' }] }),
+    D({ v: [{ p: '/message/content/parts/0', o: 'append', v: '**立てる**' }, { p: '/message/metadata/model_dil_v2/fallbackMarkdown', o: 'replace', v: 'x' }] }),
+    cont('의 차이'),
+    COMPLETE];
+  const ev = await collect(lines);
+  const end = lastEnd(ev);
+  t('메시지 객체만 온 줄의 첫 조각을 받는다 (맨 앞 글자가 빠지지 않는다)', finalText(ev) === '**立つ(たつ)**와 **立てる**의 차이');
+  t('그 답의 id 로 끝난다', end.id === 'e561de');
+  t('추론 메시지도 같은 모양으로 오면 건너뛴다 (본문으로 새지 않는다)', (end.skipped || []).includes('reasoning_recap') && !/reasoning/.test(finalText(ev)));
+  t('버린 델타가 없다', end.droppedOps === 0);
+  // 마커 → 본문 몇 조각 → (늦게) 메시지 객체 순서여도 받은 본문을 덮지 않는다
+  const late = await collect([...ENC, marker('m2', 'user_visible_token'), append('앞부분 '), bareMsg('m2', 'text', '앞', { channel: 'final' }), append('뒷부분'), COMPLETE]);
+  t('이미 받고 있던 같은 메시지의 객체가 늦게 와도 받은 본문을 덮지 않는다', finalText(late) === '앞부분 뒷부분');
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

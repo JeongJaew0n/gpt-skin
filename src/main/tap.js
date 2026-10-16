@@ -121,7 +121,12 @@
       if (typeof o.p === 'string' && o.p !== '' && /^\/message\/content\//.test(o.p)) {
         this.lastPath = o.p;
       }
-      const op = o.o || (o.p === undefined ? 'append' : 'add');
+      // o · p 없이 v 에 메시지 객체만 오는 줄도 메시지 생성(add)이다. 실측(2026-10-16, gpt-6-thinking):
+      //   {"v":{"message":{"id":"e561de…","author":{"role":"assistant"},"content":{"parts":["**立つ("]},"channel":"final",…},"conversation_id":…}}
+      // 예전에는 o 가 없어 'append' 로 읽혀 add 로 알아보지 못했고, 메시지에 실려 온 첫 조각(5자)이 버려졌다 —
+      // 답의 맨 앞 글자가 빠졌다(사용자 보고서의 truncated). docs/issue/2026-10-16-truncated-false-alarm-dil-fallback.md
+      const carriesMessage = !!(o.v && typeof o.v === 'object' && !Array.isArray(o.v) && o.v.message && typeof o.v.message === 'object');
+      const op = o.o || (carriesMessage || o.p !== undefined ? 'add' : 'append');
 
       if (op === 'patch' && Array.isArray(o.v)) { o.v.forEach((x) => this.op(x)); return; }
 
@@ -179,12 +184,16 @@
           return;
         }
 
+        // 마커(user_visible_token)가 이 add 보다 먼저 와서 같은 메시지를 이미 받고 있으면, 받은 본문을 덮지 않는다 —
+        // 실측 순서(2026-10-16): marker user_visible → marker final_channel → add(첫 조각 실림) → append …
+        // 아직 받은 게 없을 때만 add 에 실린 첫 조각으로 시작한다.
+        const already = !!(this.current && this.current.id === m.id && this.current.accepted && this.text);
         this.current = { id: m.id || null, accepted: true, initial: parts0 };
         this.messageId = m.id || null;
         this.role = role;
         this.model = (m.metadata && m.metadata.model_slug) || null;
         const parts = m.content && Array.isArray(m.content.parts) ? m.content.parts : [];
-        this.text = typeof parts[0] === 'string' ? parts[0] : '';
+        if (!already) this.text = typeof parts[0] === 'string' ? parts[0] : '';
         this.began = true;
         post('begin', { id: this.messageId, role, model: this.model, text: this.text });
         return;

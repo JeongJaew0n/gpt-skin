@@ -45,7 +45,36 @@ ffb201    811    832       826                         832
 
 검사: `conversation` 6 · `bugs` 2 · `citation` 5. 고친 곳 넷을 하나씩 되돌리면 각각 실패.
 
+## 진짜 빠짐도 있었다 — 메시지 객체만 오는 줄 (0.31.7) `[확정]`
+
+승인받은 새 채팅 질문 1개(立つ와 立てる)의 스트림을 녹화(118KB)해, tap.js 의 `DeltaDecoder` 를 페이지 안에서 그대로 돌리고 대화 원본 본문과 비교했다.
+
+```
+우리 결과 868자 · 본문 873자 · 첫 글자부터 다르다
+본문   **立つ(たつ)**와 **立てる(たて…
+우리       たつ)**와 **立てる(たて…        ← 맨 앞 '**立つ(' 5자가 없다
+droppedOps 0 · unknownOps 0 · 마커 cot_token:46d9fc → user_visible_token:e561de → final_channel_token:e561de
+```
+
+그 자리의 스트림 줄(값은 길이만):
+
+```
+14: marker cot_token 46d9fc
+15: {"v":{"message":{46d9fc assistant reasoning_recap parts:[]},"conversation_id","error","error_code"},"c":…}
+16: marker user_visible_token e561de
+17: marker final_channel_token e561de
+18: {"v":{"message":{e561de assistant text channel:final recipient:all parts:[5자]},…},"c":…}   ← 첫 조각
+20: {"o":"patch","v":[{"p":"/message/content/parts/0","o":"append","v":20자}, {"p":"/message/metadata/model_dil_v2/code",…}, …]}
+```
+
+- 새 메시지가 **`p` · `o` 없이 `v` 에 메시지 객체만** 담겨 온다. `o` 가 없으면 `append` 로 읽던 규칙 때문에 메시지 생성(add)으로 알아보지 못했고,
+  거기 실린 첫 조각이 버려졌다. 0.28.2 의 'o · p 없는 배열 줄' 과 같은 계열
+- e561de 메타데이터에 `reasoning_status` · 숨김 표시 없음, recipient `all` — 본문으로 받는 것이 맞다
+- 이 답의 화면 쪽 길이가 본문보다 짧던 `54f31b`(166 / 181) 도 같은 원인으로 본다 `[가정 — 그 답의 스트림은 녹화하지 못했다]`
+
+고친 것: `v` 가 메시지 객체면 `o` 가 없어도 add 로 본다. 마커가 먼저 와 같은 메시지를 이미 받고 있으면 받은 본문을 덮지 않는다.
+검사 `stream` 5건(실측 줄 순서 그대로) — 고친 두 곳을 되돌리면 각각 실패.
+
 ## 남은 것 `[미정]`
 
-- 문제의 답 `54f31b` 의 화면 쪽 길이는 166 인데 본문은 181 이다. 스트림이 본문과 같다면 181 이어야 한다 —
-  이 답에서는 실제로 15자가 빠졌을 수 있다. 확인: 스트림 원문을 녹화해 tap.js 로 재생하고 본문과 비교한다(승인받은 새 채팅 시험)
+- 고친 tap.js 가 실제 크롬에서 같은 모양의 스트림을 끝까지 받는지 — 0.31.7 을 올린 뒤 질문 하나로 확인한다
