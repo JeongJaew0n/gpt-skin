@@ -10,7 +10,9 @@ GT.conversation = (function () {
     // 프로젝트 안의 대화는 /g/<프로젝트>/c/<id> 다 (실측 2026-10-02: 원본 사이드바 링크 8개가 이 꼴).
     // 예전에는 /c/ 로 시작하는 주소만 알아봐 프로젝트 대화는 대화 원본을 아예 읽지 않았다.
     const m = /^(?:\/g\/[^/]+)?\/c\/([0-9a-zA-Z:-]+)/.exec(p || location.pathname);
-    return m ? m[1] : null;
+    // 새 채팅에서 막 보낸 직후의 임시 주소(/c/local-chatgpt%3A<uuid>, 실측 2026-10-16)는 아직 대화가 아니다 —
+    // 서버에 없어 읽으면 404 다. tabs.js 의 provisional 과 같은 규칙 (리뷰 2026-11-03).
+    return m && !/^local-/.test(m[1]) ? m[1] : null;
   };
 
   // 이미지 파트. 실측(2026-09-09) — 생성한 그림은 role 'tool' 메시지로 온다.

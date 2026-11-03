@@ -101,6 +101,9 @@ const C = load();
 // 8. 경로에서 id 추출
 {
   t('경로 파싱', C.idFromPath('/c/6a95-abc') === '6a95-abc' && C.idFromPath('/') === null);
+  // 새 채팅에서 막 보낸 직후의 임시 주소(실측 2026-10-16)는 대화가 아니다 — 읽으면 404 (리뷰 2026-11-03)
+  t('임시 대화 주소는 대화 id 가 없다', C.idFromPath('/c/local-chatgpt%3Affd8dfca-e725') === null
+    && C.idFromPath('/c/local-chatgpt:ffd8dfca') === null && C.idFromPath('/g/g-p-1/c/local-x') === null);
 }
 
 // 9. 순환 참조에도 멈춘다

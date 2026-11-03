@@ -49,6 +49,19 @@ const ids = (T) => T.list().map((x) => x.id).join(',');
   t('임시 대화 → 새 대화 화면은 옮긴 것이다', T.leftConversation('/c/local-chatgpt%3Affd8dfca-e725', '/') === true);
 }
 
+// --- 임시 대화 주소는 탭이 아니다 (리뷰 2026-11-03) ---
+// 주소 틱(600ms)이 임시 주소를 보면 'local-chatgpt' 라는 탭이 저장돼 남았다 — 누르면 없는 대화로 간다.
+{
+  const { T, store } = load();
+  const tmp = '/c/local-chatgpt%3Affd8dfca-e725-4732-b0c9-af2c1b0d77fc';
+  t('임시 주소의 id 는 없다', T.idOf(tmp) === null && T.idOf('/c/local-chatgpt:ffd8dfca') === null);
+  t('임시 주소는 탭에 넣지 않는다', T.open(tmp, '') === null && T.list().length === 0);
+  t('저장하지도 않는다', !(store['gt.openTabs'] || []).some((x) => /^local-/.test(x.id)));
+  t('임시 주소인지 밖에서도 물을 수 있다', typeof T.provisional === 'function' && T.provisional(tmp) === true && T.provisional('/c/6ad1abcd') === false);
+  T.open('/c/6ad1abcd-0000', '진짜');
+  t('진짜 주소는 그대로 탭이 된다', T.list().length === 1 && T.list()[0].id === '6ad1abcd-0000');
+}
+
 {
   const { T, store } = load();
   T.open('/c/a', '가'); T.open('/c/b', '나'); T.open('/c/c', '');

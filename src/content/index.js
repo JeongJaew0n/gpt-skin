@@ -526,11 +526,13 @@
         // 번호를 들고 간다 — 빨리 넘기면 앞선 대화의 응답이 먼저 와도 지금 대화를 받는 표시를 끄지 않는다
         const lt = GT.tabs.loading(true);
         pull('route').then((ok) => { GT.tabs.loading(false, lt); if (!ok) GT.toMain('harvest'); });
-      } else {
+      } else if (!GT.tabs.provisional(location.pathname)) {
         // 새 대화 화면(/). 수확할 대화가 없다 — 수확을 기다리지 말고 바로 비운다.
         // 안 비우면 본문만 사라지고 상단바·탭에 이전 대화 제목이 남는다.
         GT.store.replaceAll([], { path: location.pathname, title: '' });
       }
+      // 임시 대화(새 채팅에서 막 보낸 직후의 /c/local-…)는 같은 대화가 생기는 중이다 — 비우지도 읽지도 않는다.
+      // 비우면 방금 보낸 글과 받는 답이 지워진다. 진짜 주소로 바뀌면 위의 pull 이 읽는다.
       GT.sidebar.draw();                 // 현재 대화 강조를 옮긴다
       // 기록은 대화마다 다르다. 위치를 그대로 두면 엉뚱한 줄을 가리킨다.
       GT.prompt.resetHistory();

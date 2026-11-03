@@ -68,6 +68,9 @@ const msg = (id, role, text) => ({ id, role, text });
   const tty = fs.readFileSync('src/content/skins/terminal.js', 'utf8');
 
   t('대화 id 가 없으면 수확하지 않는다', /if \(GT\.conversation\.idFromPath\(\)\) \{/.test(idx));
+  // 임시 대화(새 채팅에서 막 보낸 직후)에서 화면을 비우면 방금 보낸 글과 받는 답이 지워진다 (리뷰 2026-11-03)
+  t('임시 대화 주소에서는 화면을 비우지 않는다',
+    /\} else if \(!GT\.tabs\.provisional\(location\.pathname\)\) \{\s*(\/\/[^\n]*\s*)*GT\.store\.replaceAll\(\[\]/.test(idx));
   t('새 대화 화면에서는 store 를 바로 비운다',
     /GT\.store\.replaceAll\(\[\], \{ path: location\.pathname, title: '' \}\)/.test(idx));
 

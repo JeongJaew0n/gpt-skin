@@ -18,19 +18,22 @@ GT.tabs = (function () {
   let list = [];                     // [{ id, href, title, seen }]
   const subs = [];
 
+  // 실측(2026-10-16, 0.31.4): 새 채팅에서 보내면 주소가 먼저 /c/local-chatgpt%3A<uuid> 인 임시 대화가 된다.
+  // 서버에 그런 대화는 없다(읽으면 404). 진짜 id 주소로 바뀔 때까지 '대화 아님' 으로 본다 — 대화로 보면
+  // 'local-chatgpt' 라는 탭이 저장돼 남고, 없는 대화를 읽으러 갔다 (리뷰 2026-11-03). conversation.js 의 idFromPath 와 같은 규칙이다.
+  const provisional = (path) => /\/c\/local-/.test(String(path || ''));
+
   // 대화 id. 프로젝트 안의 대화는 /g/<프로젝트>/c/<id> 다 — 주소 전체를 href 로 들고, id 는 /c/ 뒤에서 꺼낸다.
-  const idOf = (path) => (/\/c\/([0-9a-zA-Z:-]+)/.exec(String(path || '')) || [])[1] || null;
+  const idOf = (path) => (provisional(path) ? null : (/\/c\/([0-9a-zA-Z:-]+)/.exec(String(path || '')) || [])[1] || null);
   const valid = (t) => t && typeof t.id === 'string' && typeof t.href === 'string';
 
   // 주소가 from → to 로 바뀐 것이 '다른 대화로 옮긴 것' 인가.
   // 새 대화 화면(/ · 프로젝트 첫 화면)에서 첫 메시지를 보내 /c/<새 id> 가 된 것은 같은 대화가 생긴 것이라 아니다.
   // 화면 진단 줄(경고 · 명령 결과)을 대화에 묶을 때 쓴다 — 실측(2026-10-16): 한 번 뜬 '원본이 메시지를 보내지 않았습니다' 가
   // 그 뒤로 여는 모든 대화의 맨 아래에 붙어 따라다녀, 보낼 때마다 실패하는 것처럼 보였다.
-  // 실측(2026-10-16, 0.31.4): 새 채팅에서 보내면 주소가 먼저 /c/local-chatgpt%3A<uuid> 인 임시 대화가 된다.
-  // 이 임시 주소에서 대화 주소로 가는 것도 '막 생긴 대화' 다.
-  const provisional = (path) => /\/c\/local-/.test(String(path || ''));
+  // 임시 대화로 가는 것 · 임시 대화에서 대화 주소로 가는 것도 '막 생긴 대화' 다.
   const leftConversation = (from, to) => from !== to
-    && ((idOf(from) && !provisional(from)) || !idOf(to));
+    && (!!idOf(from) || (!idOf(to) && !provisional(to)));
 
   function emit() { subs.forEach((f) => { try { f(); } catch (_) {} }); }
   function save() { try { chrome.storage.local.set({ [KEY]: list }); } catch (_) {} }
@@ -196,7 +199,7 @@ GT.tabs = (function () {
   }
 
   return {
-    KEY, MAX, idOf, leftConversation,
+    KEY, MAX, idOf, leftConversation, provisional,
     load, open, title, close, step, go, closeCurrent, loading, GO_DELAY_MS,
     list: () => list.slice(),
     // 탭 줄이 '지금' 으로 강조할 대화 — 단축키로 옮겨 둔 탭이 있으면 그쪽
