@@ -91,3 +91,14 @@ para | <box gap={3}> <row align="start" gap={3}> <box background="surface-second
 - 원본 화면이 이 블록을 실제로 어떻게 그리는지 (카드인지) — 화면에서 확인하지 못했다
 - 태그 없는 답에서 fallback 과 본문이 2~28자 다른 이유
 - 다른 모델(예: gpt-5 계열)도 DIL 을 쓰는지 · 언제부터인지
+
+## 후속 (2026-11-03) — 스트림 경로 `[확정]` · 0.32.17 에서 고침
+
+실측(크롬 · gpt-6-thinking): 스트림은 본문 조각과 같은 patch 안에 `/message/metadata/model_dil_v2/fallbackMarkdown` 를 나란히 append 한다
+(메시지 생성에 첫 조각이 실린다). 예전에는 받는 동안부터 끝난 뒤 끊김 검사(8초)까지 `<icon name="download" inline /> HTML 파일 다운로드` 처럼
+태그가 글자로 보였다. 이제 tap 이 대체 마크다운을 함께 쌓아 보내고, 본문에 마크업이 섞이면 받는 동안에도 그것을 그린다(원문은 body).
+고친 뒤 같은 종류의 답을 받는 32초 동안 0.5초마다 봐서 태그가 한 번도 안 보였다.
+
+같은 날 대체 마크다운의 링크(url 봉투)가 지워지던 것도 고쳤다(0.32.13) — `content_references` 앞에 `client_defined_widget` 항목이 끼어
+순번 짝짓기가 어긋났다. 원본은 `cdn.platform.openai.com/deployments/dil/v15/runner.html` iframe 에서 `code` 를 돌려 UI 를 그린다
+(위 '원본 화면이 실제로 어떻게 그리는지' 의 답). 자세한 것은 docs/issue/2026-11-03-live-check-image-markdown-dil.md.
