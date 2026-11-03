@@ -64,6 +64,20 @@ GT.store = (function () {
     return rec;
   };
 
+  // 수확이 레코드를 새로 만들 때 지킬 것. 수확(DOM · fiber)이 모르는 값만 — 아는 값은 수확을 따른다.
+  //   thinking   추론 조각 수. 대화 원본(API)과 스트림만 안다
+  //   streaming  지금 받고 있는 답이면 받는 중으로 둔다. 원본은 받는 중에 그린 만큼만 보여 주므로(fiber 가 짧다)
+  //              우리가 받은 글이 더 길면 그것을 지킨다 — 다음 조각이 오기 전까지 글이 줄었다 늘었다 하지 않게
+  function keepFrom(old, m) {
+    const keep = {};
+    if (old.thinking && m.thinking === undefined) keep.thinking = old.thinking;
+    if (old.streaming && old.id === state.streamingId) {
+      keep.streaming = true;
+      if (typeof old.text === 'string' && old.text.length > String(m.text || '').length) keep.text = old.text;
+    }
+    return keep;
+  }
+
   // 한 턴에 assistant 메시지가 여러 개 온다.
   // 추론 모델은 사고 조각·중간 산출물을 각각 별개 메시지로 흘리고, 원본 UI 는 마지막 것만 그린다.
   // 우리는 턴마다 자리(slot)를 하나만 두고, 새 메시지가 오면 그 자리를 대체한다.
@@ -145,7 +159,8 @@ GT.store = (function () {
           const old = m.id && prev.get(m.id);
           // 수확(DOM·fiber)에는 인용 출처도 이미지도 없다. API 로 받아둔 것을 지키고
           // 넘어간다 — 안 지키면 fiber 교정이 도는 순간 각주가 번호만 남고 그림이 사라진다.
-          const keep = {};
+          // 추론 조각 수(터미널의 'thinking ×N')와 '받는 중' 도 수확에는 없다 — 레코드를 새로 만들며 지웠다 (리뷰 2026-11-03).
+          const keep = old ? keepFrom(old, m) : {};
           if (old && old.refs && !m.refs) keep.refs = old.refs;
           if (old && old.images && !m.images) keep.images = old.images;
           upsert({ at: old ? old.at : null, ...m, ...keep });
@@ -159,7 +174,7 @@ GT.store = (function () {
       messages.forEach((m) => {
         if (m.id && state.byId.has(m.id)) {
           const rec = state.byId.get(m.id);
-          if (typeof m.text === 'string' && m.text) rec.text = m.text;
+          if (typeof m.text === 'string' && m.text && !(rec.streaming && rec.id === state.streamingId && m.text.length < String(rec.text || '').length)) rec.text = m.text;
           if (m.model) rec.model = m.model;
           if (m.parts) rec.parts = m.parts;
           if (m.refs) rec.refs = m.refs;

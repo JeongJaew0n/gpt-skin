@@ -81,6 +81,42 @@ const M = (id, role, text) => ({ id, role, text: text || id, model: null });
   t('멱등', s.state.messages.length === 2 && ids(s) === 't1,t2');
 }
 
+// 8. 수확이 레코드를 새로 만들어도 추론 조각 수(thinking ×N)를 지운다면 안 된다 (리뷰 2026-11-03)
+//    수확(DOM · fiber)은 그 수를 모른다. 대화 원본(API)이 준 것을 지킨다.
+{
+  const s = fresh();
+  s.applyHarvest([M('u1','user'), { ...M('a1','assistant'), thinking: 3 }], {path:'/c/x'});     // 대화 원본(API)
+  const r = s.applyHarvest([M('u1','user'), M('a1','assistant'), M('u2','user')], {path:'/c/x'}); // DOM 수확 (모두 포함 → adopt)
+  t('adopt 로 다시 만들어도 추론 조각 수를 지킨다', r.mode === 'adopt' && s.state.byId.get('a1').thinking === 3);
+  s.applyHarvest([M('u1','user'), { ...M('a1','assistant'), thinking: 1 }, M('u2','user')], {path:'/c/x'});
+  t('수확이 그 수를 알면 수확을 따른다', s.state.byId.get('a1').thinking === 1);
+}
+
+// 9. 받는 중인 답은 수확이 와도 받는 중이다 — 원본은 그린 만큼만 보여 준다(fiber 가 짧다)
+{
+  const s = fresh();
+  s.applyHarvest([M('u1','user')], {path:'/c/x'});
+  s.begin({ id: 'a1', role: 'assistant', text: '' });
+  s.delta('a1', '받은 글이 더 길다');
+  const r = s.applyHarvest([M('u1','user'), M('a1','assistant','받은 글')], {path:'/c/x'});
+  const a = s.state.byId.get('a1');
+  t('adopt 뒤에도 받는 중 표시가 남는다', r.mode === 'adopt' && a.streaming === true);
+  t('받은 글이 더 길면 지킨다', a.text === '받은 글이 더 길다');
+  s.end('a1', '받은 글이 더 길다 끝');
+  s.applyHarvest([M('u1','user'), M('a1','assistant','고친 본문')], {path:'/c/x'});
+  t('끝난 뒤에는 예전처럼 수확을 따른다', s.state.byId.get('a1').streaming === false && s.state.byId.get('a1').text === '고친 본문');
+}
+{
+  // merge(수확이 덜 아는 경우)도 같다
+  const s = fresh();
+  s.applyHarvest([M('u1','user'), M('a0','assistant')], {path:'/c/x'});
+  s.userSent('질문', 'u2');
+  s.begin({ id: 'a1', role: 'assistant', text: '' });
+  s.delta('a1', '받은 글이 더 길다');
+  const r = s.applyHarvest([M('u2','user','질문'), M('a1','assistant','받은')], {path:'/c/x'});   // 앞쪽 턴이 빠진 수확
+  t('merge 에서도 받는 중인 답의 글을 줄이지 않는다', r.mode === 'merge' && s.state.byId.get('a1').text === '받은 글이 더 길다');
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');
