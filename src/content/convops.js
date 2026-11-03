@@ -23,10 +23,22 @@ GT.convops = (function () {
     return !!(j && j.success);
   }
 
+  // 이 탭에서 보관한 대화 { id, title, href }. 대화 목록은 보관한 대화를 빼므로(chats.group) 보관 직후 안내하는
+  // ':archive <id> off' 가 대상을 찾을 곳이 없었다 (리뷰 2026-11-03, 하네스 실측). 되돌리는 명령이 여기서도 찾는다.
+  const archived = new Map();
+
+  async function archive(id, on, rec) {
+    const ok = await patch(id, { is_archived: !!on });
+    if (ok && on) archived.set(id, { id, title: (rec && rec.title) || id, href: (rec && rec.href) || '/c/' + id });
+    if (ok && !on) archived.delete(id);
+    return ok;
+  }
+
   return {
     rename: (id, title) => patch(id, { title: String(title) }),
     pin: (id, on) => patch(id, { is_starred: !!on }),
-    archive: (id, on) => patch(id, { is_archived: !!on }),
+    archive,
+    archivedList: () => [...archived.values()],
 
     // 되돌릴 수 없다. 복구 경로가 없음을 실측으로 확인했다.
     remove: (id) => patch(id, { is_visible: false }),

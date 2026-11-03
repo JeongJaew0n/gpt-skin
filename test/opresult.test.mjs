@@ -59,7 +59,7 @@ for (const cmd of [':archive cur-1234', ':rm cur-1234 yes']) {
     (sb.match(/GT\.tabs\.close\(rec\.id\)/g) || []).length === 2 && /ok \+= 1; GT\.tabs\.close\(recs\[i\]\.id\)/.test(sb) && /res\.done\.forEach\(\(id\) => GT\.tabs\.close\(id\)\)/.test(sb));
   const n = (sb.match(/if \(!\(await GT\.convops\.(pin|archive|remove)\([^)]*\)\)\) \{ GT\.skin\.current\.system\('error', GT_T\('cmd\.op\.rejected'/g) || []).length;
   t('사이드바 메뉴의 고정 · 보관 · 삭제도 거절을 실패로 알린다', n === 3);
-  t('다중 보관은 거절을 실패 개수로 센다', /if \(await GT\.convops\.archive\(recs\[i\]\.id, true\)\) \{ ok \+= 1;[^}]*\} else bad\.push/.test(sb));
+  t('다중 보관은 거절을 실패 개수로 센다', /if \(await GT\.convops\.archive\(recs\[i\]\.id, true(?:, recs\[i\])?\)\) \{ ok \+= 1;[^}]*\} else bad\.push/.test(sb));
   const i18n = read('src/shared/i18n.js');
   t('문구는 사전에 ko · en 둘 다', (i18n.match(/'cmd\.op\.rejected':/g) || []).length === 2);
 }

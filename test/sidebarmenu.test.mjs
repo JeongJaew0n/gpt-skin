@@ -2,6 +2,7 @@
 //
 // 1. '삭제' 는 두 번 눌러야 지워진다. 예전에는 두 번째 누름을 나중에 붙인 bubble 리스너(once)가 받게 했는데,
 //    같은 항목의 capture 리스너가 stopPropagation 을 불러 once 가 한 번도 불리지 않았다 — 메뉴로는 지울 수 없었다.
+// 2. '보관' 뒤 안내하는 ':archive <id> off' 가 대상을 찾는다. 대화 목록은 보관한 대화를 빼서(chats.group) 못 찾았다.
 //
 // 가짜 DOM 의 이벤트 순서는 크롬과 같게 둔다 (DOM 표준 dispatch — 크롬 156 실측, 리뷰 2026-11-03):
 //   조상 capture → 대상 capture → 대상 bubble → 조상 bubble. stopPropagation 은 다음 '노드' 로 넘어가기를 막는다 —
@@ -149,6 +150,48 @@ const item = (pred) => find((n) => n.className === 'gt-ctx-item' && pred(n));
   t('두 번째 누름에 삭제 요청이 나간다', patches.length === 1 && /x2aa1111-0000$/.test(p.url || '') && JSON.stringify(p.body) === '{"is_visible":false}');
   t('지운 뒤 메뉴가 닫힌다', !find((n) => n.className === 'gt-ctx'));
   t('지운 뒤 목록을 다시 읽어 행이 빠진다', !rowOf('K8s 설명'));
+}
+
+// --- 2. '⋯ → 아카이브에 보관' 뒤 안내대로 되돌린다 ---
+{
+  patches.length = 0; sys.length = 0;
+  t('보관할 행의 메뉴를 연다', await openMenu('배포 계획'));
+  const arch = item((n) => n.textContent.includes('보관'));
+  arch.press();
+  for (let i = 0; i < 4; i += 1) await tick();
+  t('보관 요청이 나간다', patches.length === 1 && JSON.stringify(patches[0].body) === '{"is_archived":true}');
+  t('보관한 대화는 목록에서 빠진다(서버 흉내)', !rowOf('배포 계획'));
+  const hint = sys.find((s) => /:archive \S+ off/.test(s)) || '';
+  const undo = (/:archive \S+ off/.exec(hint) || [])[0];
+  t('되돌리는 명령을 안내한다', !!undo);
+  await GT.commands.run(undo || ':archive ef013333 off');
+  const p = patches.at(-1) || {};
+  t('안내한 명령이 그 대화를 되돌린다', patches.length === 2 && /ef013333-0000$/.test(p.url || '') && JSON.stringify(p.body) === '{"is_archived":false}');
+  t('대상을 못 찾았다는 오류가 없다', !sys.some((s) => s.startsWith('error:')));
+}
+
+// --- 3. 선택 모드로 보관한 것도 같은 명령으로 되돌린다 ---
+{
+  patches.length = 0; sys.length = 0;
+  await GT.sidebar.refresh();
+  GT.sidebar.enterSelect('abcd2222-0000');
+  const btn = find((n) => /gt-sb-act/.test(n.className) && n.textContent === '보관');
+  t('선택 모드에 보관 단추가 있다', !!btn);
+  btn.press();
+  for (let i = 0; i < 6; i += 1) await tick();
+  t('선택 모드 보관 요청', patches.length === 1 && JSON.stringify(patches[0].body) === '{"is_archived":true}');
+  await GT.commands.run(':archive abcd2222 off');
+  const p = patches.at(-1) || {};
+  t('선택 모드로 보관한 것도 :archive <id> off 로 되돌린다', patches.length === 2 && /abcd2222-0000$/.test(p.url || '') && JSON.stringify(p.body) === '{"is_archived":false}');
+}
+
+// --- 4. 되돌린 뒤에는 '보관한 대화' 로 남지 않는다 · 보관하지 않은 대화를 되돌리라고 하면 지금처럼 못 찾는다 ---
+{
+  patches.length = 0; sys.length = 0;
+  const left = typeof GT.convops.archivedList === 'function' ? GT.convops.archivedList() : null;
+  t('되돌린 대화는 보관 기억에서 빠진다', Array.isArray(left) && left.length === 0);
+  await GT.commands.run(':archive zz99 off');
+  t('모르는 대화는 건드리지 않는다', patches.length === 0 && sys.some((s) => s.startsWith('error:')));
 }
 
 let bad = 0;

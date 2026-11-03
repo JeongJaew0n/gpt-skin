@@ -100,7 +100,8 @@ GT.commands = (function () {
   //     예전에는 :ls 없이 ':rm 3 yes' 가 id 가 3 으로 시작하는 대화나 제목에 3 이 든 대화를 지웠다
   //   · id 앞자리 · 제목은 하나만 맞을 때만 고른다. 여럿이면 고르지 않고 알린다
   // 사이드바 메뉴는 id 앞 8자리를 넘긴다(숫자만일 수도 있다) — 네 자리 이상 숫자는 id 앞자리로도 찾는다.
-  function resolveChat(raw) {
+  // extra — 목록에 없는 후보를 더 얹는다 (:archive … off 의 '이 탭에서 보관한 대화')
+  function resolveChat(raw, extra) {
     // '@3' · '@6a97' 처럼 앞에 @ 를 붙여도 된다.
     // 이름과 섞일 수 있는 명령(:rename)에서 대상임을 분명히 하려고 쓴다.
     const key = String(raw == null ? '' : raw).replace(/^@/, '').trim();
@@ -112,7 +113,7 @@ GT.commands = (function () {
     if (/^\d+$/.test(key) && lastList[Number(key)]) return { chat: lastList[Number(key)] };
 
     const byId = new Map();
-    lastList.concat(GT.sidebar.chats ? GT.sidebar.chats() : [])
+    lastList.concat(GT.sidebar.chats ? GT.sidebar.chats() : [], extra || [])
       .forEach((c) => { if (c && c.id && !byId.has(c.id)) byId.set(c.id, c); });
     const pool = Array.from(byId.values());
     const lk = key.toLowerCase();
@@ -122,8 +123,8 @@ GT.commands = (function () {
     return one(pool.filter((c) => (c.title || '').toLowerCase().includes(lk)));
   }
 
-  const needTarget = (key) => {
-    const r = resolveChat(key);
+  const needTarget = (key, extra) => {
+    const r = resolveChat(key, extra);
     if (r.chat) return r.chat;
     if (r.why === 'no-list') err(GT_T('cmd.target.noList', key));
     else if (r.why === 'range') err(GT_T('cmd.target.range', key, lastList.length - 1));
@@ -176,9 +177,10 @@ GT.commands = (function () {
   });
 
   def(':archive', '보관 — :archive <n|id> [off]', async (args) => {
-    const c = needTarget(args[0]); if (!c) return;
     const on = String(args[1] || '').toLowerCase() !== 'off';
-    if (!(await GT.convops.archive(c.id, on))) return err(GT_T('cmd.op.rejected', c.title));
+    // 되돌릴 때는 이 탭에서 보관한 대화에서도 찾는다 — 목록은 보관한 대화를 뺀다
+    const c = needTarget(args[0], on ? null : (GT.convops.archivedList ? GT.convops.archivedList() : [])); if (!c) return;
+    if (!(await GT.convops.archive(c.id, on, c))) return err(GT_T('cmd.op.rejected', c.title));
     if (on) GT.tabs.close(c.id);          // 보관한 대화는 열린 탭에서도 닫는다 — 남겨 두면 누를 때 없는 대화로 간다 (0.26.5)
     info(on ? `보관: ${c.title}` : `보관 해제: ${c.title}`);
     // 지금 대화인지는 id 로 본다 — 프로젝트 안의 대화는 주소가 /g/<프로젝트>/c/<id> 다

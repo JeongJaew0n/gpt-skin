@@ -197,7 +197,7 @@ GT.sidebar = (function () {
     });
 
     act('아카이브에 보관', async () => {
-      if (!(await GT.convops.archive(rec.id, true))) { GT.skin.current.system('error', GT_T('cmd.op.rejected', rec.title)); return; }
+      if (!(await GT.convops.archive(rec.id, true, rec))) { GT.skin.current.system('error', GT_T('cmd.op.rejected', rec.title)); return; }
       GT.tabs.close(rec.id);              // 열린 탭에서도 닫는다 (0.26.5)
       GT.skin.current.system('info', `보관했습니다 — :archive ${rec.id.slice(0, 8)} off 로 되돌립니다`);
       if (currentId() === rec.id) GT.navigate.newChat();
@@ -304,7 +304,7 @@ GT.sidebar = (function () {
     let ok = 0; const bad = [];
     for (let i = 0; i < recs.length; i += 1) {
       // success 가 거짓이면 실패로 센다 (0.26.4)
-      try { if (await GT.convops.archive(recs[i].id, true)) { ok += 1; GT.tabs.close(recs[i].id); } else bad.push(recs[i].title); }
+      try { if (await GT.convops.archive(recs[i].id, true, recs[i])) { ok += 1; GT.tabs.close(recs[i].id); } else bad.push(recs[i].title); }
       catch (e) { bad.push(recs[i].title); }
       busy = `보관 중 ${i + 1}/${recs.length}`; draw();
     }
