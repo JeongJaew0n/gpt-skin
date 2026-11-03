@@ -362,7 +362,8 @@ GT.store = (function () {
     // 않으므로 다음 델타도 또 새 레코드를 만든다 — 응답 하나가 '점점 길어지는 접두사' 수십 줄로
     // 쌓였다. 스트림이 add 없이 본문부터 보내는 경우가 실재한다(재개 연결 등).
     // 그래서 붙일 곳을 순서대로 찾고, 정말 없을 때만 한 번 만든다.
-    delta(id, text) {
+    // body — 생성형 UI 답이면 화면 글(text, 대체 마크다운)과 다른 원문. 끊김 검사가 원문끼리 잰다.
+    delta(id, text, body) {
       let rec = (id && state.byId.get(id))
         || (state.streamingId && state.byId.get(state.streamingId))
         || (state.slotId && state.byId.get(state.slotId))
@@ -377,14 +378,19 @@ GT.store = (function () {
       }
 
       rec.text = text;
+      if (typeof body === 'string') rec.body = body;
       rec.streaming = true;
       state.lastStreamAt = Date.now();
       emit('delta');
     },
 
-    end(id, text) {
+    end(id, text, body) {
       const rec = (id && state.byId.get(id)) || state.messages[state.messages.length - 1];
-      if (rec) { if (typeof text === 'string' && text) rec.text = text; rec.streaming = false; }
+      if (rec) {
+        if (typeof text === 'string' && text) rec.text = text;
+        if (typeof body === 'string' && body) rec.body = body;
+        rec.streaming = false;
+      }
       state.streamingId = null;
       state.thinkingSince = 0;
       // slotId 는 그대로 둔다. 같은 턴에서 또 begin 이 오면 이 자리를 대체해야 한다.

@@ -192,10 +192,15 @@
     }
   });
   GT.on('user', (p) => GT.store.userSent(p.text, p.id));
-  GT.on('begin', (p) => GT.store.begin(p));
-  GT.on('delta', (p) => GT.store.delta(p.id, p.text));
+  // 생성형 UI(DIL) 답 — 본문에 마크업이 섞이면 화면에는 태그 없는 대체 마크다운을 쓴다. 대화 원본 경로(conversation.js)와
+  // 같은 규칙이다. 예전에는 스트림 경로에 대체 마크다운이 없어, 받는 동안부터 끝난 뒤 끊김 검사(8초)까지
+  // '<icon name="download" inline /> HTML 파일 다운로드' 처럼 태그가 글자로 보였다 (실측 2026-11-03, 크롬 · gpt-6-thinking).
+  // 원문은 body 로 따로 둔다 — 끊김 검사는 원문끼리 잰다.
+  const shownText = (p) => (typeof p.fallback === 'string' && p.fallback && GT.conversation.hasMarkup(p.text) ? p.fallback : p.text);
+  GT.on('begin', (p) => GT.store.begin({ id: p.id, role: p.role, model: p.model, text: shownText(p), body: p.text, orphan: p.orphan, markerAnchored: p.markerAnchored }));
+  GT.on('delta', (p) => GT.store.delta(p.id, shownText(p), p.text));
   GT.on('end', (p) => {
-    GT.store.end(p.id, p.text);
+    GT.store.end(p.id, shownText(p), p.text);
     // add 를 못 보고 본문부터 받은 스트림. 화면은 정상이지만 해석이 어긋났다는 신호다.
     if (p.orphan) {
       GT.health.soft('스트림이 메시지 생성(add) 없이 본문부터 보냈다 — 자리를 만들어 이어붙였다');
@@ -287,7 +292,7 @@
     if (!orig || !shown) { GT.log('끊김 검사: 원본에서 이 답을 찾지 못했다'); return; }
     // 스트림과 같은 출처(본문)와 잰다. 화면용 글(orig.text)은 생성형 UI 답이면 다시 써 낸 fallback 이라
     // 이스케이프 · 표 구분선만큼 길어 헛경보를 냈다 (실측 2026-10-16 — 사용자 보고서의 truncated 7건 중 5건이 fallback 길이와 일치).
-    const t = GT.health.truncation(shown.text, typeof orig.body === 'string' ? orig.body : orig.text);
+    const t = GT.health.truncation(typeof shown.body === 'string' ? shown.body : shown.text, typeof orig.body === 'string' ? orig.body : orig.text);
     if (t) {
       GT.bugs.record('truncated', `화면 ${t.shown}자 / 원본 ${t.original}자 (${t.diff}자 짧음)`,
         { ...t, droppedOps: (info && info.droppedOps) || 0, verifyTries: shown.verifyTries || 0 });

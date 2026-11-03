@@ -69,6 +69,10 @@
       this.markers = [];       // ['user_visible_token:5032df', 'cot_token:b5841c', …]
       this.droppedOps = 0;
       this.droppedChars = 0;
+      // 생성형 UI(DIL) 답의 대체 마크다운. 본문에 <icon …/> 같은 마크업이 섞여 오는데, 스트림은 같은 patch 안에
+      // /message/metadata/model_dil_v2/fallbackMarkdown 를 나란히 append 한다 (실측 2026-11-03, gpt-6-thinking).
+      // 받는 동안에도 태그 없는 글을 그릴 수 있게 함께 쌓아 보낸다. 대체 마크다운이 없는 답이면 null.
+      this.fallback = null;
     }
 
     line(raw) {
@@ -188,6 +192,8 @@
         // 실측 순서(2026-10-16): marker user_visible → marker final_channel → add(첫 조각 실림) → append …
         // 아직 받은 게 없을 때만 add 에 실린 첫 조각으로 시작한다.
         const already = !!(this.current && this.current.id === m.id && this.current.accepted && this.text);
+        const dil = meta.model_dil_v2;
+        if (!already || this.fallback === null) this.fallback = dil && typeof dil.fallbackMarkdown === 'string' ? dil.fallbackMarkdown : null;
         this.current = { id: m.id || null, accepted: true, initial: parts0 };
         this.messageId = m.id || null;
         this.role = role;
@@ -195,7 +201,17 @@
         const parts = m.content && Array.isArray(m.content.parts) ? m.content.parts : [];
         if (!already) this.text = typeof parts[0] === 'string' ? parts[0] : '';
         this.began = true;
-        post('begin', { id: this.messageId, role, model: this.model, text: this.text });
+        post('begin', { id: this.messageId, role, model: this.model, text: this.text, fallback: this.fallback });
+        return;
+      }
+
+      // 생성형 UI 답의 대체 마크다운 조각 — 본문 조각과 나란히 온다. 지금 받는 답의 것만 쌓는다.
+      if (typeof o.p === 'string' && /\/model_dil_v2\/fallbackMarkdown$/.test(o.p) && typeof o.v === 'string') {
+        if (!this.current || !this.current.accepted || !this.messageId) return;
+        if (op === 'append' || op === 'add') this.fallback = (this.fallback || '') + o.v;
+        else if (op === 'replace') this.fallback = o.v;
+        else return;
+        post('delta', { id: this.messageId, text: this.text, fallback: this.fallback });
         return;
       }
 
@@ -215,7 +231,7 @@
         if (op === 'append' || op === 'add') this.text += o.v;
         else if (op === 'replace') this.text = o.v;
         else { this.unknownOps += 1; return; }
-        post('delta', { id: this.messageId, text: this.text });
+        post('delta', { id: this.messageId, text: this.text, fallback: this.fallback });
         return;
       }
 
@@ -224,7 +240,7 @@
         if (this.current && !this.current.accepted) { this.drop(o.v); return; }
         if (!this.messageId) return;
         this.text += o.v;
-        post('delta', { id: this.messageId, text: this.text });
+        post('delta', { id: this.messageId, text: this.text, fallback: this.fallback });
         return;
       }
 
@@ -287,6 +303,7 @@
           const carry = drop ? '' : this.text;
 
           this.current = { id: mid, accepted: true, initial: carry };
+          if (drop) this.fallback = null;
           this.messageId = mid;
           this.text = carry;
           this.began = true;
@@ -312,6 +329,7 @@
       post('end', {
         id: this.messageId,
         text: this.text,
+        fallback: this.fallback,
         why,
         unknownOps: this.unknownOps,
         totalOps: this.totalOps,
