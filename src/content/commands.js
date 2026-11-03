@@ -400,7 +400,7 @@ GT.commands = (function () {
   def(':model', '모델 — 인자 없으면 목록, :model <n|이름> 으로 전환합니다', async (args) => {
     const last = [...GT.store.state.messages].reverse().find((m) => m.model);
     if (!GT.picker.available()) {
-      return err('원본의 모델 선택기를 찾지 못했습니다. 창이 좁으면 숨겨집니다 — 창을 넓히거나 :q 로 원본에서 바꾸세요');
+      return err(GT_T('model.menu.unavailable'));
     }
     if (!args.length) {
       const list = await GT.picker.models();
@@ -417,7 +417,7 @@ GT.commands = (function () {
 
   def(':effort', '추론 수준 — :effort <0-2 | 낮음|중간|높음 | + | ->', async (args) => {
     if (!GT.picker.available()) {
-      return err('원본의 선택기를 찾지 못했습니다. 창이 좁으면 숨겨집니다 — 창을 넓히거나 :q 로 원본에서 바꾸세요');
+      return err(GT_T('cmd.effort.unavailable'));
     }
 
     if (!args.length) {

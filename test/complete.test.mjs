@@ -114,6 +114,24 @@ const names = C.registry.map((c) => c.name);
   t('대소문자 무시', C.complete(':THE').candidates.includes(':theme'));
 }
 
+// --- 문구가 가리키는 명령은 실재해야 한다 (리뷰 2026-11-03) ---
+// ':q 로 원본에서 바꾸세요' 가 사전과 명령 파일에 남아 있었다 — 그런 명령은 없다. 원본으로 가는 길은 ^` 다.
+// 문구 속 ':낱말' 을 모두 모아 레지스트리와 맞춘다. 앞에 공백 · 따옴표 · 백틱 · 여는 괄호가 오는 것만 본다(CSS 의사 클래스 · 주소 제외).
+{
+  const files = ['src/shared/i18n.js', 'src/content/commands.js', 'src/content/index.js', 'src/content/compose.js', 'src/content/health.js', 'src/content/sidebar.js',
+    'src/content/skins/terminal.js', 'src/content/skins/sheet.js', 'src/content/skins/none.js'];
+  const ghosts = [];
+  files.forEach((f) => {
+    const src = fs.readFileSync(f, 'utf8');
+    (src.match(/[ '\`(]:[a-z][a-z-]*/g) || []).forEach((m) => {
+      const name = m.slice(1);
+      if (!names.includes(name)) ghosts.push(`${f} ${name}`);
+    });
+  });
+  t('문구가 가리키는 명령은 모두 있다', ghosts.length === 0);
+  if (ghosts.length) console.log('    없는 명령:', ghosts.join(' · '));
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');
