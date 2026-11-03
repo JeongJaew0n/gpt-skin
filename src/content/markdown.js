@@ -152,8 +152,12 @@ GT.markdown = (function () {
     // 코드보다 앞에 둔다 — \` 는 코드 시작이 아니다. 코드 안의 \ 는 코드 규칙이 먼저(더 앞 자리) 잡는다.
     { re: /\\([!-/:-@[-`{-~])/, make: (m) => document.createTextNode(m[1]) },
     { re: /`([^`\n]+)`/, make: (m) => el('span', 'gt-code-inline', m[1]) },
-    { re: /\*\*([^*\n]+)\*\*/, make: (m) => el('strong', 'gt-strong', m[1]) },
-    { re: /(?<![*\w])\*([^*\n]+)\*(?!\w)/, make: (m) => el('em', 'gt-em', m[1]) },
+    // 굵게 · 기울임 · 취소선의 안쪽도 인라인이다 — '**`npm install`**' 은 굵은 코드, '**[링크](…)**' 는 굵은 링크.
+    // 예전에는 안쪽을 글자로 넣어 백틱 · 링크 문법이 화면에 남았다 (리뷰 2026-11-03).
+    { re: /\*\*\*([^*\n]+)\*\*\*/, make: (m, ctx) => { const s = el('strong', 'gt-strong'); s.appendChild(wrap('em', 'gt-em', m[1], ctx)); return s; } },
+    { re: /\*\*([^*\n]+)\*\*/, make: (m, ctx) => wrap('strong', 'gt-strong', m[1], ctx) },
+    { re: /(?<![*\w])\*([^*\n]+)\*(?!\w)/, make: (m, ctx) => wrap('em', 'gt-em', m[1], ctx) },
+    { re: /~~([^~\n]+)~~/, make: (m, ctx) => wrap('del', 'gt-strike', m[1], ctx) },
     {
       re: /\[([^\]\n]+)\]\(([^)\s]+)\)/,
       make: (m) => {
@@ -175,6 +179,12 @@ GT.markdown = (function () {
       }
     }
   ];
+
+  function wrap(tag, cls, text, ctx) {
+    const n = el(tag, cls);
+    inline(text, n, ctx);
+    return n;
+  }
 
   function inline(text, frag, ctx) {
     frag = frag || document.createDocumentFragment();

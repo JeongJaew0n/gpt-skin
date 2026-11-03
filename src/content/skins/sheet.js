@@ -416,7 +416,7 @@
     .replace(/\uE200[^\uE201]*\uE201/g, '[0]')
     .replace(/:contentReference\[[^\]]*\]\{[^}]*\}/g, '[0]')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/\*\*|__|`/g, '');
+    .replace(/\*\*|__|`|~~/g, '');
   // 한글 · 한자는 두 칸. ₩ ▲ 같은 기호(U+2000 이상)도 고정폭 글꼴에 없어 더 넓은 글꼴로 그려지므로 두 칸으로 센다
   // (하네스 실측: 한 칸으로 셌더니 '₩15,009,000' 이 칸 안에서 두 줄로 꺾였다).
   const textWidth = (t) => { let w = 0; for (const ch of visible(t)) w += (WIDE.test(ch) || ch.codePointAt(0) >= 0x2000) ? 2 : 1; return w; };
