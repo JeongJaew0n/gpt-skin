@@ -29,16 +29,18 @@
     rows.forEach((row, k) => { row.dataset.dirty = current[k] !== GT_DEFAULTS[k] ? '1' : '0'; });
   }
 
+  // 언어를 바꾸면 이 화면의 모든 문구가 바뀐다. 스킨을 바꾸면 보여 줄 항목이 바뀐다.
+  // 둘 다 다시 그리는 게 가장 간단하다.
+  // 탭별로 분할 적용을 켜고 끄면 위 스킨 항목의 이름(스킨 / 기본 스킨)이 바뀐다 (0.28.0)
+  const REDRAW = ['locale', 'skin', 'skin.perTab'];
+
   async function save(key, raw) {
     const v = GT_COERCE(key, raw);
     current[key] = v;
     await chrome.storage.sync.set({ [key]: v });
     markSaved();
     refreshCount();
-    // 언어를 바꾸면 이 화면의 모든 문구가 바뀐다. 스킨을 바꾸면 보여 줄 항목이 바뀐다.
-    // 둘 다 다시 그리는 게 가장 간단하다.
-    // 탭별로 분할 적용을 켜고 끄면 위 스킨 항목의 이름(스킨 / 기본 스킨)이 바뀐다 (0.28.0)
-    if (key === 'locale' || key === 'skin' || key === 'skin.perTab') location.reload();
+    if (REDRAW.includes(key)) location.reload();
     return v;
   }
 
@@ -133,8 +135,12 @@
   });
 
   $('#reset').addEventListener('click', async () => {
+    // 언어 · 스킨 · 탭별 분할까지 기본값으로 돌아가면 save() 처럼 다시 그린다. 예전에는 그대로 둬서
+    // 이전 스킨의 항목 · 언어가 남았다 (리뷰 2026-11-03 실측: sheet · en 에서 누르면 시트 항목이 그대로).
+    const redraw = REDRAW.some((k) => current[k] !== GT_DEFAULTS[k]);
     await chrome.storage.sync.set({ ...GT_DEFAULTS });
     Object.assign(current, GT_DEFAULTS);
+    if (redraw) { location.reload(); return; }
     rows.forEach((row, k) => row._set(GT_DEFAULTS[k]));
     markSaved(); refreshCount();
   });

@@ -169,7 +169,8 @@ function commands() {
   const opt = read('src/options/options.js');
   t('옵션 화면은 지금 스킨의 항목만 그린다', /GT_FIELDS_FOR\(current\.skin\)\.forEach/.test(opt));
   t('옵션 화면이 스키마 전체를 그리지 않는다', !/GT_SCHEMA\.forEach/.test(opt));
-  t('스킨 · 탭별로 분할 적용을 바꾸면 다시 그린다 (항목 이름이 바뀐다)', /key === 'locale' \|\| key === 'skin' \|\| key === 'skin\.perTab'\) location\.reload\(\)/.test(opt));
+  t('스킨 · 탭별로 분할 적용을 바꾸면 다시 그린다 (항목 이름이 바뀐다)',
+    /const REDRAW = \['locale', 'skin', 'skin\.perTab'\];/.test(opt) && /if \(REDRAW\.includes\(key\)\) location\.reload\(\)/.test(opt));
   const cmds = read('src/content/commands.js');
   t(':config 는 지금 스킨의 항목만', /GT_FIELDS_FOR\(GT\.skin\.current\.id\)/.test(cmds));
 }
