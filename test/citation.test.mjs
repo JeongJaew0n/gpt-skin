@@ -392,6 +392,34 @@ mode('number');
   t('구두점이 아닌 글자 앞의 백슬래시는 그대로', text(f) === '경로 C:\\Users 와 \\n');
 }
 
+// --- 출처 목록에 봉투와 짝이 없는 항목이 끼어 올 때 (실측 2026-11-03, 크롬 · gpt-6-thinking) ---
+// 생성형 UI 답의 대체 마크다운: 링크가 url 봉투로 오는데, content_references 앞쪽에는 코드 블록 위젯
+// (client_defined_widget, matched_text 빈 것 · 34자 · 45자)과 hidden 이 있다. 순번으로 짚으면 url 봉투가
+// 위젯과 짝지어져 링크 셋이 모두 지워졌다.
+{
+  const url = (label, href) => pua('url', label + E202 + href);
+  const widgets = [
+    REF({ type: 'client_defined_widget', matched: '', title: '', url: '', attribution: '' }),
+    REF({ type: 'client_defined_widget', matched: 'x'.repeat(34), title: '', url: '', attribution: '' }),
+    REF({ type: 'client_defined_widget', matched: 'y'.repeat(45), title: '', url: '', attribution: '' }),
+    REF({ type: 'hidden', matched: '', title: '', url: '', attribution: '' })
+  ];
+  const md = '**' + url('문서', 'https://example.com/docs') + '** 참고. 그냥 주소는 '
+    + url('https\\://example.com/docs', 'https://example.com/docs') + ' 에서 보고, 끝 주소 '
+    + url('https\\://example.com/a', 'https://example.com/a') + '\\.';
+  const frag = M.render(md, { refs: widgets });
+  const as = frag.all((n) => n.tag === 'a' && /gt-link/.test(n.className || ''));
+  t('위젯 항목이 앞에 있어도 url 봉투 셋이 링크가 된다', as.length === 3);
+  t('링크 주소는 봉투가 준 것', as.map((a) => a.href).join(' ') === 'https://example.com/docs https://example.com/docs https://example.com/a');
+  t('글자의 이스케이프를 푼다 (https\\:// → https://)', as.map((a) => a.textContent).join(' ') === '문서 https://example.com/docs https://example.com/a');
+  t('봉투 문자가 화면에 남지 않는다', !/[-]/.test(text(frag)));
+
+  // 봉투 글자 그대로인 항목이 뒤에 있으면 자리와 상관없이 그것을 쓴다
+  const exact = REF({ type: 'webpage', matched: pua('cite', 'turn0search3'), url: 'https://a.example/x', attribution: '에이' });
+  const f2 = M.render('결론' + pua('cite', 'turn0search3'), { refs: [widgets[0], exact] });
+  t('봉투 글자와 같은 항목을 찾아 출처로 쓴다', (links(f2)[0] || {}).href === 'https://a.example/x');
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');

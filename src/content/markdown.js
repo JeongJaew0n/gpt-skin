@@ -55,7 +55,8 @@ GT.markdown = (function () {
     // 봉투가 직접 준 값이 먼저다. 스트리밍 중에는 refs 가 아직 없다.
     const cut = typeof payload === 'string' ? payload.indexOf(SEP) : -1;
     if (cut >= 0) {
-      label = payload.slice(0, cut);
+      // 생성형 UI 답의 대체 마크다운은 글자에 백슬래시 이스케이프를 넣는다 ('https\://…', 실측 2026-11-03)
+      label = payload.slice(0, cut).replace(/\\([!-/:-@[-`{-~])/g, '$1');
       href = payload.slice(cut + SEP.length);
     } else if (ref && typeof ref.alt === 'string') {
       // fiber 경로(:contentReference)에는 봉투가 없다. alt 에 완성된 링크가 들어 있다.
@@ -94,9 +95,27 @@ GT.markdown = (function () {
     mode: (opts && opts.mode) || citeMode()
   });
 
+  // 봉투에 맞는 출처(content_references 항목). 예전에는 '몇 번째 봉투인가' 로만 짚었다. 그런데 이제 그 목록에
+  // 본문의 봉투와 짝이 없는 항목(코드 블록 위젯 client_defined_widget 등)이 앞에 끼어 와, 생성형 UI 답의 url 봉투가
+  // 위젯 항목과 짝지어져 '인용도 링크도 아니다' 로 지워졌다 (실측 2026-11-03, 크롬 · gpt-6-thinking — 링크 3개가 사라졌다).
+  // 봉투 글자 그대로(matched_text)인 항목을 먼저 찾는다. 없으면 같은 자리의 항목을 쓰되,
+  //   - 그 항목이 다른 글자를 가리키면 이 봉투의 것이 아니다
+  //   - url 봉투는 url 항목하고만 짝짓는다 (실측의 첫 위젯 항목은 글자가 비어 있었다)
+  // 글자가 빈 항목은 예전처럼 자리로 쓴다 — 모르는 종류면 번호 없이 지우는 규칙이 그대로 산다.
+  function refFor(ctx, idx, kind, raw) {
+    const hit = ctx.refs.find((r) => r && r.matched === raw);
+    if (hit) return hit;
+    const r = ctx.refs[idx] || null;
+    if (!r) return null;
+    if (r.matched && r.matched !== raw) return null;
+    if (kind === 'url' && r.type !== 'url') return null;
+    return r;
+  }
+
   // 마커 하나를 인용이나 링크로 바꾸거나 지운다. 지울 때는 빈 조각을 돌려준다.
-  function mark(ctx, idx, kind, payload) {
-    const ref = ctx.refs[idx] || null;
+  // raw 는 봉투 글자 그대로 — fiber 표기(:contentReference)는 순번이 곧 목록의 자리라 넘기지 않는다.
+  function mark(ctx, idx, kind, payload, raw) {
+    const ref = raw ? refFor(ctx, idx, kind, raw) : (ctx.refs[idx] || null);
     const type = ref ? ref.type : kind;
 
     if (type === 'url') {
@@ -144,7 +163,7 @@ GT.markdown = (function () {
 
   const INLINE = [
     // 마커를 먼저 잡는다. 뒤의 규칙이 봉투 안의 JSON 을 물어뜯으면 안 된다.
-    { re: PUA_MARK, make: (m, ctx) => mark(ctx, ctx.seen++, m[1], m[2]) },
+    { re: PUA_MARK, make: (m, ctx) => mark(ctx, ctx.seen++, m[1], m[2], m[0]) },
     // fiber 표기에는 봉투 속 값이 없다. 종류도 refs 를 봐야 안다.
     { re: OAI_MARK, make: (m, ctx) => { ctx.seen = Math.max(ctx.seen, +m[2] + 1); return mark(ctx, +m[2], 'cite', null); } },
     // 백슬래시 이스케이프 (CommonMark: ASCII 구두점 앞의 \ 는 그 글자 그대로). 생성형 UI 답의 fallback 이 이렇게 온다 —
