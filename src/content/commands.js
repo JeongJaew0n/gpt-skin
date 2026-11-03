@@ -94,23 +94,44 @@ GT.commands = (function () {
 
   // 대화 조작 — 원본 "..." 메뉴에 해당한다.
   // 대상은 :ls 번호 또는 대화 id 앞자리로 지정한다.
-  function findChat(raw) {
+  //
+  // 되돌릴 수 없는 :rm 도 이 길을 쓴다. 그래서 '아마 이것' 으로 고르지 않는다 (리뷰 2026-11-03).
+  //   · 세 자리까지의 숫자는 :ls 번호다. 목록에 없으면 id 앞자리 · 제목으로 다시 찾지 않는다 —
+  //     예전에는 :ls 없이 ':rm 3 yes' 가 id 가 3 으로 시작하는 대화나 제목에 3 이 든 대화를 지웠다
+  //   · id 앞자리 · 제목은 하나만 맞을 때만 고른다. 여럿이면 고르지 않고 알린다
+  // 사이드바 메뉴는 id 앞 8자리를 넘긴다(숫자만일 수도 있다) — 네 자리 이상 숫자는 id 앞자리로도 찾는다.
+  function resolveChat(raw) {
     // '@3' · '@6a97' 처럼 앞에 @ 를 붙여도 된다.
     // 이름과 섞일 수 있는 명령(:rename)에서 대상임을 분명히 하려고 쓴다.
-    const key = String(raw == null ? '' : raw).replace(/^@/, '');
-    if (key === '') return null;
-    const n = Number(key);
-    if (Number.isInteger(n) && lastList[n]) return lastList[n];
-    const pool = lastList.concat(GT.sidebar.chats ? GT.sidebar.chats() : []);
-    return pool.find((c) => c.id && c.id.startsWith(String(key)))
-      || pool.find((c) => (c.title || '').toLowerCase().includes(String(key).toLowerCase()))
-      || null;
+    const key = String(raw == null ? '' : raw).replace(/^@/, '').trim();
+    if (key === '') return { chat: null, why: 'none' };
+    if (/^\d{1,3}$/.test(key)) {
+      const c = lastList[Number(key)];
+      return c ? { chat: c } : { chat: null, why: lastList.length ? 'range' : 'no-list' };
+    }
+    if (/^\d+$/.test(key) && lastList[Number(key)]) return { chat: lastList[Number(key)] };
+
+    const byId = new Map();
+    lastList.concat(GT.sidebar.chats ? GT.sidebar.chats() : [])
+      .forEach((c) => { if (c && c.id && !byId.has(c.id)) byId.set(c.id, c); });
+    const pool = Array.from(byId.values());
+    const lk = key.toLowerCase();
+    const one = (hits) => (hits.length === 1 ? { chat: hits[0] } : { chat: null, why: hits.length ? 'ambiguous' : 'none', hits });
+    const byPrefix = pool.filter((c) => c.id.toLowerCase().startsWith(lk));
+    if (byPrefix.length) return one(byPrefix);
+    return one(pool.filter((c) => (c.title || '').toLowerCase().includes(lk)));
   }
 
   const needTarget = (key) => {
-    const c = findChat(key);
-    if (!c) err(`대상을 찾지 못했습니다: ${key} — :ls 번호나 id 앞자리로 지정하세요`);
-    return c;
+    const r = resolveChat(key);
+    if (r.chat) return r.chat;
+    if (r.why === 'no-list') err(GT_T('cmd.target.noList', key));
+    else if (r.why === 'range') err(GT_T('cmd.target.range', key, lastList.length - 1));
+    else if (r.why === 'ambiguous') {
+      err(GT_T('cmd.target.ambiguous', key, r.hits.length,
+        r.hits.slice(0, 3).map((c) => `${c.id.slice(0, 8)} ${c.title || ''}`.trim()).join(' · ')));
+    } else err(`대상을 찾지 못했습니다: ${key} — :ls 번호나 id 앞자리로 지정하세요`);
+    return null;
   };
 
   def(':rename', '이름 바꾸기 — :rename <새 이름> (지금 대화) · :rename @<n|id> <새 이름>', async (args) => {

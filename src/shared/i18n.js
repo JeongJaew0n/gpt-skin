@@ -149,6 +149,9 @@ var GT_I18N = {
     'cmd.close.none': '닫을 탭이 없습니다 (지금 대화가 열린 탭에 없습니다)',
     // 대화 조작 API 가 200 이지만 success 가 거짓일 때 (0.26.4)
     'cmd.op.rejected': '바뀌지 않았습니다 — 서버가 요청을 받아들이지 않았습니다: $1',
+    'cmd.target.noList': '$1 번이 무엇인지 모릅니다 — 먼저 :ls 로 목록을 불러오세요. 번호는 :ls 목록의 번호입니다',
+    'cmd.target.range': ':ls 목록에 $1 번이 없습니다 — 0 부터 $2 까지입니다',
+    'cmd.target.ambiguous': '$1 에 맞는 대화가 $2 개라 고르지 않았습니다 — id 앞자리를 더 길게 쓰세요: $3',
     // 답변 중 보내기 막기 (0.30.0)
     'compose.busy.placeholder': '답변 중 — 끝나면 보낼 수 있습니다 · esc 로 중단',
     // 모델 버튼 (0.31.0)
@@ -375,6 +378,9 @@ var GT_I18N = {
     'cmd.close.desc': 'Close the current tab and move to the next one',
     'cmd.close.none': 'No tab to close (the current conversation is not an open tab)',
     'cmd.op.rejected': 'Nothing changed — the server did not accept the request: $1',
+    'cmd.target.noList': 'Not sure what #$1 is — load the list with :ls first. Numbers refer to the :ls list',
+    'cmd.target.range': 'There is no #$1 in the :ls list — it runs from 0 to $2',
+    'cmd.target.ambiguous': '$2 chats match $1, so none was picked — type more of the id: $3',
     'compose.busy.placeholder': 'Answering — you can send when it finishes · esc to stop',
     'model.pick.title': 'Change model',
     'model.menu.placeholder': 'Pick a model · type part of a name to filter',
