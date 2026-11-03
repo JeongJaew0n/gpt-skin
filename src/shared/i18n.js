@@ -217,6 +217,7 @@ var GT_I18N = {
     'img.drawing': '그림을 만드는 중',
     'img.ref': '그림 · $1',
     'img.ref.local': '그림 · $1 — 원본 화면에서 봅니다',
+    'md.sandbox': '$1 — 원본 화면에서 받습니다',
 
     'opt.gutter.markers.label': '응답 왼쪽 세로 바',
     'opt.scanlines.label': '스캔라인',
@@ -447,6 +448,7 @@ var GT_I18N = {
     'img.drawing': 'Drawing',
     'img.ref': 'Image · $1',
     'img.ref.local': 'Image · $1 — view it in the original UI',
+    'md.sandbox': '$1 — download it in the original UI',
 
     'opt.gutter.markers.label': 'Vertical bar beside replies',
     'opt.scanlines.label': 'Scanlines',

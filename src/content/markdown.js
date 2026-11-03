@@ -196,6 +196,9 @@ GT.markdown = (function () {
     {
       re: /\[([^\]\n]+)\]\(([^)\s]+)\)/,
       make: (m) => {
+        // 코드 실행이 만든 파일(sandbox:)은 우리 화면에서 열 수 없다 — 예전에는 눌러도 아무 일 없는 링크(#)였다.
+        // 실측(2026-11-03): HTML 을 만들어 달라는 답이 '[HTML 파일 다운로드](sandbox:/mnt/data/counter.html)' 였다.
+        if (/^sandbox:/i.test(m[2])) return el('span', 'gt-img-ref', GT_T('md.sandbox', m[1]));
         const a = el('a', 'gt-link', m[1]);
         a.href = /^https?:\/\//i.test(m[2]) ? m[2] : '#';
         a.target = '_blank';

@@ -41,7 +41,14 @@ const nodes = (src) => M.inline(src).children;
   t('평범한 링크는 그대로', n.length === 1 && n[0].tag === 'a' && n[0].textContent === '문서');
 }
 {
+  // 코드 실행이 만든 파일 링크 (실측: '[HTML 파일 다운로드](sandbox:/mnt/data/counter.html)')
+  const n = nodes('[HTML 파일 다운로드](sandbox:/mnt/data/counter.html) 를 받으세요');
+  t('sandbox 링크는 눌리지 않는 링크(#)가 아니라 원본에서 받으라는 글자', n[0].tag === 'span' && /HTML 파일 다운로드/.test(n[0].textContent) && /원본/.test(n[0].textContent));
+  t('뒤 글은 그대로', n[1].textContent === ' 를 받으세요');
+}
+{
   const i18n = fs.readFileSync('src/shared/i18n.js', 'utf8');
+  t('sandbox 문구도 ko · en 에', (i18n.match(/'md\.sandbox':/g) || []).length === 2);
   t('문구가 ko · en 사전에 있다', (i18n.match(/'img\.ref\.local':/g) || []).length === 2 && (i18n.match(/'img\.ref':/g) || []).length === 2);
 }
 
