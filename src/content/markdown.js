@@ -308,14 +308,21 @@ GT.markdown = (function () {
   // 마크다운 원문을 블록 목록으로 자른다. 터미널 렌더(renderInto)와 줄 단위 출력(lines)이
   // 같은 판별을 쓴다 — 문법이 두 벌이면 같은 원문이 스킨마다 다르게 잘린다.
   //   code    { lang, lines }        heading { level, text }     hr
-  //   quote   { src }                table   { rows: [[셀]] }     item    { depth, text }
+  //   quote   { src }                table   { rows: [[셀]] }     item    { depth, text, num }
   //   para    { text }               (여러 줄 문단은 공백으로 이어 붙인다)
   // text 는 원문 그대로다(인용 마커 포함). 인라인 처리는 그리는 쪽이 inline() 으로 한다.
+  // item 의 num 은 번호 목록(1. 2) …)의 번호다. 글머리 목록이면 null.
   function blocks(src) {
     const out = [];
     const lines = String(src == null ? '' : src).split('\n');
     let i = 0;
     let para = [];
+    // 깊이마다 지금 이어지는 목록. 번호 목록은 원본(CommonMark)처럼 첫 항목의 번호에서 시작해 1씩 올린다 —
+    // 예전에는 표지를 버려 '1. 2. 3.' 이 '· · ·' 로 보였다 (리뷰 2026-11-03).
+    const lists = [];
+    const indentOf = (l) => /^\s*/.exec(l)[0].replace(/\t/g, '  ').length;
+    // 목록이 아닌 줄. 들여쓴 줄은 앞 항목에 딸린 것이라(이어지는 문단 · 코드) 그 깊이까지의 목록은 이어진다.
+    const leaveLists = (l) => { lists.length = Math.min(lists.length, Math.floor(indentOf(l) / 2)); };
 
     const flushPara = () => {
       if (!para.length) return;
@@ -329,6 +336,7 @@ GT.markdown = (function () {
       const fence = /^\s*```+\s*([\w+-]*)\s*$/.exec(line);
       if (fence) {
         flushPara();
+        leaveLists(line);
         const lang = fence[1];
         const body = [];
         i += 1;
@@ -341,18 +349,20 @@ GT.markdown = (function () {
       if (/^\s*$/.test(line)) { flushPara(); i += 1; continue; }
 
       if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
-        flushPara(); out.push({ type: 'hr' }); i += 1; continue;
+        flushPara(); leaveLists(line); out.push({ type: 'hr' }); i += 1; continue;
       }
 
       const h = /^(#{1,6})\s+(.*)$/.exec(line);
       if (h) {
         flushPara();
+        lists.length = 0;
         out.push({ type: 'heading', level: h[1].length, text: h[2] });
         i += 1; continue;
       }
 
       if (/^\s*>\s?/.test(line)) {
         flushPara();
+        leaveLists(line);
         const buf = [];
         while (i < lines.length && /^\s*>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^\s*>\s?/, '')); i += 1; }
         out.push({ type: 'quote', src: buf.join('\n') });
@@ -361,6 +371,7 @@ GT.markdown = (function () {
 
       if (/^\s*\|.*\|\s*$/.test(line)) {
         flushPara();
+        leaveLists(line);
         const rows = [];
         while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) {
           const cells = lines[i].trim().replace(/^\||\|$/g, '').split('|');
@@ -375,16 +386,25 @@ GT.markdown = (function () {
       if (li) {
         flushPara();
         const depth = Math.floor(li[1].replace(/\t/g, '  ').length / 2);
-        out.push({ type: 'item', depth, text: li[3] });
+        const ordered = !/^[-*+]$/.test(li[2]);
+        lists.length = Math.min(lists.length, depth + 1);              // 더 깊은 목록은 끝났다
+        const prev = lists[depth];
+        const num = !ordered ? null : (prev && prev.num != null ? prev.num + 1 : parseInt(li[2], 10));
+        lists[depth] = { num };
+        out.push({ type: 'item', depth, text: li[3], num });
         i += 1; continue;
       }
 
+      if (!para.length) leaveLists(line);
       para.push(line.trim());
       i += 1;
     }
     flushPara();
     return out;
   }
+
+  // 목록 항목 앞에 그릴 표지. 번호 목록은 번호, 글머리 목록은 깊이에 따라 · ▸ (시트도 같은 것을 쓴다)
+  const bullet = (b) => (b.num != null ? `${b.num}.` : (b.depth ? '▸' : '·'));
 
   function renderInto(src, ctx) {
     const out = document.createDocumentFragment();
@@ -409,7 +429,7 @@ GT.markdown = (function () {
       if (b.type === 'table') { out.appendChild(table(b.rows, ctx)); return; }
       if (b.type === 'item') {
         const row = el('div', `gt-li gt-li-d${Math.min(b.depth, 3)}`);
-        row.appendChild(el('span', 'gt-bullet', b.depth === 0 ? '·' : '▸'));
+        row.appendChild(el('span', 'gt-bullet', bullet(b)));
         const body = el('span', 'gt-li-body');
         body.appendChild(inline(b.text, null, ctx));
         row.appendChild(body);
@@ -448,7 +468,7 @@ GT.markdown = (function () {
         b.rows.forEach((cells, k) => rows.push({ kind: 'table', text: cells.map((c) => c.trim()).join(' | '),
           cells: cells.map((c) => c.trim()), header: k === 0, quote: q }));
       } else if (b.type === 'item') {
-        rows.push({ kind: 'item', text: b.text, depth: b.depth, quote: q });
+        rows.push({ kind: 'item', text: b.text, depth: b.depth, num: b.num, quote: q });
       } else {
         rows.push({ kind: 'text', text: b.text, quote: q });
       }
@@ -474,5 +494,5 @@ GT.markdown = (function () {
       .replace(new RegExp(OAI_MARK.source, 'g'), '');
   }
 
-  return { render, renderInto, blocks, lines, inline, copyBtn, newCtx, stripMarks };
+  return { render, renderInto, blocks, lines, inline, bullet, copyBtn, newCtx, stripMarks };
 })();

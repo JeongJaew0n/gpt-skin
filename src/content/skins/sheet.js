@@ -567,7 +567,7 @@
         b.textContent = r.text;
       } else if (r.kind === 'item') {
         b.style.paddingLeft = (6 + 14 * (r.depth || 0)) + 'px';
-        b.appendChild(el('span', 'gs-bullet', (r.depth ? '▸' : '·') + ' '));
+        b.appendChild(el('span', 'gs-bullet', GT.markdown.bullet(r) + ' '));
         GT.markdown.inline(r.text, b, ctx);
       } else if (r.kind === 'code' || r.kind === 'table' || r.raw) {
         b.textContent = r.text;
