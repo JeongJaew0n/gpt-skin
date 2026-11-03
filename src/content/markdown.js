@@ -177,6 +177,22 @@ GT.markdown = (function () {
     { re: /\*\*([^*\n]+)\*\*/, make: (m, ctx) => wrap('strong', 'gt-strong', m[1], ctx) },
     { re: /(?<![*\w])\*([^*\n]+)\*(?!\w)/, make: (m, ctx) => wrap('em', 'gt-em', m[1], ctx) },
     { re: /~~([^~\n]+)~~/, make: (m, ctx) => wrap('del', 'gt-strike', m[1], ctx) },
+    // 마크다운 그림 ![대체 글](주소). 예전에는 링크 규칙이 [대체 글](주소) 만 먹어 '!' 가 남고, sandbox: 주소는 눌리지 않는
+    // 링크(#)가 됐다 — 코드 실행으로 만든 그림의 답이 '!귀여운 토끼 얼굴 아이콘' 으로 보였다 (실측 2026-11-03).
+    // 외부 그림은 불러오지 않고 링크로, 열 수 없는 주소(sandbox: 등)는 원본에서 보라는 자리 글자로 남긴다.
+    {
+      re: /!\[([^\]\n]*)\]\(([^)\s]+)\)/,
+      make: (m) => {
+        const alt = m[1] || m[2].split('/').pop();
+        if (!/^https?:\/\//i.test(m[2])) return el('span', 'gt-img-ref', GT_T('img.ref.local', alt));
+        const a = el('a', 'gt-link gt-img-ref', GT_T('img.ref', alt));
+        a.href = m[2];
+        a.target = '_blank';
+        a.rel = 'noreferrer noopener';
+        a.title = m[2];
+        return a;
+      }
+    },
     {
       re: /\[([^\]\n]+)\]\(([^)\s]+)\)/,
       make: (m) => {

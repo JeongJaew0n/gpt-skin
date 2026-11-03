@@ -229,6 +229,7 @@ GT.theme = (function () {
 .gt-strong { font-weight: 700; color: var(--gt-fg-strong, #fff); }
 .gt-em { font-style: italic; }
 .gt-strike { text-decoration: line-through; }
+.gt-img-ref { color: var(--gt-fg-dim); }
 .gt-link { color: var(--gt-blue); text-decoration: none; }
 .gt-link:hover { text-decoration: underline; }
 .gt-table { border-collapse: collapse; font-size: 0.96em; }
