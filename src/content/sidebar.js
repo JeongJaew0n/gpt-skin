@@ -169,10 +169,11 @@ GT.sidebar = (function () {
     box.style.top = Math.round(rect.bottom - host.top + 2) + 'px';
     box.style.left = Math.round(rect.left - host.left) + 'px';
 
+    // fn 이 없으면 누름을 부르는 쪽이 직접 받는다 (삭제)
     const act = (label, fn, danger) => {
       const it = el('div', 'gt-ctx-item', label);
       if (danger) it.dataset.danger = '1';
-      it.addEventListener('mousedown', async (e) => {
+      if (fn) it.addEventListener('mousedown', async (e) => {
         e.preventDefault(); e.stopPropagation();
         closeMenu();
         try { await fn(); } catch (err) { GT.skin.current.system('error', `실패: ${err.message}`); }
@@ -203,28 +204,28 @@ GT.sidebar = (function () {
       await refresh();
     });
 
-    // 삭제는 되돌릴 수 없다. 한 번 더 누르게 한다.
-    const del = act('삭제', () => {}, true);
-    del.addEventListener('mousedown', (e) => {
+    // 삭제는 되돌릴 수 없다. 한 번 더 누르게 한다 — 두 번 다 이 리스너 하나가 받는다.
+    // 예전에는 두 번째 누름을 나중에 붙인 리스너(once)가 받게 했는데, 이 항목의 capture 리스너가 stopPropagation 을
+    // 부르면 같은 항목의 bubble 리스너는 불리지 않는다. 메뉴로는 한 번도 지워지지 않았다 —
+    // 크롬 156 하네스 실측(리뷰 2026-11-03): 두 번째 누름 뒤에도 '정말 삭제? 한 번 더' 그대로, 삭제 요청 0회.
+    const del = act('삭제', null, true);
+    del.addEventListener('mousedown', async (e) => {
       e.preventDefault(); e.stopPropagation();
-      if (del.dataset.armed) return;
-      del.dataset.armed = '1';
-      del.textContent = '정말 삭제? 한 번 더';
-      setTimeout(() => { if (del.isConnected) { del.dataset.armed = ''; del.textContent = '삭제'; } }, 4000);
-      const once = async (ev) => {
-        ev.preventDefault(); ev.stopPropagation();
-        del.removeEventListener('mousedown', once);
-        closeMenu();
-        try {
-          if (!(await GT.convops.remove(rec.id))) { GT.skin.current.system('error', GT_T('cmd.op.rejected', rec.title)); return; }
-          GT.tabs.close(rec.id);          // 열린 탭에서도 닫는다 (0.26.5)
-          GT.skin.current.system('warn', `삭제 요청: ${rec.title}`);
-          if (currentId() === rec.id) GT.navigate.newChat();
-          await refresh();
-        } catch (err) { GT.skin.current.system('error', `삭제 실패: ${err.message}`); }
-      };
-      setTimeout(() => del.addEventListener('mousedown', once), 0);
-    }, true);
+      if (!del.dataset.armed) {
+        del.dataset.armed = '1';
+        del.textContent = '정말 삭제? 한 번 더';
+        setTimeout(() => { if (del.isConnected) { del.dataset.armed = ''; del.textContent = '삭제'; } }, 4000);
+        return;
+      }
+      closeMenu();
+      try {
+        if (!(await GT.convops.remove(rec.id))) { GT.skin.current.system('error', GT_T('cmd.op.rejected', rec.title)); return; }
+        GT.tabs.close(rec.id);            // 열린 탭에서도 닫는다 (0.26.5)
+        GT.skin.current.system('warn', `삭제 요청: ${rec.title}`);
+        if (currentId() === rec.id) GT.navigate.newChat();
+        await refresh();
+      } catch (err) { GT.skin.current.system('error', `삭제 실패: ${err.message}`); }
+    });
 
     act('프로젝트로 이동', () => {
       GT.prompt.fill(`:mv ${rec.id.slice(0, 8)} `);
