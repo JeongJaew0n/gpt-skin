@@ -55,7 +55,9 @@ const kinds = (src) => L(src).map((r) => r.kind).join(',');
 // ---------------------------------------------------------------- 문법은 한 벌
 {
   const src = read('src/content/markdown.js');
-  t('코드 울타리 판별이 한 곳에만 있다', (src.match(/\/\^\\s\*```\+\\s\*\(\[\\w\+-\]\*\)\\s\*\$\//g) || []).length === 1);
+  // 펜스 정규식 (2026-11-03 부터 정보 문자열 · 물결 펜스를 받는다 — test/fence.test.mjs)
+  t('코드 울타리 판별이 한 곳에만 있다', (src.match(/\/\^\\s\*\(`\{3,\}\|~\{3,\}\)\(\.\*\)\$\//g) || []).length === 1
+    && !/```\+\\s\*\(\[\\w/.test(src));
   t('목록 판별이 한 곳에만 있다', (src.match(/\/\^\(\\s\*\)\(\[-\*\+\]\|\\d\+\[\.\)\]\)\\s\+\(\.\*\)\$\//g) || []).length === 1);
   t('터미널 렌더가 blocks() 를 쓴다', /function renderInto\(src, ctx\) \{\s*\n\s*const out = [^\n]+\n\s*blocks\(src\)\.forEach/.test(src));
   t('줄 단위 출력도 blocks() 를 쓴다', /function lines\(src, quote\) \{[\s\S]{0,120}blocks\(src\)\.forEach/.test(src));

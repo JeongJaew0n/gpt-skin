@@ -333,14 +333,22 @@ GT.markdown = (function () {
     while (i < lines.length) {
       const line = lines[i];
 
-      const fence = /^\s*```+\s*([\w+-]*)\s*$/.exec(line);
-      if (fence) {
+      // 여는 펜스: ``` 또는 ~~~ 셋 이상 + 정보 문자열(info string). 언어는 그 첫 낱말이다 (CommonMark).
+      // 닫는 펜스는 같은 글자로 여는 것 이상 길이여야 한다 — 네 개로 연 블록 안의 ``` 는 본문이다.
+      // 예전에는 정보 문자열을 [\w+-] 로만 받아 'c#' · 'python title="x"' 가 펜스가 아니었다. 그러면 닫는 ``` 가
+      // 새 펜스를 열어 답의 나머지가 통째로 코드가 됐다. 닫을 때도 ``` 셋에 닫혀 README 예시가 중간에 깨졌다 (리뷰 2026-11-03).
+      const fence = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+      if (fence && !(fence[1][0] === '`' && fence[2].includes('`'))) {
         flushPara();
         leaveLists(line);
-        const lang = fence[1];
+        const lang = fence[2].trim().split(/\s+/)[0] || '';
+        const close = new RegExp(`^\\s*${fence[1][0]}{${fence[1].length},}\\s*$`);
+        // 목록 안에서 들여쓴 펜스는 본문에서도 그만큼 덜어 낸다 (CommonMark). 안 덜면 복사한 코드 맨 앞이 들여써져
+        // 파이썬은 IndentationError 가 난다.
+        const dedent = new RegExp(`^ {0,${/^ */.exec(line)[0].length}}`);
         const body = [];
         i += 1;
-        while (i < lines.length && !/^\s*```+\s*$/.test(lines[i])) { body.push(lines[i]); i += 1; }
+        while (i < lines.length && !close.test(lines[i])) { body.push(lines[i].replace(dedent, '')); i += 1; }
         i += 1;
         out.push({ type: 'code', lang, lines: body });
         continue;
