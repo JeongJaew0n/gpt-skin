@@ -188,6 +188,47 @@ GT.store = (function () {
       return { mode: 'merge', kept: missing.length, gained };
     },
 
+    // 대화 원본(API)을 반영한다. 원본은 지금 분기의 전부를 순서대로 준다 — DOM 수확과 달리 '덜 그려진 것' 이 없다.
+    // 그래서 원본의 순서를 따른다. 예전에는 수확과 같은 합치기(applyHarvest)를 써서, 방금 보낸 내 메시지가
+    // 임시 id(local-…)로 남아 있으면 '합치기' 로 갔고, 처음 보는 기록을 끝에 덧붙였다 — 늦게 끝난 그림이
+    // 다음 질문 아래에 붙었다 (실측 2026-11-03, 크롬 · 시트: 18:08 그림이 18:11 질문 아래).
+    // 원본에 아직 없는 것만 끝에 남긴다: 방금 보낸 내 메시지(임시 id) · 받는 중인 답. 원본에 없는 진짜 id 는
+    // 다른 분기(다시 생성 · 고치기 이전)의 것이라 버린다.
+    applyApi(messages, meta) {
+      const path = meta && meta.path;
+      if (path && path !== state.path) {
+        state.path = path;
+        this.replaceAll(messages, meta);
+        return { mode: 'replace' };
+      }
+      if (meta && meta.title && !state.conversationTitle) state.conversationTitle = meta.title;
+      if (meta && meta.id) state.conversationId = meta.id;
+      if (path) state.path = path;
+
+      const incoming = new Set(messages.map((m) => m.id).filter(Boolean));
+      // 방금 보낸 내 메시지에 진짜 id 를 단다 (upsert 와 같은 규칙 — 같은 글이면 같은 메시지)
+      messages.forEach((m) => {
+        if (!m.id || m.role !== 'user' || state.byId.has(m.id)) return;
+        const local = state.messages.find((x) => x.role === 'user' && isLocalId(x.id) && x.text === m.text);
+        if (local) { state.byId.delete(local.id); local.id = m.id; state.byId.set(m.id, local); }
+      });
+      const pending = state.messages.filter((x) => !(x.id && incoming.has(x.id))
+        && (isLocalId(x.id) || (x.id && x.id === state.streamingId) || String(x.id || '').indexOf('stream-') === 0));
+      const prev = new Map(state.byId);
+      state.messages = [];
+      state.byId.clear();
+      messages.forEach((m) => {
+        const old = m.id && prev.get(m.id);
+        const keep = old ? keepFrom(old, m) : {};
+        if (old && old.refs && !m.refs) keep.refs = old.refs;
+        if (old && old.images && !m.images) keep.images = old.images;
+        upsert({ at: old ? old.at : null, ...m, ...keep });
+      });
+      pending.forEach((x) => { state.messages.push(x); if (x.id) state.byId.set(x.id, x); });
+      emit('harvest');
+      return { mode: 'api', pending: pending.length };
+    },
+
     // 이름을 바꾸면 다음 수확을 기다리지 않고 상단바를 바로 고친다.
     setTitle(t) {
       state.conversationTitle = String(t || '');

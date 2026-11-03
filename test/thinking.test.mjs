@@ -152,7 +152,8 @@ const results = []; const t = (n, ok) => results.push([n, ok]);
   t('상태를 주기적으로 평가한다', /every\(200, \(\) => \{/.test(idx));
   t('생성 중인지는 중단 버튼으로 본다',
     /const generating = !!GT\.compose\.stopButton\(\);/.test(idx));
-  t('본문이 흐르면 끈다', /const want = generating && !GT\.store\.state\.streamingId;/.test(idx));
+  // 원본에서 턴이 이어지는 동안(다시 읽기 chase)도 켠다 — 비동기 그림은 중지 버튼이 먼저 사라진다 (리뷰 2026-11-03)
+  t('본문이 흐르면 끈다', /const want = \(generating \|\| !!chasing\) && !GT\.store\.state\.streamingId;/.test(idx));
   t('바뀔 때만 다시 그린다', /if \(GT\.store\.setThinking\(want\)\) GT\.skin\.current\.render\(\);/.test(idx));
   t('왜 이렇게 하는지 문서를 가리킨다', /thinking-indicator-flicker\.md/.test(idx));
 }

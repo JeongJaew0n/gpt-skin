@@ -155,18 +155,41 @@ GT.conversation = (function () {
     return out;
   }
 
+  // 지금 턴이 원본에서 아직 이어지는가 — 스트림이 끝난 뒤 다시 읽기(index.js 의 chase)가 본다.
+  // 실측(2026-11-03, 크롬 · gpt-6-thinking, 그림 턴 넷):
+  //   그리는 동안 분기 끝은 assistant 의 도구 호출(recipient 가 all 이 아니다) · end_turn false
+  //   도구 결과 뒤에 생각 · 코드 실행 · 답 글이 9초쯤 쉬었다가 이어지기도 했다(답 글은 status in_progress 로 자란다)
+  //   끝은 assistant · text · end_turn true 일 때도, reasoning_recap(end_turn false)일 때도 있었다 — end_turn 만으로는 모른다
+  //   대화의 async_status 는 다 끝난 뒤 null 이었다 (그리는 동안의 값은 재지 못했다 [미정])
+  // pending  아직 이어진다 — 비동기 작업이 있거나 · 끝 메시지가 자라는 중이거나 · 도구 호출에서 멈춰 있다
+  // done     끝 메시지가 end_turn 이다 (아니면 다시 읽는 쪽이 '두 번 연달아 그대로' 로 끝을 판단한다)
+  // sig      분기의 모양 — 다시 읽을 때마다 바뀌었는지 본다
+  function turnState(conv, branch) {
+    const last = branch[branch.length - 1];
+    const role = last && last.author && last.author.role;
+    const pending = !!conv.async_status || !!(last && (last.status === 'in_progress'
+      || (role === 'assistant' && last.recipient && last.recipient !== 'all')));
+    return {
+      pending,
+      done: !pending && !!(last && last.end_turn === true),
+      sig: `${branch.length}:${last ? last.id : ''}:${last ? last.status : ''}`
+    };
+  }
+
   async function load(id) {
     const cid = id || idFromPath();
     if (!cid) return null;
     const conv = await GT.oai.get(`/backend-api/conversation/${encodeURIComponent(cid)}`);
     if (!conv || !conv.mapping) throw new Error('mapping 없음');
+    const branch = activeBranch(conv);
     return {
       id: cid,
       title: conv.title || '',
       messages: toRecords(conv),
-      model: conv.default_model_slug || null
+      model: conv.default_model_slug || null,
+      ...turnState(conv, branch)
     };
   }
 
-  return { load, toRecords, toRefs, activeBranch, isVisible, isReasoning, idFromPath, hasMarkup };
+  return { load, toRecords, toRefs, activeBranch, isVisible, isReasoning, idFromPath, hasMarkup, turnState };
 })();

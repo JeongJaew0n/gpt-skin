@@ -175,6 +175,12 @@
 
   GT.on('thinking', () => GT.store.thinking());
 
+  // 턴이 원본에서 끝날 때까지 다시 읽기(chase, 아래 pull 옆) 의 상태. 이벤트 처리기보다 먼저 둔다 — 부팅은 아래에서
+  // 컴포저 · 스레드를 기다리며(await) 멈추는데, 그 사이 'end' 가 오면 늦게 선언한 let 을 건드려 TDZ 오류가 난다.
+  const CHASE_WAITS = [600, 2000, 3000, 4000, 5000, 6000, 8000, 10000];
+  const CHASE_MAX_MS = 4 * 60 * 1000;
+  let chasing = null;                                  // { cid, t0 } — 다시 읽는 중인 대화
+
   // 그림을 만들기 시작했다. 스트림에서만 오는 신호다 —
   // 원본은 이 메시지를 [data-message-id] 로 그리지 않아 DOM 수확으로는 못 본다.
   let drewThisTurn = false;
@@ -190,18 +196,20 @@
   GT.on('delta', (p) => GT.store.delta(p.id, p.text));
   GT.on('end', (p) => {
     GT.store.end(p.id, p.text);
-    // 응답이 끝났는데 본문을 한 번도 못 잡았다 = 판별자가 낡았다.
-    if (p.began === false && (p.skipped || []).length) {
-      GT.health.soft(`최종 응답을 찾지 못했습니다 — 건너뛴 종류: ${p.skipped.join(', ')}. 판별자가 낡았을 수 있습니다`);
-    }
     // add 를 못 보고 본문부터 받은 스트림. 화면은 정상이지만 해석이 어긋났다는 신호다.
     if (p.orphan) {
       GT.health.soft('스트림이 메시지 생성(add) 없이 본문부터 보냈다 — 자리를 만들어 이어붙였다');
     }
     // 스트림에서 본문을 하나도 못 받았다. 화면을 비워두는 대신 정본(API)에서 다시 읽는다.
-    // 스트림은 반응성용이고, 대화 원본이 정답이다.
+    // 스트림은 반응성용이고, 대화 원본이 정답이다. 원본에서 턴이 아직 이어지면(비동기 그림 등) 끝날 때까지 읽는다.
+    // 원본에서 턴이 끝났는데도 보일 것(답 글 · 그림)이 없으면 그때 알린다 = 판별자가 낡았다. 예전에는 스트림이 끝나자마자
+    // 알려, 생각 조각만 싣고 끝나는 비동기 그림 턴마다 배지에 헛경보(⚠)가 떴다 (리뷰 2026-11-03).
     if (p.began === false) {
-      setTimeout(() => pull('stream-empty'), 600);
+      const skipped = (p.skipped || []).slice();
+      chase('stream-empty', () => {
+        if (!skipped.length || turnHasOutput()) return;
+        GT.health.soft(`최종 응답을 찾지 못했습니다 — 건너뛴 종류: ${skipped.join(', ')}. 판별자가 낡았을 수 있습니다`);
+      });
     }
     if (p.totalOps && p.unknownOps / p.totalOps > 0.2) {
       GT.health.soft(`알 수 없는 델타 op ${p.unknownOps}/${p.totalOps} — 스키마가 바뀌었을 수 있습니다`);
@@ -272,6 +280,8 @@
     if (!cid || !GT.store.state.byId.get(msgId)) return;          // 대화를 옮겼다 · 비로그인 화면
     let conv;
     try { conv = await GT.conversation.load(cid); } catch (e) { GT.log('끊김 검사: 대화 원본을 읽지 못했다 —', e.message); return; }
+    // 답 글이 온 뒤에도 원본에서 턴이 이어질 수 있다(글 다음에 그림이 오는 턴) — 끝날 때까지 다시 읽는다
+    if (conv && conv.done === false) chase('turn-pending');
     const orig = conv && conv.messages.find((m) => m.id === msgId);
     const shown = GT.store.state.byId.get(msgId);
     if (!orig || !shown) { GT.log('끊김 검사: 원본에서 이 답을 찾지 못했다'); return; }
@@ -554,7 +564,8 @@
     const busyNow = GT.compose.answering();
     if (busyNow !== wasBusy) { wasBusy = busyNow; GT.prompt.setBusy(busyNow); }
     const generating = !!GT.compose.stopButton();
-    const want = generating && !GT.store.state.streamingId;
+    // 원본에서 턴이 이어지는 동안(다시 읽기 중)도 일하는 중이다 — 비동기 그림은 중지 버튼이 먼저 사라진다
+    const want = (generating || !!chasing) && !GT.store.state.streamingId;
     if (GT.store.setThinking(want)) GT.skin.current.render();
   });
   // 회전자는 더 자주 돈다. 렌더가 아니라 해당 노드의 글자만 바꾸므로 싸다.
@@ -577,13 +588,60 @@
       // 응답이 오는 사이 다른 대화로 넘어갔으면 화면에는 넣지 않는다. 넣으면 그 대화 내용이 지금 주소로 깔린다
       // (빠르게 탭을 넘길 때 — 2026-10-02). 지금 대화는 그쪽의 pull 이 채운다.
       if (GT.conversation.idFromPath() !== id) { GT.log(`대화 원본 버림 — 받는 사이 다른 대화로 넘어갔다 (${why})`); return true; }
-      GT.store.applyHarvest(conv.messages, { title: conv.title, path: location.pathname, id });
+      GT.store.applyApi(conv.messages, { title: conv.title, path: location.pathname, id });
       GT.log(`대화 원본 ${conv.messages.length}건 (${why})`);
-      return true;
+      return conv;
     } catch (e) {
       GT.log('대화 원본 API 실패 — DOM 수확으로 내려간다:', e.message);
       return false;
     }
+  }
+
+  // 턴이 원본에서 끝날 때까지 대화 원본을 다시 읽는다 (리뷰 2026-11-03).
+  // 그림은 비동기로 그려진다 — 실측(크롬 · gpt-6-thinking): 스트림은 생각 조각만 싣고 [DONE] 으로 끝나고,
+  // 원본은 분기 끝에 그림 도구 호출(end_turn false)을 둔 채 약 80초 뒤 그림과 끝 메시지(end_turn true)를 붙였다.
+  // 원본은 그동안 /backend-api/conversations/<id>?num_turns=… 를 몇 초마다 다시 읽는다. 예전에 우리는 600ms 뒤
+  // 한 번만 읽어 그림이 새로고침 전까지 안 보였다. 간격을 늘려 가며 읽고, 끝나면(done) 멈춘다.
+  // 다른 대화로 옮기거나 새 스트림이 시작되면 멈춘다(그쪽이 맡는다). 그동안 '생각 중' 을 띄운다(아래 every(200)).
+  // 마지막 내 메시지 뒤에 보일 답(글 · 그림)이 있는가
+  function turnHasOutput() {
+    const ms = GT.store.state.messages;
+    let i = ms.length - 1;
+    while (i >= 0 && ms[i].role !== 'user') i -= 1;
+    return ms.slice(i + 1).some((m) => m.role === 'assistant' && ((m.images && m.images.length) || String(m.text || '').trim()));
+  }
+
+  function chase(why, onDone) {
+    const cid = GT.conversation.idFromPath();
+    if (!cid || gone) return;
+    if (chasing && chasing.cid === cid) return;        // 이미 읽고 있다
+    const run = chasing = { cid, t0: Date.now(), sig: null, same: 0 };
+    let n = 0;
+    const step = () => {
+      if (gone || chasing !== run) return;
+      if (GT.conversation.idFromPath() !== cid || GT.store.state.streamingId || Date.now() - run.t0 > CHASE_MAX_MS) {
+        chasing = null;
+        return;
+      }
+      pull(`${why}-${n + 1}`).then((conv) => {
+        if (chasing !== run) return;
+        // 끝 메시지가 end_turn 이면 끝. 아니면 이어지는 중이 아닌 채로 분기가 두 번 연달아 그대로일 때 끝으로 본다
+        // (끝이 reasoning_recap 인 턴이 있었고, 도구 결과 뒤 9초쯤 쉬었다가 답 글이 이어진 턴도 있었다).
+        if (conv && conv.sig === run.sig && !conv.pending) run.same += 1; else run.same = 0;
+        if (conv) run.sig = conv.sig;
+        if (conv && (conv.done || run.same >= 2)) {
+          chasing = null;
+          GT.log(`턴이 끝났다 — 다시 읽기 ${n + 1}번 (${why})`);
+          if (onDone) onDone();
+          return;
+        }
+        n += 1;
+        const t = setTimeout(step, CHASE_WAITS[Math.min(n, CHASE_WAITS.length - 1)]);
+        disposers.push(() => clearTimeout(t));
+      });
+    };
+    const t = setTimeout(step, CHASE_WAITS[0]);
+    disposers.push(() => clearTimeout(t));
   }
 
   // 첫 로드 — API 를 먼저 시도하고, 안 되면 원본이 스레드를 붙일 시간을 주고 수확한다
