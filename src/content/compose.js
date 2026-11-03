@@ -52,6 +52,11 @@ GT.compose = (function () {
 
   const composer = () => { const c = candidates()[0]; return c ? c.el : null; };
   let lastUsed = null;                 // 마지막으로 글을 넣은 입력창 — 보냈는지 확인할 때 같은 것을 본다
+  // 우리가 원본 입력창에 글을 넣고 보내는 중인가. 그동안 원본 입력창이 초점을 갖는 것은 우리 일이다 —
+  // 덮는 스킨이 초점을 입력줄로 되돌리는 처리(prompt.js 의 focusin)는 이때 손대지 않는다.
+  let using = false;
+  const isComposer = (el) => !!el && el.nodeType === 1
+    && COMPOSERS.some((sel) => { try { return el.matches(sel); } catch (_) { return false; } });
 
   function stopButton() {
     return document.querySelector('[data-testid="stop-button"]')
@@ -191,8 +196,14 @@ GT.compose = (function () {
   }
 
   async function send(text) {
+    using = true;
+    try { return await sendNow(text); } finally { using = false; }
+  }
+
+  async function sendNow(text) {
     const why = tryInject(text);
-    if (why) return { ok: false, reason: why };
+    // 넣다가 실패해도 초점은 원본 입력창에 가 있다 — 입력줄로 돌려준다 (부르는 쪽이 쓴 글을 입력줄에 되돌린다)
+    if (why) { GT.skin.current.focus(); return { ok: false, reason: why }; }
 
     const t0 = Date.now();
     const btn = await waitSendButton(lastUsed);
@@ -260,5 +271,6 @@ GT.compose = (function () {
 
   // 대화 목록은 GT.chats 가 담당한다. 여기 있던 DOM 스크래핑은 그쪽 폴백으로 옮겼다 —
   // 구현이 둘이면 출처가 갈릴 때 서로 다른 목록을 보여준다.
-  return { composer, send, stop, inject, tryInject, probe, sendButton, stopButton, answering, STREAM_STALE_MS, SEND_WAIT_MS, SEND_DISABLED_WAIT_MS, SEND_RETRY_MS, SELECTOR, COMPOSERS, holding, SENT_CHECK_MS };
+  return { composer, send, stop, inject, tryInject, probe, sendButton, stopButton, answering, isComposer, usingComposer: () => using,
+    STREAM_STALE_MS, SEND_WAIT_MS, SEND_DISABLED_WAIT_MS, SEND_RETRY_MS, SELECTOR, COMPOSERS, holding, SENT_CHECK_MS };
 })();

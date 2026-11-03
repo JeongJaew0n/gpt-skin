@@ -74,6 +74,19 @@ GT.prompt = (function () {
     window.addEventListener('focus', () => GT.skin.current.syncFocus(), sig());
     window.addEventListener('blur', () => GT.skin.current.syncFocus(), sig());
 
+    // 덮는 스킨(터미널 · 시트)에서는 원본 입력창이 보이지 않는다. 원본이 답을 마치거나 주소를 바꾸며 자기 입력창에
+    // 초점을 주면, 그 뒤에 친 글이 숨은 입력창에 쌓였다가 Enter 에 원본이 보냈다 — 명령(:log dump)도 메시지로 나갔다.
+    // 실측(2026-11-03, 크롬 · 시트 · gpt-6-thinking): 답이 끝난 뒤 activeElement = 원본 .ProseMirror.
+    // 한글은 조합 키(Process)로 와서 아래 '타이핑을 입력줄로' 가 못 잡는다 — 초점이 넘어가는 순간 되돌린다.
+    // 원본 입력창일 때만이다(원본 메뉴 · 대화상자는 그대로). 우리가 글을 넣고 보내는 동안(compose)도 그대로 둔다.
+    window.addEventListener('focusin', (e) => {
+      if (!opts.capturesTyping || !GT.skin.visible()) return;
+      if (GT.compose.usingComposer && GT.compose.usingComposer()) return;
+      const t = e.composedPath ? e.composedPath()[0] : e.target;
+      if (!GT.compose.isComposer || !GT.compose.isComposer(t)) return;
+      GT.skin.current.focus();
+    }, sig(true));
+
     // IME(한글) 조합 중에는 이 핸들러가 아무것도 하지 않는다.
     //
     // 조합 중의 Enter 는 '보내기' 가 아니라 '조합을 확정' 하는 키다.

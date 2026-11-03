@@ -59,7 +59,7 @@ function boot({ capturesTyping = true } = {}) {
     return e;
   };
   const tick = () => new Promise((r) => setTimeout(r, 0));
-  return { P: sb.GT.prompt, input, win, calls, key, tick };
+  return { P: sb.GT.prompt, input, win, calls, key, tick, sb };
 }
 
 {
@@ -121,6 +121,37 @@ function boot({ capturesTyping = true } = {}) {
   const off = boot({ capturesTyping: false });
   const e = off.key(off.win, { key: 'a', composedPath: () => [{ closest: () => null }] });
   t('capturesTyping=false 면 글자를 가로채지 않는다', off.input.value === '' && !e.defaultPrevented);
+}
+
+{
+  // 덮는 스킨에서 원본 입력창이 초점을 가져가면 입력줄로 되돌린다 (실측 2026-11-03 — 답이 끝난 뒤
+  // activeElement 가 숨은 원본 .ProseMirror 였고, 친 ':log dump' 가 원본으로 메시지가 되어 나갔다)
+  const focusin = (b, el) => { const e = new Event('focusin'); e.composedPath = () => [el]; b.win.dispatchEvent(e); };
+  const PM = { isComposer: true }, MENU = { isComposer: false };
+  const wire = (b, using) => {
+    b.sb.GT.compose.isComposer = (el) => !!(el && el.isComposer);
+    b.sb.GT.compose.usingComposer = () => using.on;
+  };
+
+  const on = boot({ capturesTyping: true }); const u1 = { on: false }; wire(on, u1);
+  focusin(on, PM);
+  t('원본 입력창이 초점을 가져가면 입력줄로 되돌린다', on.calls.focus === 1);
+  focusin(on, MENU);
+  t('원본 입력창이 아니면(메뉴 등) 그대로 둔다', on.calls.focus === 1);
+  u1.on = true; focusin(on, PM);
+  t('우리가 글을 넣고 보내는 동안은 그대로 둔다', on.calls.focus === 1);
+
+  const off = boot({ capturesTyping: false }); wire(off, { on: false });
+  focusin(off, PM);
+  t('원본을 가리지 않는 스킨(none)은 원본 입력창을 그대로 둔다', off.calls.focus === 0);
+
+  const hidden = boot({ capturesTyping: true }); wire(hidden, { on: false });
+  hidden.sb.GT.skin.visible = () => false;
+  focusin(hidden, PM);
+  t('스킨을 숨겼으면(원본 화면) 그대로 둔다', hidden.calls.focus === 0);
+
+  on.P.detach(); u1.on = false; focusin(on, PM);
+  t('detach 뒤에는 반응하지 않는다', on.calls.focus === 1);
 }
 
 {

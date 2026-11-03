@@ -268,6 +268,36 @@ async function sendWith({ clears }) {
   t('잠긴 버튼이 2초 뒤 풀리면 기다렸다가 누른다', btn.clicks === 1 && r.via === 'button' && !ta.events.includes('keydown'));
 }
 
+// --- 덮는 스킨의 초점 되돌리기와 맞물리는 것 (리뷰 2026-11-03) ---
+// prompt.js 는 원본 입력창이 초점을 가져가면 입력줄로 되돌린다. 우리가 넣고 보내는 동안만은 예외여야 한다.
+{
+  const L = load({});
+  const el = (sel) => ({ nodeType: 1, matches: (s) => s === sel });
+  const isC = typeof L.C.isComposer === 'function' ? L.C.isComposer : () => null;
+  t('원본 입력창(ProseMirror)을 알아본다', isC(el('.ProseMirror[contenteditable="true"]')) === true);
+  t('id 가 있던 예전 입력창도', isC(el('#prompt-textarea')) === true);
+  t('다른 요소는 입력창이 아니다', isC(el('button[aria-haspopup="menu"]')) === false && isC(null) === false);
+}
+{
+  const setter = (ta, v) => Object.getOwnPropertyDescriptor(Object.getPrototypeOf(ta), 'value').set.call(ta, v);
+  let ta; let during = null; let L;
+  const using = () => (typeof L.C.usingComposer === 'function' ? L.C.usingComposer() : null);
+  const button = { disabled: false, clicks: 0, click() { this.clicks++; during = using(); setter(ta, ''); } };
+  L = load({ button, make: (P) => { ta = makeTextarea(P); return { 'textarea#mobile-composer-prompt': ta }; }, execCommand: () => false });
+  t('보내기 전에는 쓰는 중이 아니다', using() === false);
+  const r = await L.C.send('보낼 글');
+  t('넣고 누르는 동안은 쓰는 중이다', r.ok === true && during === true);
+  t('보내고 나면 쓰는 중이 아니다', using() === false);
+}
+{
+  let focused = 0;
+  const L = load({});
+  L.GT.skin.current.focus = () => { focused++; };
+  const r = await L.C.send('입력창 없음');
+  t('넣기에 실패하면 입력줄로 초점을 돌려준다', r.ok === false && r.reason === 'composer-not-found' && focused === 1);
+  t('실패해도 쓰는 중 표시가 남지 않는다', typeof L.C.usingComposer === 'function' && L.C.usingComposer() === false);
+}
+
 let bad = 0;
 results.forEach(([n, ok]) => { if (!ok) bad++; console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${n}`); });
 console.log(bad ? `\n${bad}건 실패` : '\n전부 통과');
