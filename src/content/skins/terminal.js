@@ -343,6 +343,8 @@
     body.textContent = m.text;
     line.appendChild(body);
     wrap.appendChild(meta); wrap.appendChild(line);
+    // 내가 올린 그림. 원본은 내 메시지에 붙여 보여 준다 — 예전에는 글만 그려 첨부가 화면에서 사라졌다 (리뷰 2026-11-03)
+    (m.images || []).forEach((im) => { const b = imageBox(im); b.classList.add('gt-img-user'); wrap.appendChild(b); });
     return wrap;
   }
 

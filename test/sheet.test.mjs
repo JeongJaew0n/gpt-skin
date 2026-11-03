@@ -115,6 +115,11 @@ const rowsText = (S) => S.ui.body.children.map((tr) => tr.children.map((td) => t
   t('그릴 수 없는 파트는 알린다 (그림은 두 번 세지 않는다)', img.some((r) => r.kind === 'placeholder' && /code/.test(r.text) && !/image/.test(r.text)));
   const empty = JSON.parse(JSON.stringify(S.rowsOf({ role: 'assistant', text: '', streaming: true })));
   t('빈 답도 한 행 (스트리밍 첫 순간)', empty.length === 1 && empty[0].streaming);
+  // 내가 올린 그림 (리뷰 2026-11-03 — 예전에는 글만 그려 첨부가 사라졌다)
+  const up = JSON.parse(JSON.stringify(S.rowsOf({ role: 'user', text: '이 그림 설명해 줘', images: [{ mime: 'image/png', w: 128, h: 128, pointer: 'u1' }] })));
+  t('내 첨부 그림도 자리표시 행', up.map((r) => r.kind).join() === 'text,image' && /128×128/.test(up[1].text) && up[0].label === '나');
+  const only = JSON.parse(JSON.stringify(S.rowsOf({ role: 'user', text: '', images: [{ mime: 'image/png', w: 8, h: 8, pointer: 'u2' }] })));
+  t('그림만 보냈으면 빈 글 행이 없다', only.map((r) => r.kind).join() === 'image' && only[0].label === '나');
 }
 
 // ---------------------------------------------------------------- 그리기

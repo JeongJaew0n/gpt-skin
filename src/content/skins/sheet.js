@@ -383,7 +383,10 @@
     const rows = [];
     if (m.role === 'user') {
       // 내가 보낸 글은 마크다운으로 해석하지 않는다 (터미널도 원문 그대로 보여 준다). 줄마다 한 행.
-      String(m.text || '').split('\n').forEach((line) => rows.push({ kind: 'text', text: line, raw: true }));
+      // 그림만 보냈으면 빈 글 행을 만들지 않는다.
+      if (m.text || !(m.images || []).length) String(m.text || '').split('\n').forEach((line) => rows.push({ kind: 'text', text: line, raw: true }));
+      // 내가 올린 그림도 행으로 남긴다 — 예전에는 글만 그려 첨부가 사라졌다 (리뷰 2026-11-03)
+      (m.images || []).forEach((im) => rows.push({ kind: 'image', text: `${im.mime || 'image'} ${im.w}×${im.h}`, pointer: im.pointer }));
     } else {
       GT.markdown.lines(m.text || '').forEach((r) => rows.push(r));
       (m.images || []).forEach((im) => rows.push({ kind: 'image', text: `${im.mime || 'image'} ${im.w}×${im.h}`, pointer: im.pointer }));

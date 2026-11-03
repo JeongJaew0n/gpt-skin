@@ -323,6 +323,9 @@ function loadStore(clock) {
   t('harvest 병합에서도 지킨다', /if \(m\.images\) rec\.images = m\.images;/.test(store));
   t('tty 가 이미지를 그린다', /\(m\.images \|\| \[\]\)\.forEach\(\(im\) => body\.appendChild\(imageBox\(im\)\)\)/.test(tty));
   t('자리표시자와 겹치지 않게 한다', /!\(drew && t === 'image'\)/.test(tty));
+  // 내가 올린 그림 — 원본은 내 메시지에 붙여 보인다. 예전에는 turnUser 가 글만 그렸다 (리뷰 2026-11-03)
+  t('tty 가 내 첨부 그림도 그린다', /function turnUser\(m\) \{[\s\S]*?\(m\.images \|\| \[\]\)\.forEach\(\(im\) => \{ const b = imageBox\(im\); b\.classList\.add\('gt-img-user'\); wrap\.appendChild\(b\); \}\);[\s\S]*?return wrap;\s*\}\s*\n\s*function turnAssistant/.test(tty));
+  t('내 첨부 그림은 내 글과 줄을 맞춘다', /\.gt-img-user \{ padding-left: calc\(1ch \+ 10px\); align-self: flex-start; \}/.test(css));
   t('서명에 포인터가 들어간다', /m\.images\[0\]\.pointer/.test(plan));
   t('image.js 가 로드된다', mani.content_scripts.some((c) => (c.js || []).includes('src/content/image.js')));
   t('tty 보다 먼저 로드된다', (() => {

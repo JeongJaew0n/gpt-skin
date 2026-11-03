@@ -331,6 +331,7 @@ GT.theme = (function () {
 
 /* ---- 이미지 ---- */
 .gt-img { margin: 10px 0 4px; }
+.gt-img-user { padding-left: calc(1ch + 10px); align-self: flex-start; }   /* 내 글(❯ 다음)과 줄을 맞추고, 그림 폭만큼만 */
 .gt-img-pic {
   display: block; max-width: 100%; border: 1px solid var(--gt-bg-3);
   image-rendering: auto;
