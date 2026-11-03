@@ -613,7 +613,7 @@
   if (autoShow && !showEarly) GT.skin.show();   // onBreak = revert — 점검을 통과한 뒤에 켠다
   // 배지·팝업이 실제 상태를 알아야 한다. 이걸 안 보내면 서비스 워커가
   // '점검이 멀쩡하니 켜져 있겠지' 로 추측한다 — 기본이 꺼짐이 되면서 그 추측이 틀리게 됐다.
-  GT.sendToSW({ kind: 'visible', visible: GT.skin.visible() });
+  GT.skin.reportState();
   GT.health.report();
   GT.skin.current.system('info', `gpt-skin ${GT_VERSION} · build ${GT_BUILD} — :help 로 명령, ^\` 로 원본 토글`,
     null, { quiet: true });

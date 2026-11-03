@@ -188,13 +188,19 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   const tabId = sender.tab && sender.tab.id;
   if (!tabId) return;
   const s = STATE.get(tabId) || {};
+  // 워커는 잠들면(MV3: 30초쯤 쉬면 내려간다) STATE 를 잃는다. 그래서 탭이 두 메시지에 켜짐과 점검 상태를 함께 실어 보낸다 —
+  // 메시지 하나만 받아도 배지를 바르게 그린다. 예전에는 깨어난 뒤 'visible' 만 받아 경고(⚠)를 잃고 초록으로 그렸다 (리뷰 2026-11-03).
   if (msg.kind === 'health') {
     s.reverted = msg.degraded;
     s.warned = msg.warned;
     s.reasons = msg.reasons;
-    if (!('visible' in s)) s.visible = !msg.degraded;
+    if (typeof msg.visible === 'boolean') s.visible = msg.visible;
+    else if (!('visible' in s)) s.visible = !msg.degraded;
   }
-  if (msg.kind === 'visible') s.visible = msg.visible;
+  if (msg.kind === 'visible') {
+    s.visible = msg.visible;
+    if (typeof msg.warned === 'boolean') { s.reverted = !!msg.degraded; s.warned = msg.warned; s.reasons = msg.reasons || []; }
+  }
   STATE.set(tabId, s);
   paint(tabId);
 });

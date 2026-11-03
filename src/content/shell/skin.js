@@ -95,6 +95,15 @@ GT.skin = (function () {
     return tabSkin;
   }
 
+  // 배지(서비스 워커)에 지금 상태를 알린다 — 켜짐과 점검 상태를 함께 보낸다.
+  // 서비스 워커는 잠들면(MV3: 30초쯤 쉬면 내려간다) 탭별 상태를 잃는다. 켜짐만 보내면 깨어난 워커가 경고를 모른 채
+  // 초록으로 그렸다 (리뷰 2026-11-03). show · hide 가 직접 부른다 — 노 스킨의 Ctrl+; · esc · 바깥 클릭으로 여닫는 것,
+  // 부팅 때 점검보다 먼저 켜는 것도 배지에 바로 닿는다(예전에는 toggle · switch 만 알렸다).
+  function reportState() {
+    const h = GT.health || {};
+    GT.sendToSW({ kind: 'visible', visible: GT.cover.isOn(), degraded: !!h.degraded, warned: !!h.warned, reasons: h.reasons || [] });
+  }
+
   // 부팅 때 설정으로 고른다. 모르는 이름이면 기본 스킨으로 간다.
   function use(id) {
     cur = GT.skins.get(id) || GT.skins.get(DEFAULT);
@@ -181,7 +190,7 @@ GT.skin = (function () {
         if (perTab()) { tabSkin = id; await GT.askSW({ kind: 'tabSkin:set', skin: id }, 3000); }
         else await GT.config.set('skin', id);
       }
-      GT.sendToSW({ kind: 'visible', visible: this.visible() });
+      reportState();
       return { ok: true };
     },
     // 스크린리더에 상태를 알린다. 눈에 보이지 않는 role=status 요소 하나에 글을 쓴다.
@@ -203,18 +212,19 @@ GT.skin = (function () {
       n.textContent = String(text || '');
       return true;
     },
-    show() { GT.cover.on(); this.current.focus(); },
+    show() { GT.cover.on(); this.current.focus(); reportState(); },
     hide() {
       const had = focusInHost();
       GT.cover.off();
       if (had) giveBack();
+      reportState();
     },
     visible() { return GT.cover.isOn(); },
-    // Ctrl+` · 툴바 버튼. 원본으로 복귀한 상태(degraded)에서는 다시 켜지 않는다.
+    reportState,
+    // Ctrl+` · 툴바 버튼. 원본으로 복귀한 상태(degraded)에서는 다시 켜지 않는다. 배지에는 show · hide 가 알린다.
     toggle() {
       if (GT.health.degraded) return this.visible();
       this.visible() ? this.hide() : this.show();
-      GT.sendToSW({ kind: 'visible', visible: this.visible() });
       return this.visible();
     }
   };

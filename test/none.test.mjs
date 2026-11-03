@@ -166,6 +166,7 @@ function registry() {
   const b = GT.skins.register(make('b'));
   GT.skin.use('a');
   GT.skin.show();
+  const swBefore = calls.sw.length;
   const r = await GT.skin.switch('b');
   t('전환이 성공한다', r.ok && GT.skin.current === b);
   t('이전 스킨을 먼저 해체한다', calls.order.indexOf('destroy:a') < calls.order.indexOf('mount:b'));
@@ -176,7 +177,7 @@ function registry() {
   t('새 스킨의 키를 넘긴다', at && at.o.openCode === 'Semicolon' && at.o.escapeHides === true && at.o.capturesTyping === false);
   t('원본을 안 가리는 스킨으로 바꾸면 닫힌 채 시작한다 (사용자 보고 2026-09-24)', !isOn());
   t('저장한다', calls.set.some(([k, v]) => k === 'skin' && v === 'b'));
-  t('서비스 워커에 알린다', calls.sw.length === 1);
+  t('서비스 워커에 알린다', calls.sw.length - swBefore === 1);
 
   const same = await GT.skin.switch('b');
   t('같은 스킨이면 아무것도 안 한다', same.same && b.mounted === 1);

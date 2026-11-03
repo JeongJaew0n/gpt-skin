@@ -22,12 +22,16 @@ GT.health = (function () {
 
   const policy = () => GT.config.get('onBreak') || 'warn';
 
+  // 켜짐도 같이 보낸다 — 잠들었다 깬 서비스 워커는 탭별 상태가 비어 있어, 없으면 '켜졌겠지' 로 추측했다 (리뷰 2026-11-03).
   function report() {
+    let visible;
+    try { visible = GT.skin.visible(); } catch (_) { visible = undefined; }
     GT.sendToSW({
       kind: 'health',
       degraded: reverted,
       warned,
       reasons,
+      visible,
       checks: Object.fromEntries(Object.entries(CHECKS).map(([k, v]) => [k, v.ok]))
     });
   }
